@@ -467,7 +467,12 @@ function handleTempPhoto(companyId, e) {
       const company = companies.find(c => c.id === companyId);
       if (company) {
         company.photo = canvas.toDataURL('image/jpeg', 0.85);
-        renderCompanies();
+        // DOM 직접 업데이트 (renderCompanies 호출 안함)
+        const box = document.querySelector(`#companyCard_${companyId} .temp-photo-box`);
+        if (box) {
+          box.innerHTML = `<img src="${company.photo}" style="width:100%;height:100%;object-fit:contain;display:block;" onclick="openImgModalByCompany(${companyId})">`;
+        }
+        renderSummary();
       }
     };
     img.src = ev.target.result;
