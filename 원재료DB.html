@@ -351,6 +351,10 @@ header h1 { color: #f0a500; font-size: 17px; font-weight: 700; }
     <span>🔍</span>
     <input type="text" id="searchInput" placeholder="품명, 바코드 검색..." oninput="renderItems()">
   </div>
+  <div style="display:flex; gap:8px; padding:8px 12px 4px; flex-wrap:wrap;">
+    <div class="filter-chip" id="sortName" onclick="setSort('name')">가나다순</div>
+    <div class="filter-chip" id="sortType" onclick="setSort('type')">유형별</div>
+  </div>
 
   <div class="items-wrap">
     <div class="empty" id="emptyMsg" style="display:block">
@@ -404,6 +408,7 @@ const fsdb = firebase.firestore();
 let ingredients = [];
 let historyData = [];
 let hFilter = '전체';
+let sortMode = null;
 let formFront = null, formBack = null;
 let editDocId = null;
 let videoStream = null, scanTimer = null;
@@ -686,14 +691,26 @@ async function deleteItem(docId, name) {
   }
 }
 
+function setSort(mode) {
+  sortMode = sortMode === mode ? null : mode;
+  document.getElementById('sortName').classList.toggle('active', sortMode === 'name');
+  document.getElementById('sortType').classList.toggle('active', sortMode === 'type');
+  renderItems();
+}
+
 // ── 목록 렌더 ──
 function renderItems() {
   const search = document.getElementById('searchInput').value.trim().toLowerCase();
-  const filtered = ingredients.filter(d =>
+  let filtered = ingredients.filter(d =>
     !search ||
     (d.name && d.name.toLowerCase().includes(search)) ||
     (d.barcode && d.barcode.includes(search))
   );
+  if (sortMode === 'name') {
+    filtered = [...filtered].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko'));
+  } else if (sortMode === 'type') {
+    filtered = [...filtered].sort((a, b) => (a.type || '').localeCompare(b.type || '', 'ko') || (a.name || '').localeCompare(b.name || '', 'ko'));
+  }
   const empty = document.getElementById('emptyMsg');
   const list = document.getElementById('itemsList');
   if (!filtered.length) { empty.style.display = 'block'; list.innerHTML = ''; return; }
