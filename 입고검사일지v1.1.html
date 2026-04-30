@@ -430,9 +430,11 @@ document.getElementById('inDate').value = today.toISOString().split('T')[0];
 
 // ── 거래처 ──
 function openCompanyModal() {
+  buildSupplierList();
   document.getElementById('mCompanyName').value = '';
+  document.getElementById('mCompanySelect').value = '';
+  document.getElementById('mCompanyName').style.display = 'none';
   document.getElementById('companyModal').classList.add('active');
-  setTimeout(() => document.getElementById('mCompanyName').focus(), 100);
 }
 function closeCompanyModal() {
   document.getElementById('companyModal').classList.remove('active');
@@ -929,7 +931,7 @@ function renderCompanies() {
     }).join('');
 
     const photoHtml = company.photo
-      ? `<img src="${company.photo}" style="width:100%;height:100%;object-fit:contain;display:block;" onclick="openImgModal('${company.photo}')">`
+      ? `<img src="${company.photo}" style="width:100%;height:100%;object-fit:contain;display:block;" onclick="openImgModalByCompany(${company.id})">`
       : `<div class="temp-photo-placeholder"><div class="icon">📄</div><p>온도기록지 사진 촬영</p></div>`;
 
     return `
@@ -1054,6 +1056,10 @@ function renderCompanies() {
 }
 
 // ── 이미지 모달 ──
+function openImgModalByCompany(companyId) {
+  const company = companies.find(c => c.id === companyId);
+  if (company && company.photo) openImgModal(company.photo);
+}
 function openImgModal(src) {
   document.getElementById('modalImg').src = src;
   document.getElementById('imgModal').classList.add('active');
