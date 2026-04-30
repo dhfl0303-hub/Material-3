@@ -271,6 +271,15 @@ header h1 { color: #f0a500; font-size: 17px; font-weight: 700; }
         <input type="text" id="fBarcode" placeholder="스캔 또는 직접 입력" inputmode="numeric">
       </div>
       <div class="form-group">
+        <label>관리번호</label>
+        <div style="display:flex;gap:4px;align-items:center">
+          <input type="text" id="fManageNum" placeholder="예: 0001" style="flex:1;min-width:0">
+          <button class="btn btn-outline" style="padding:6px 10px;font-size:12px;white-space:nowrap" onclick="fillNextManageNum()">다음번호</button>
+        </div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="flex:100%">
         <label>품명 *</label>
         <input type="text" id="fName" placeholder="예: 버터">
       </div>
@@ -282,7 +291,11 @@ header h1 { color: #f0a500; font-size: 17px; font-weight: 700; }
       </div>
       <div class="form-group">
         <label>원산지</label>
-        <input type="text" id="fOrigin" placeholder="예: 미국">
+        <select id="fOriginSelect" onchange="handleOriginSelect(this.value)">
+          <option value="">선택</option>
+          <option value="__direct__">직접 입력</option>
+        </select>
+        <input type="text" id="fOrigin" placeholder="예: 미국" style="display:none;margin-top:6px" oninput="updateOriginList(this.value)">
       </div>
     </div>
     <div class="form-row">
@@ -298,7 +311,10 @@ header h1 { color: #f0a500; font-size: 17px; font-weight: 700; }
       </div>
       <div class="form-group">
         <label>규격</label>
-        <input type="text" id="fSpec" placeholder="예: 1kg">
+        <div style="display:flex;align-items:center;gap:4px">
+          <input type="number" id="fSpecNum" placeholder="예: 1" style="flex:1;min-width:0">
+          <span style="font-size:14px;font-weight:600;color:#555">kg</span>
+        </div>
       </div>
     </div>
     <div class="form-row">
@@ -308,7 +324,18 @@ header h1 { color: #f0a500; font-size: 17px; font-weight: 700; }
       </div>
       <div class="form-group">
         <label>공급업체</label>
-        <input type="text" id="fSupplier" placeholder="예: 에이스유통">
+        <select id="fSupplierSelect" onchange="handleSupplierSelect(this.value)">
+          <option value="">선택</option>
+          <option>네추럴쿡</option>
+          <option>남원원예농협</option>
+          <option>대선제분</option>
+          <option>덕풍</option>
+          <option>씨제이제일제당</option>
+          <option>에이스유통</option>
+          <option>엠즈푸드</option>
+          <option value="__direct__">직접 입력</option>
+        </select>
+        <input type="text" id="fSupplier" placeholder="업체명 직접 입력" style="display:none;margin-top:6px">
       </div>
     </div>
     <div class="photo-row">
@@ -446,6 +473,7 @@ fsdb.collection('ingredients').orderBy('updatedAt','desc').onSnapshot(
   snap => {
     ingredients = snap.docs.map(d => ({ ...d.data(), _docId: d.id }));
     document.getElementById('countBadge').textContent = ingredients.length;
+    buildOriginList();
     renderItems();
   },
   err => { console.error(err); showToast('❌ 데이터 연결 오류'); }
@@ -532,13 +560,82 @@ function processBarcode(barcode) {
   document.getElementById('formTitle').textContent = '원료 등록 (' + barcode + ')';
 }
 
+// ── 관리번호 ──
+function fillNextManageNum() {
+  const nums = ingredients
+    .map(d => parseInt(d.manageNum))
+    .filter(n => !isNaN(n));
+  const next = nums.length > 0 ? Math.max(...nums) + 1 : 1;
+  document.getElementById('fManageNum').value = String(next).padStart(4, '0');
+}
+
+// ── 원산지 ──
+let originList = [];
+function buildOriginList() {
+  const set = new Set();
+  ingredients.forEach(d => { if (d.origin) set.add(d.origin.trim()); });
+  originList = [...set].sort((a, b) => a.localeCompare(b, 'ko'));
+  const sel = document.getElementById('fOriginSelect');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">선택</option>';
+  originList.forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o; opt.textContent = o;
+    sel.appendChild(opt);
+  });
+  const directOpt = document.createElement('option');
+  directOpt.value = '__direct__'; directOpt.textContent = '직접 입력';
+  sel.appendChild(directOpt);
+  if (current) sel.value = current;
+}
+function handleOriginSelect(val) {
+  const input = document.getElementById('fOrigin');
+  if (val === '__direct__') {
+    input.style.display = 'block';
+    input.focus();
+  } else {
+    input.style.display = 'none';
+    input.value = '';
+  }
+}
+function updateOriginList(val) {
+  if (!val.trim()) return;
+  if (!originList.includes(val.trim())) {
+    originList.push(val.trim());
+    originList.sort((a, b) => a.localeCompare(b, 'ko'));
+    const sel = document.getElementById('fOriginSelect');
+    const directOpt = sel.querySelector('option[value="__direct__"]');
+    const opt = document.createElement('option');
+    opt.value = val.trim(); opt.textContent = val.trim();
+    sel.insertBefore(opt, directOpt);
+  }
+}
+
+function handleSupplierSelect(val) {
+  const directInput = document.getElementById('fSupplier');
+  if (val === '__direct__') {
+    directInput.style.display = 'block';
+    directInput.focus();
+  } else {
+    directInput.style.display = 'none';
+    directInput.value = '';
+  }
+}
+
 // ── 폼 ──
 function resetForm() {
   editDocId = null; formFront = null; formBack = null; selectedAllergies = [];
-  ['fBarcode','fName','fType','fOrigin','fSpec','fMaker','fSupplier','fIngredients'].forEach(id => {
+  ['fBarcode','fManageNum','fName','fType','fOrigin','fSpecNum','fMaker','fIngredients'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.getElementById('fStorage').value = '';
+  document.getElementById('fOriginSelect').value = '';
+  document.getElementById('fOriginSelect').style.display = 'block';
+  document.getElementById('fOrigin').style.display = 'none';
+  document.getElementById('fSupplierSelect').value = '';
+  document.getElementById('fSupplier').value = '';
+  document.getElementById('fSupplier').style.display = 'none';
   document.getElementById('prevFront').style.display = 'none';
   document.getElementById('prevBack').style.display = 'none';
   document.getElementById('aiResult').classList.remove('show');
@@ -552,13 +649,36 @@ function openForm(item) {
     editDocId = item._docId;
     document.getElementById('formTitle').textContent = '원료 수정';
     document.getElementById('fBarcode').value = item.barcode || '';
+    document.getElementById('fManageNum').value = item.manageNum || '';
     document.getElementById('fName').value = item.name || '';
     document.getElementById('fType').value = item.type || '';
-    document.getElementById('fOrigin').value = item.origin || '';
+    const origin = item.origin || '';
+    const originSelect = document.getElementById('fOriginSelect');
+    const originExists = Array.from(originSelect.options).some(o => o.value === origin && o.value !== '' && o.value !== '__direct__');
+    if (origin && originExists) {
+      originSelect.value = origin;
+      originSelect.style.display = 'block';
+      document.getElementById('fOrigin').style.display = 'none';
+    } else if (origin) {
+      originSelect.value = '__direct__';
+      originSelect.style.display = 'block';
+      document.getElementById('fOrigin').style.display = 'block';
+      document.getElementById('fOrigin').value = origin;
+    }
     document.getElementById('fStorage').value = item.storage || '';
-    document.getElementById('fSpec').value = item.spec || '';
+    const specVal = item.spec ? item.spec.replace('kg','').trim() : '';
+    document.getElementById('fSpecNum').value = specVal;
     document.getElementById('fMaker').value = item.maker || '';
-    document.getElementById('fSupplier').value = item.supplier || '';
+    const supplier = item.supplier || '';
+    const knownList = ['네추럴쿡','남원원예농협','대선제분','덕풍','씨제이제일제당','에이스유통','엠즈푸드'];
+    if (knownList.includes(supplier)) {
+      document.getElementById('fSupplierSelect').value = supplier;
+      document.getElementById('fSupplier').style.display = 'none';
+    } else if (supplier) {
+      document.getElementById('fSupplierSelect').value = '__direct__';
+      document.getElementById('fSupplier').style.display = 'block';
+      document.getElementById('fSupplier').value = supplier;
+    }
     document.getElementById('fIngredients').value = item.ingredients || '';
     selectedAllergies = item.allergies ? [...item.allergies] : [];
     formFront = item.photoFront || null;
@@ -648,13 +768,18 @@ async function submitForm() {
   if (!name) { alert('품명을 입력해주세요.'); return; }
   const data = {
     barcode: document.getElementById('fBarcode').value.trim(),
+    manageNum: document.getElementById('fManageNum').value.trim(),
     name,
     type: document.getElementById('fType').value.trim(),
-    origin: document.getElementById('fOrigin').value.trim(),
+    origin: document.getElementById('fOriginSelect').value === '__direct__'
+      ? document.getElementById('fOrigin').value.trim()
+      : document.getElementById('fOriginSelect').value,
     storage: document.getElementById('fStorage').value,
-    spec: document.getElementById('fSpec').value.trim(),
+    spec: document.getElementById('fSpecNum').value.trim() ? document.getElementById('fSpecNum').value.trim() + 'kg' : '',
     maker: document.getElementById('fMaker').value.trim(),
-    supplier: document.getElementById('fSupplier').value.trim(),
+    supplier: document.getElementById('fSupplierSelect').value === '__direct__'
+      ? document.getElementById('fSupplier').value.trim()
+      : document.getElementById('fSupplierSelect').value,
     ingredients: document.getElementById('fIngredients').value.trim(),
     allergies: [...selectedAllergies],
     photoFront: formFront,
