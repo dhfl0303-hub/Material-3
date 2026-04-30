@@ -287,7 +287,11 @@ header h1 { color: #f0a500; font-size: 17px; font-weight: 700; }
     <div class="form-row">
       <div class="form-group">
         <label>식품유형</label>
-        <input type="text" id="fType" placeholder="예: 가공버터">
+        <select id="fTypeSelect" onchange="handleTypeSelect(this.value)">
+          <option value="">선택</option>
+          <option value="__direct__">직접 입력</option>
+        </select>
+        <input type="text" id="fType" placeholder="예: 가공버터" style="display:none;margin-top:6px" oninput="updateTypeList(this.value)">
       </div>
       <div class="form-group">
         <label>원산지</label>
@@ -473,6 +477,7 @@ fsdb.collection('ingredients').orderBy('updatedAt','desc').onSnapshot(
   snap => {
     ingredients = snap.docs.map(d => ({ ...d.data(), _docId: d.id }));
     document.getElementById('countBadge').textContent = ingredients.length;
+    buildTypeList();
     buildOriginList();
     renderItems();
   },
@@ -569,6 +574,42 @@ function fillNextManageNum() {
   document.getElementById('fManageNum').value = String(next).padStart(4, '0');
 }
 
+// ── 식품유형 ──
+let typeList = [];
+function buildTypeList() {
+  const set = new Set();
+  ingredients.forEach(d => { if (d.type) set.add(d.type.trim()); });
+  typeList = [...set].sort((a, b) => a.localeCompare(b, 'ko'));
+  const sel = document.getElementById('fTypeSelect');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">선택</option>';
+  typeList.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t; opt.textContent = t;
+    sel.appendChild(opt);
+  });
+  const directOpt = document.createElement('option');
+  directOpt.value = '__direct__'; directOpt.textContent = '직접 입력';
+  sel.appendChild(directOpt);
+  if (current) sel.value = current;
+}
+function handleTypeSelect(val) {
+  const input = document.getElementById('fType');
+  if (val === '__direct__') { input.style.display = 'block'; input.focus(); }
+  else { input.style.display = 'none'; input.value = ''; }
+}
+function updateTypeList(val) {
+  if (!val.trim() || typeList.includes(val.trim())) return;
+  typeList.push(val.trim());
+  typeList.sort((a, b) => a.localeCompare(b, 'ko'));
+  const sel = document.getElementById('fTypeSelect');
+  const directOpt = sel.querySelector('option[value="__direct__"]');
+  const opt = document.createElement('option');
+  opt.value = val.trim(); opt.textContent = val.trim();
+  sel.insertBefore(opt, directOpt);
+}
+
 // ── 원산지 ──
 let originList = [];
 function buildOriginList() {
@@ -630,6 +671,9 @@ function resetForm() {
     document.getElementById(id).value = '';
   });
   document.getElementById('fStorage').value = '';
+  document.getElementById('fTypeSelect').value = '';
+  document.getElementById('fTypeSelect').style.display = 'block';
+  document.getElementById('fType').style.display = 'none';
   document.getElementById('fOriginSelect').value = '';
   document.getElementById('fOriginSelect').style.display = 'block';
   document.getElementById('fOrigin').style.display = 'none';
@@ -651,7 +695,19 @@ function openForm(item) {
     document.getElementById('fBarcode').value = item.barcode || '';
     document.getElementById('fManageNum').value = item.manageNum || '';
     document.getElementById('fName').value = item.name || '';
-    document.getElementById('fType').value = item.type || '';
+    const typeVal = item.type || '';
+    const typeSelect = document.getElementById('fTypeSelect');
+    const typeExists = Array.from(typeSelect.options).some(o => o.value === typeVal && o.value !== '' && o.value !== '__direct__');
+    if (typeVal && typeExists) {
+      typeSelect.value = typeVal;
+      typeSelect.style.display = 'block';
+      document.getElementById('fType').style.display = 'none';
+    } else if (typeVal) {
+      typeSelect.value = '__direct__';
+      typeSelect.style.display = 'block';
+      document.getElementById('fType').style.display = 'block';
+      document.getElementById('fType').value = typeVal;
+    }
     const origin = item.origin || '';
     const originSelect = document.getElementById('fOriginSelect');
     const originExists = Array.from(originSelect.options).some(o => o.value === origin && o.value !== '' && o.value !== '__direct__');
@@ -770,7 +826,9 @@ async function submitForm() {
     barcode: document.getElementById('fBarcode').value.trim(),
     manageNum: document.getElementById('fManageNum').value.trim(),
     name,
-    type: document.getElementById('fType').value.trim(),
+    type: document.getElementById('fTypeSelect').value === '__direct__'
+      ? document.getElementById('fType').value.trim()
+      : document.getElementById('fTypeSelect').value,
     origin: document.getElementById('fOriginSelect').value === '__direct__'
       ? document.getElementById('fOrigin').value.trim()
       : document.getElementById('fOriginSelect').value,
