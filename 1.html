@@ -1,0 +1,187 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로또 번호 제외/조합 생성기</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            text-align: center;
+            background-color: #f7f9fa;
+            margin: 20px;
+        }
+        h2 { color: #333; }
+        .info { color: #666; margin-bottom: 20px; font-size: 0.95rem; }
+        
+        /* 로또 용지 스타일 (7열 배열) */
+        .lotto-board {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            max-width: 350px;
+            margin: 0 auto 25px auto;
+            background: #fff;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        .number-btn {
+            aspect-ratio: 1;
+            font-size: 1.1rem;
+            font-weight: bold;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .number-btn:hover { background-color: #e0e0e0; }
+        
+        /* 제외된 숫자 스타일 (빨간색 엑스 분위기) */
+        .number-btn.excluded {
+            background-color: #ffcccc;
+            color: #cc0000;
+            border-color: #ff9999;
+            text-decoration: line-through;
+        }
+
+        /* 컨트롤 버튼 */
+        .action-btn {
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .action-btn:hover { background-color: #0056b3; }
+        .reset-btn { background-color: #6c757d; }
+        .reset-btn:hover { background-color: #5a6268; }
+
+        /* 결과 창 스타일 */
+        .result-container {
+            margin-top: 25px;
+            min-height: 60px;
+        }
+        .ball {
+            display: inline-block;
+            width: 45px;
+            height: 45px;
+            line-height: 45px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: white;
+            border-radius: 50%;
+            margin: 0 5px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        /* 로또 실제 색상 반영 */
+        .ball1 { background-color: #fbc400; text-shadow: 0px 1px 2px #d4a600;} /* 1~10 노랑 */
+        .ball2 { background-color: #69c8f2; text-shadow: 0px 1px 2px #39a3d4;} /* 11~20 파랑 */
+        .ball3 { background-color: #ff7272; text-shadow: 0px 1px 2px #d43f3f;} /* 21~30 빨강 */
+        .ball4 { background-color: #aaa; text-shadow: 0px 1px 2px #777;}    /* 31~40 회색 */
+        .ball5 { background-color: #b0e06e; text-shadow: 0px 1px 2px #82b33c;} /* 41~45 녹색 */
+    </style>
+</head>
+<body>
+
+    <h2>로또 번호 제외 조합기</h2>
+    <p class="info">원하지 않는 번호를 클릭하여 <b>제외</b>(붉은색)한 뒤, <br>번호 조합하기 버튼을 눌러주세요.</p>
+
+    <div class="lotto-board" id="lottoBoard"></div>
+
+    <button class="action-btn" onclick="generateLotto()">번호 조합하기</button>
+    <button class="action-btn reset-btn" onclick="resetBoard()">초기화</button>
+
+    <div class="result-container" id="result"></div>
+
+    <script>
+        const lottoBoard = document.getElementById('lottoBoard');
+        const resultDiv = document.getElementById('result');
+        const excludedNumbers = new Set(); // 제외된 숫자를 저장하는 Set
+
+        // 1. 1부터 45까지 번호판 생성 (가로 7개 배열)
+        for (let i = 1; i <= 45; i++) {
+            const btn = document.createElement('button');
+            btn.classList.add('number-btn');
+            btn.innerText = i;
+            
+            // 클릭 시 제외수 지정/해제 토글
+            btn.addEventListener('click', () => {
+                if (excludedNumbers.has(i)) {
+                    excludedNumbers.delete(i);
+                    btn.classList.remove('excluded');
+                } else {
+                    // 최소 6개 번호는 남겨두어야 조합이 가능함
+                    if (excludedNumbers.size >= 39) {
+                        alert("최소 6개의 숫자는 남겨두어야 합니다!");
+                        return;
+                    }
+                    excludedNumbers.add(i);
+                    btn.classList.add('excluded');
+                }
+            });
+            lottoBoard.appendChild(btn);
+        }
+
+        // 2. 로또 번호 조합 및 추출 함수
+        function generateLotto() {
+            // 전체 1~45 중 제외되지 않은 숫자만 필터링
+            const availableNumbers = [];
+            for (let i = 1; i <= 45; i++) {
+                if (!excludedNumbers.has(i)) {
+                    availableNumbers.push(i);
+                }
+            }
+
+            // 무작위로 6개 추출
+            const selectedNumbers = [];
+            while (selectedNumbers.length < 6) {
+                const randomIndex = Math.floor(Math.random() * availableNumbers.length);
+                const number = availableNumbers.splice(randomIndex, 1)[0];
+                selectedNumbers.push(number);
+            }
+
+            // 오름차순 정렬
+            selectedNumbers.sort((a, b) => a - b);
+
+            // 결과 화면에 로또 공 모양으로 출력
+            displayResults(selectedNumbers);
+        }
+
+        // 3. 추출된 번호 시각화 함수
+        function displayResults(numbers) {
+            resultDiv.innerHTML = ''; // 기존 결과 제거
+            
+            numbers.forEach(num => {
+                const ball = document.createElement('span');
+                ball.classList.add('ball');
+                ball.innerText = num;
+
+                // 실제 로또 번호대별 색상 입히기
+                if (num <= 10) ball.classList.add('ball1');
+                else if (num <= 20) ball.classList.add('ball2');
+                else if (num <= 30) ball.classList.add('ball3');
+                else if (num <= 40) ball.classList.add('ball4');
+                else ball.classList.add('ball5');
+
+                resultDiv.appendChild(ball);
+            });
+        }
+
+        // 4. 제외 조건 전체 초기화 함수
+        function resetBoard() {
+            excludedNumbers.clear();
+            const buttons = document.querySelectorAll('.number-btn');
+            buttons.forEach(btn => btn.classList.remove('excluded'));
+            resultDiv.innerHTML = '';
+        }
+    </script>
+</body>
+</html>
