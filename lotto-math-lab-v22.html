@@ -155,6 +155,7 @@ p{margin-bottom:6px;line-height:1.6}
   <button class="tab" onclick="switchTab('generate')">🎲 생성</button>
   <button class="tab" onclick="switchTab('simulate')">🧪 시뮬</button>
   <button class="tab" onclick="switchTab('indicator')">📉 보조지표</button>
+  <button class="tab" onclick="switchTab('analyze')">🔍 분석</button>
 </div>
 
 <!-- ═══════════ 탭1: 통계분석 ═══════════ -->
@@ -339,6 +340,26 @@ p{margin-bottom:6px;line-height:1.6}
   <div class="info-box info-neutral mt8" style="font-size:10px;text-align:center">⚠️ 본 지표는 독립시행 게임에 종속시행 분석 기법을 적용한 실험적 도구입니다. 평균회귀 경향은 대수의 법칙에 의해 장기적으로만 유효하며, 단기 예측력은 보장되지 않습니다.</div>
 </div>
 
+<!-- ═══════════ 탭5: 내 번호 분석 ═══════════ -->
+<div id="tab-analyze" class="hidden">
+  <div class="card">
+    <div class="card-title">🔢 분석할 번호 6개 입력</div>
+    <div class="text-dim mb8" style="font-size:11px">직접 선택한 6개의 번호를 수학 및 보조지표 기반으로 정밀 분석합니다.</div>
+    <div class="flex-center gap8 mb8" style="justify-content:space-between">
+      <input type="number" id="myNum1" min="1" max="45" placeholder="1" style="width:48px;text-align:center">
+      <input type="number" id="myNum2" min="1" max="45" placeholder="2" style="width:48px;text-align:center">
+      <input type="number" id="myNum3" min="1" max="45" placeholder="3" style="width:48px;text-align:center">
+      <input type="number" id="myNum4" min="1" max="45" placeholder="4" style="width:48px;text-align:center">
+      <input type="number" id="myNum5" min="1" max="45" placeholder="5" style="width:48px;text-align:center">
+      <input type="number" id="myNum6" min="1" max="45" placeholder="6" style="width:48px;text-align:center">
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="analyzeMyNumbers()">🔍 정밀 분석 실행</button>
+  </div>
+  
+  <!-- 분석 결과 출력 영역 -->
+  <div id="analyzeResult" class="hidden"></div>
+</div>
+
 <div class="footer">⚠️ 본 도구는 수학적 분석 목적이며, 당첨을 보장하지 않습니다. 로또는 독립시행 확률 게임입니다.</div>
 
 </div><!-- /mainApp -->
@@ -484,16 +505,16 @@ function updateStatusBar(){
 // 탭 전환
 let curTab='stats', curSub='freq', curIndSub='lma';
 function switchTab(id){
+  const tabs = ['stats','generate','simulate','indicator','analyze'];
   document.querySelectorAll('.tab').forEach((t,i)=>{
-    const tabs=['stats','generate','simulate','indicator'];
-    t.classList.toggle('active',tabs[i]===id);
+    t.classList.toggle('active', tabs[i]===id);
   });
-  ['stats','generate','simulate','indicator'].forEach(t=>{
-    document.getElementById('tab-'+t).classList.toggle('hidden',t!==id);
+  tabs.forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('hidden', t!==id);
   });
   curTab=id;
-  if(id==='stats')renderStatsTab();
-  if(id==='indicator')renderIndicatorTab();
+  if(id==='stats') renderStatsTab();
+  if(id==='indicator') renderIndicatorTab();
 }
 function switchSubTab(id){
   document.querySelectorAll('#tab-stats .sub-tab').forEach((t,i)=>{
@@ -1017,6 +1038,116 @@ function renderIndicatorSub(){
   else if(curIndSub==='macd') renderMACD();
   else if(curIndSub==='mom') renderMomentum();
   else if(curIndSub==='range') renderRangeInd();
+}
+
+// ══════════ 내 번호 분석 엔진 ══════════
+function analyzeMyNumbers() {
+  // 1. 입력값 수집 및 검증
+  const inputs = [1,2,3,4,5,6].map(i => parseInt(document.getElementById(`myNum${i}`).value));
+  
+  const validNums = inputs.filter(n => !isNaN(n) && n >= 1 && n <= 45);
+  const uniqueNums = new Set(validNums);
+  
+  if(validNums.length !== 6 || uniqueNums.size !== 6) {
+    alert("1~45 사이의 중복되지 않는 번호 6개를 모두 정확히 입력해주세요.");
+    return;
+  }
+  
+  const myNums = [...uniqueNums].sort((a,b) => a-b);
+  
+  // 2. 기초 통계 분석 (합계, 홀짝, 고저)
+  const sum = myNums.reduce((a,b) => a+b, 0);
+  const odd = myNums.filter(n => n % 2 !== 0).length;
+  const even = 6 - odd;
+  const low = myNums.filter(n => n <= 22).length;
+  const high = 6 - low;
+  
+  // 3. 보조지표 종합 점수 분석 (기존 calcSignalScores 재활용)
+  const allScores = calcSignalScores(); // 번호별 종합 스코어 배열
+  let totalScore = 0;
+  
+  const myIndData = myNums.map(n => {
+    const scoreObj = allScores.find(x => x.num === n);
+    const score = scoreObj ? scoreObj.score : 50;
+    const rsi = calcRSI(n, 20); // 기존 RSI 함수 호출
+    totalScore += score;
+    return { num: n, score, rsi };
+  });
+  
+  const avgScore = (totalScore / 6).toFixed(1);
+  
+  // 4. 결과 HTML 렌더링
+  let html = `
+    <!-- 기초 패턴 분석 -->
+    <div class="card mt8">
+      <div class="card-title">📝 기초 패턴 분석</div>
+      <div class="flex-center gap6 mb10" style="justify-content:center; padding:10px 0;">
+        ${myNums.map(n => renderBall(n)).join('')}
+      </div>
+      <div class="grid3">
+        <div class="stat">
+          <div class="stat-val ${sum >= 100 && sum <= 175 ? 'text-green' : 'text-red'}">${sum}</div>
+          <div class="stat-label">합계<br>(권장: 100~175)</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val ${odd === 3 || odd === 4 || odd === 2 ? 'text-green' : 'text-red'}">${odd}:${even}</div>
+          <div class="stat-label">홀:짝<br>(이론적 대세: 3:3)</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val ${low === 3 || low === 4 || low === 2 ? 'text-green' : 'text-red'}">${low}:${high}</div>
+          <div class="stat-label">저:고<br>(22기준 비율)</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 보조지표 종합 평가 -->
+    <div class="card mt8">
+      <div class="card-title">🎯 보조지표 정밀 평가 (LMA, MACD, BB 등)</div>
+      <div class="stat mb8" style="background:rgba(240,192,64,.08); border:1px solid rgba(240,192,64,.2)">
+        <div class="stat-val text-gold">${avgScore}점</div>
+        <div class="stat-label">조합 평균 시그널 스코어 (기준점: 50점)</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>번호</th>
+            <th class="text-right">종합 점수</th>
+            <th class="text-right">RSI 상태 (20주기)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${myIndData.map(item => {
+            let rsiText = '<span class="text-dim">보통 (횡보)</span>';
+            if(item.rsi > 70) rsiText = `<span class="text-red fw700">과열 (${item.rsi})</span>`;
+            if(item.rsi < 30) rsiText = `<span class="text-cyan fw700">침체 (${item.rsi})</span>`;
+            else rsiText = `<span class="text-dim">보통 (${item.rsi})</span>`;
+            
+            return `<tr>
+              <td>${renderBall(item.num, true)}</td>
+              <td class="text-right fw700 ${item.score > 60 ? 'text-green' : item.score < 40 ? 'text-red' : ''}">${item.score}점</td>
+              <td class="text-right">${rsiText}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+      <div class="info-neutral mt8">💡 <strong>해석:</strong> 평균 스코어가 높을수록 최근 추세상 모멘텀이 좋거나(MACD 골든크로스), 기술적 반등 위치(볼린저 하단 이탈 후 회귀)에 있는 번호가 많이 포함되었음을 뜻합니다.</div>
+    </div>
+    
+    <!-- 수학적 검증 -->
+    <div class="card mt8">
+      <div class="card-title">🧮 수학적 검증 (초기하분포 & 포아송)</div>
+      <div style="font-size:11px;color:var(--textDim);line-height:1.6">
+        <p><strong class="text-gold">1. 초기하분포 (사전 확률)</strong><br>
+        입력하신 번호 조합이 1등에 당첨될 독립시행 확률은 수학적으로 <strong>1/8,145,060</strong>로, 자동/수동 관계없이 동일합니다.</p>
+        <p style="margin-top:8px"><strong class="text-gold">2. 포아송 적합도 (사후 모멘텀)</strong><br>
+        로또는 독립시행이지만, 대수의 법칙에 의해 전체 구간 빈도는 평균으로 수렴(Mean Reversion)하려는 성질이 있습니다. 위에서 분석된 '침체' 번호와 '과열' 번호가 적절히 섞여 있다면 시스템 트레이딩 관점에서 우수한 포트폴리오(조합)로 평가됩니다.</p>
+      </div>
+    </div>
+  `;
+  
+  const resDiv = document.getElementById('analyzeResult');
+  resDiv.innerHTML = html;
+  resDiv.classList.remove('hidden');
 }
 
 // 앱 시작
