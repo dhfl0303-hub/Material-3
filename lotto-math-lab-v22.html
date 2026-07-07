@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LOTTO MATH LAB v2.0</title>
+<title>LOTTO MATH LAB v2.5</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -249,7 +249,7 @@ p{margin-bottom:6px;line-height:1.6}
   <!-- 종합 시그널 스코어 -->
   <div class="card">
     <div class="card-title">🎯 종합 시그널 스코어</div>
-    <div class="text-dim mb8" style="font-size:11px">5개 보조지표 가중합산 → 번호별 최종 점수 (높을수록 주목)</div>
+    <div class="text-dim mb8" style="font-size:11px">보조지표 가중합산 → 번호별 최종 점수 (높을수록 최근 추세적 주목도가 높음)</div>
     <div class="flex-between mb8"><div class="text-dim" style="font-size:10px">이번 분석 기준 추천 번호</div><div id="topBalls"></div></div>
     <div class="heatmap" id="signalHeatmap"></div>
   </div>
@@ -266,6 +266,8 @@ p{margin-bottom:6px;line-height:1.6}
     <button class="sub-tab" onclick="switchIndSub('rsi')">RSI</button>
     <button class="sub-tab" onclick="switchIndSub('bb')">볼린저</button>
     <button class="sub-tab" onclick="switchIndSub('macd')">MACD</button>
+    <button class="sub-tab" onclick="switchIndSub('super')">슈퍼트렌드</button>
+    <button class="sub-tab" onclick="switchIndSub('psar')">파라볼릭SAR</button>
     <button class="sub-tab" onclick="switchIndSub('mom')">모멘텀</button>
     <button class="sub-tab" onclick="switchIndSub('range')">번호대</button>
   </div>
@@ -315,6 +317,36 @@ p{margin-bottom:6px;line-height:1.6}
         <div id="macdNumSelector" class="num-selector"></div>
       </div>
       <div class="chart-wrapper" style="height: 220px;"><canvas id="macdChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- 슈퍼트렌드 -->
+  <div id="ind-super" class="hidden">
+    <div class="card">
+      <div class="card-title">⚡ 슈퍼트렌드 (Supertrend)</div>
+      <div class="text-dim mb8" style="font-size:11px">번호의 출현 변동성 상/하단 밴드를 돌파할 때의 추세를 포착합니다. (녹색선: 상승 트렌드 / 적색선: 하락 트렌드)</div>
+      <div class="mb8">
+        <span style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">번호 선택 (1~45): </span>
+        <div id="superNumSelector" class="num-selector"></div>
+      </div>
+      <div class="chart-wrapper" style="height: 200px;"><canvas id="superChart"></canvas></div>
+      <div class="grid2 mt8">
+        <div class="card" style="margin:0;padding:10px"><div class="text-green fw700 mb6" style="font-size:11px">🟢 상승 우세군 (주목)</div><div id="superBuyList" style="font-size:11px; line-height: 1.5;"></div></div>
+        <div class="card" style="margin:0;padding:10px"><div class="text-red fw700 mb6" style="font-size:11px">🔴 하락 우세군 (미출현 지속)</div><div id="superSellList" style="font-size:11px; line-height: 1.5;"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 파라볼릭 SAR -->
+  <div id="ind-psar" class="hidden">
+    <div class="card">
+      <div class="card-title">🎯 파라볼릭 SAR (Parabolic Stop And Reverse)</div>
+      <div class="text-dim mb8" style="font-size:11px">출현 주기 가속도에 따른 추세 전환 도트(Dot) 분석입니다. 실제 빈도가 도트 상단/하단을 터치 시 추세가 정반대로 뒤집힙니다.</div>
+      <div class="mb8">
+        <span style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">번호 선택 (1~45): </span>
+        <div id="psarNumSelector" class="num-selector"></div>
+      </div>
+      <div class="chart-wrapper" style="height: 200px;"><canvas id="psarChart"></canvas></div>
     </div>
   </div>
 
@@ -381,7 +413,7 @@ const firebaseConfig = {
 let db = null;
 let DRAWS = [];
 const N=45, PICK=6, COMBOS=8145060;
-let indSelected = { lma: 1, bb: 1, macd: 1 }; // 선택된 번호 상태 저장
+let indSelected = { lma: 1, bb: 1, macd: 1, super: 1, psar: 1 }; // 선택된 번호 상태 저장
 
 // ══════════ 데이터 로딩 시스템 ══════════
 async function initApp(){
@@ -524,10 +556,11 @@ function switchSubTab(id){
   curSub=id; renderStatsTab();
 }
 function switchIndSub(id){
+  const subTabs = ['lma','rsi','bb','macd','super','psar','mom','range'];
   document.querySelectorAll('#tab-indicator .sub-tab').forEach((t,i)=>{
-    t.classList.toggle('active',['lma','rsi','bb','macd','mom','range'][i]===id);
+    t.classList.toggle('active', subTabs[i]===id);
   });
-  ['lma','rsi','bb','macd','mom','range'].forEach(s=>document.getElementById('ind-'+s).classList.toggle('hidden',s!==id));
+  subTabs.forEach(s=>document.getElementById('ind-'+s).classList.toggle('hidden',s!==id));
   curIndSub=id; renderIndicatorSub();
 }
 
@@ -688,8 +721,8 @@ function runSimulation(){
 }
 
 // 탭4: 보조지표
-const WEIGHTS = {lma:20, rsi:25, bb:20, macd:20, mom:15};
-const WEIGHT_NAMES = {lma:'LMA 이동평균',rsi:'RSI 상대강도',bb:'볼린저밴드',macd:'MACD',mom:'구간 모멘텀'};
+const WEIGHTS = {lma:15, rsi:20, bb:15, macd:15, super:15, psar:10, mom:10};
+const WEIGHT_NAMES = {lma:'LMA 이동평균',rsi:'RSI 상대강도',bb:'볼린저밴드',macd:'MACD',super:'슈퍼트렌드',psar:'파라볼릭SAR',mom:'구간 모멘텀'};
 
 function initIndicatorSelects(){
   document.getElementById('weightSliders').innerHTML=Object.entries(WEIGHTS).map(([k,v])=>`<div class="flex-between mb6"><span style="font-size:11px">${WEIGHT_NAMES[k]}</span><div class="flex-center gap6"><input type="range" min="0" max="50" value="${v}" id="w_${k}" style="width:120px"><span style="font-size:11px;width:30px;text-align:right" id="wv_${k}">${v}%</span></div></div>`).join('');
@@ -700,8 +733,7 @@ function initIndicatorSelects(){
     });
   });
 
-  // 드롭다운을 1~45번 터치 버튼 그리드로 변경
-  ['lma', 'bb', 'macd'].forEach(ind => {
+  ['lma', 'bb', 'macd', 'super', 'psar'].forEach(ind => {
     const container = document.getElementById(`${ind}NumSelector`);
     if(!container) return;
     container.innerHTML = '';
@@ -716,6 +748,8 @@ function initIndicatorSelects(){
         if(ind === 'lma') renderLMA();
         else if(ind === 'bb') renderBB();
         else if(ind === 'macd') renderMACD();
+        else if(ind === 'super') renderSupertrend();
+        else if(ind === 'psar') renderPSAR();
       };
       container.appendChild(btn);
     }
@@ -743,7 +777,7 @@ function calcEMA(data, period){
 }
 
 function renderLMA(){
-  const num = indSelected.lma; // 드롭다운 대신 상태 변수 참조
+  const num = indSelected.lma; 
   const draws = getDrawNums();
   if(draws.length < 50) return;
   const shortP=10, longP=50;
@@ -799,14 +833,14 @@ function renderRSI(){
 
   destroyChart('rsiChart');
   const colors=rsiData.map(d=>d.rsi>70?'#FF4757':d.rsi<30?'#70A1FF':'#556677');
-  CI.rsiChart=new Chart(document.getElementById('rsiChart'),{type:'bar',data:{labels:rsiData.map(d=>d.num),datasets:[{data:rsiData.map(d=>d.rsi),backgroundColor:colors,borderRadius:2,barPercentage:.7}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:chartTooltip,annotation:undefined},scales:{x:{ticks:{color:'#556677',font:{size:8},maxRotation:0},grid:{display:false}},y:{min:0,max:100,ticks:{color:'#556677',font:{size:9},stepSize:10},grid:{color:chartGridColor}}}}});
+  CI.rsiChart=new Chart(document.getElementById('rsiChart'),{type:'bar',data:{labels:rsiData.map(d=>d.num),datasets:[{data:rsiData.map(d=>d.rsi),backgroundColor:colors,borderRadius:2,barPercentage:.7}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:chartTooltip},scales:{x:{ticks:{color:'#556677',font:{size:8},maxRotation:0},grid:{display:false}},y:{min:0,max:100,ticks:{color:'#556677',font:{size:9},stepSize:10},grid:{color:chartGridColor}}}}});
 
   document.getElementById('rsiHot').innerHTML=rsiData.filter(d=>d.rsi>70).sort((a,b)=>b.rsi-a.rsi).map(d=>`<div class="flex-between" style="padding:2px 0">${renderBall(d.num,true)}<span class="text-red">${d.rsi}</span></div>`).join('')||'<span class="text-dim">없음</span>';
   document.getElementById('rsiCold').innerHTML=rsiData.filter(d=>d.rsi<30).sort((a,b)=>a.rsi-b.rsi).map(d=>`<div class="flex-between" style="padding:2px 0">${renderBall(d.num,true)}<span class="text-cyan">${d.rsi}</span></div>`).join('')||'<span class="text-dim">없음</span>';
 }
 
 function renderBB(){
-  const num = indSelected.bb; // 드롭다운 대신 상태 변수 참조
+  const num = indSelected.bb; 
   const draws=getDrawNums();
   const windowSize=20;
   if(draws.length<windowSize) return;
@@ -844,7 +878,7 @@ function renderBB(){
 }
 
 function renderMACD(){
-  const num = indSelected.macd; // 드롭다운 대신 상태 변수 참조
+  const num = indSelected.macd; 
   const draws=getDrawNums();
   const raw=draws.map(d=>d.includes(num)?1:0);
   if(raw.length<30) return;
@@ -862,6 +896,163 @@ function renderMACD(){
     {type:'line',label:'Signal',data:sl,borderColor:'#FF4757',borderWidth:1.5,pointRadius:0,fill:false,borderDash:[4,4],order:2},
     {type:'bar',label:'Histogram',data:hl,backgroundColor:hl.map(v=>v>=0?'rgba(46,213,115,.5)':'rgba(255,71,87,.5)'),borderRadius:1,order:3}
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8899AA',font:{size:9}}},tooltip:chartTooltip},scales:{x:{display:false},y:{ticks:{color:'#556677',font:{size:9}},grid:{color:chartGridColor}}}}});
+}
+
+// ⚙️ 신규 지표 연산 1: 슈퍼트렌드 엔진
+function calcSupertrendData(num) {
+  const ts = getNumTimeSeries(num, 10); // 10주기 빈도 데이터 기반
+  if(ts.length < 20) return { trend: [], band: [], isUp: true };
+  
+  const atrPeriod = 10, multiplier = 1.5;
+  const basicUpper = [], basicLower = [], finalUpper = [], finalLower = [], trendBand = [], isUpArr = [];
+  
+  // 1. 대용 ATR 및 상하단 베이스 채널 계산
+  for(let i=0; i<ts.length; i++){
+    const start = Math.max(0, i - atrPeriod + 1);
+    const slice = ts.slice(start, i + 1);
+    const m = mean(slice), s = stddev(slice);
+    const atr = s > 0 ? s : 0.05; 
+    
+    basicUpper.push(m + multiplier * atr);
+    basicLower.push(m - multiplier * atr);
+  }
+  
+  finalUpper.push(basicUpper[0]);
+  finalLower.push(basicLower[0]);
+  isUpArr.push(true);
+  trendBand.push(finalLower[0]);
+  
+  // 2. 슈퍼트렌드 스위칭 알고리즘 적용
+  for(let i=1; i<ts.length; i++){
+    // 상단 밴드 정밀화
+    if(basicUpper[i] < finalUpper[i-1] || ts[i-1] > finalUpper[i-1]) finalUpper.push(basicUpper[i]);
+    else finalUpper.push(finalUpper[i-1]);
+    
+    // 하단 밴드 정밀화
+    if(basicLower[i] > finalLower[i-1] || ts[i-1] < finalLower[i-1]) finalLower.push(basicLower[i]);
+    else finalLower.push(finalLower[i-1]);
+    
+    let isUp = isUpArr[i-1];
+    if(isUp && ts[i] < finalLower[i]) isUp = false;
+    else if(!isUp && ts[i] > finalUpper[i]) isUp = true;
+    
+    isUpArr.push(isUp);
+    trendBand.push(isUp ? finalLower[i] : finalUpper[i]);
+  }
+  
+  return { trend: isUpArr, band: trendBand, actual: ts };
+}
+
+function renderSupertrend() {
+  const num = indSelected.super;
+  const res = calcSupertrendData(num);
+  if(res.trend.length === 0) return;
+  
+  const len = Math.min(60, res.band.length);
+  const slicedActual = res.actual.slice(-len);
+  const slicedBand = res.band.slice(-len);
+  const slicedTrend = res.trend.slice(-len);
+  const labels = Array.from({length: len}, () => '');
+  
+  destroyChart('superChart');
+  CI.superChart = new Chart(document.getElementById('superChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: '슈퍼트렌드 밴드', data: slicedBand, borderWidth: 2.5, pointRadius: 0, fill: false, tension: 0.1,
+          segment: { borderColor: ctx => slicedTrend[ctx.p0DataIndex] ? '#2ED573' : '#FF4757' }
+        },
+        { label: '실제 빈도(10회)', data: slicedActual, borderColor: '#8899AA', borderWidth: 1, pointRadius: 1, fill: false }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#8899AA', font: {size: 9} } }, tooltip: chartTooltip },
+      scales: { x: { display: false }, y: { ticks: { color: '#556677', font: {size: 9} }, grid: {color: chartGridColor} } }
+    }
+  });
+  
+  // 전체 번호 대상 추세 리스트업
+  let buyList = [], sellList = [];
+  for(let n=1; n<=N; n++){
+    const st = calcSupertrendData(n);
+    if(st.trend.length > 0){
+      if(st.trend[st.trend.length - 1]) buyList.push(n);
+      else sellList.push(n);
+    }
+  }
+  document.getElementById('superBuyList').innerHTML = buyList.map(n => renderBall(n, true)).join(' ');
+  document.getElementById('superSellList').innerHTML = sellList.map(n => renderBall(n, true)).join(' ');
+}
+
+// ⚙️ 신규 지표 연산 2: 파라볼릭 SAR 엔진
+function calcPSARData(num) {
+  const ts = getNumTimeSeries(num, 15); // 15주기 이동 빈도 활용
+  if(ts.length < 20) return { psar: [], actual: [] };
+  
+  const psar = new Array(ts.length).fill(0);
+  const isUp = new Array(ts.length).fill(true);
+  
+  // 초기화값 세팅
+  isUp[0] = ts[1] >= ts[0];
+  psar[0] = isUp[0] ? Math.min(ts[0], ts[1]) : Math.max(ts[0], ts[1]);
+  
+  let af = 0.02, maxAf = 0.2, ep = isUp[0] ? Math.max(ts[0], ts[1]) : Math.min(ts[0], ts[1]);
+  
+  for(let i=1; i<ts.length; i++) {
+    isUp[i] = isUp[i-1];
+    psar[i] = psar[i-1] + af * (ep - psar[i-1]);
+    
+    if(isUp[i]) {
+      if(ts[i] < psar[i]) { // 추세 반전 (상승 -> 하락)
+        isUp[i] = false; psar[i] = ep; af = 0.02; ep = ts[i];
+      } else {
+        if(ts[i] > ep) { ep = ts[i]; af = Math.min(maxAf, af + 0.02); }
+      }
+    } else {
+      if(ts[i] > psar[i]) { // 추세 반전 (하락 -> 상승)
+        isUp[i] = true; psar[i] = ep; af = 0.02; ep = ts[i];
+      } else {
+        if(ts[i] < ep) { ep = ts[i]; af = Math.min(maxAf, af + 0.02); }
+      }
+    }
+  }
+  return { psar, actual: ts, isUp };
+}
+
+function renderPSAR() {
+  const num = indSelected.psar;
+  const res = calcPSARData(num);
+  if(res.psar.length === 0) return;
+  
+  const len = Math.min(60, res.psar.length);
+  const slicedActual = res.actual.slice(-len);
+  const slicedPsar = res.psar.slice(-len);
+  const slicedIsUp = res.isUp.slice(-len);
+  const labels = Array.from({length: len}, () => '');
+  
+  destroyChart('psarChart');
+  CI.psarChart = new Chart(document.getElementById('psarChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Parabolic SAR Dot', data: slicedPsar, type: 'scatter',
+          pointBackgroundColor: ctx => slicedIsUp[ctx.dataIndex] ? '#2ED573' : '#FF4757',
+          pointRadius: 3, pointStyle: 'circle', fill: false
+        },
+        { label: '실제 빈도(15회)', data: slicedActual, borderColor: '#8899AA', borderWidth: 1, pointRadius: 0, fill: false, tension: 0.2 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#8899AA', font: {size: 9} } }, tooltip: chartTooltip },
+      scales: { x: { display: false }, y: { ticks: { color: '#556677', font: {size: 9} }, grid: {color: chartGridColor} } }
+    }
+  });
 }
 
 function renderMomentum(){
@@ -957,6 +1148,8 @@ function calcSignalScores(){
 
   for(let n=1;n<=N;n++){
     let score=0, totalW=0;
+    
+    // 1. LMA
     const s=getNumTimeSeries(n,10), l=getNumTimeSeries(n,50);
     if(s.length>0&&l.length>0){
       const off=s.length-l.length;
@@ -969,11 +1162,13 @@ function calcSignalScores(){
       }
     }
 
+    // 2. RSI
     const rsi=calcRSI(n,20);
     const rsiScore=100-rsi;
     score+=rsiScore*WEIGHTS.rsi;
     totalW+=WEIGHTS.rsi;
 
+    // 3. 볼린저밴드
     const ts=getNumTimeSeries(n,20);
     if(ts.length>=20){
       const lastSlice=ts.slice(-20);
@@ -984,6 +1179,7 @@ function calcSignalScores(){
       totalW+=WEIGHTS.bb;
     }
 
+    // 4. MACD
     const raw=draws.map(d=>d.includes(n)?1:0);
     if(raw.length>=30){
       const ema12=calcEMA(raw,12),ema26=calcEMA(raw,26);
@@ -993,6 +1189,23 @@ function calcSignalScores(){
       totalW+=WEIGHTS.macd;
     }
 
+    // 5. 슈퍼트렌드 반영
+    const st = calcSupertrendData(n);
+    if(st.trend.length > 0) {
+      const superScore = st.trend[st.trend.length - 1] ? 85 : 25; // 상승트렌드 85점, 하락트렌드 25점 부여
+      score += superScore * WEIGHTS.super;
+      totalW += WEIGHTS.super;
+    }
+
+    // 6. 파라볼릭 SAR 반영
+    const ps = calcPSARData(n);
+    if(ps.isUp && ps.isUp.length > 0) {
+      const psarScore = ps.isUp[ps.isUp.length - 1] ? 80 : 30;
+      score += psarScore * WEIGHTS.psar;
+      totalW += WEIGHTS.psar;
+    }
+
+    // 7. 모멘텀
     const recent10=draws.slice(-10),prev10=draws.slice(-20,-10);
     const rc=recent10.filter(d=>d.includes(n)).length;
     const pc=prev10.filter(d=>d.includes(n)).length;
@@ -1036,15 +1249,15 @@ function renderIndicatorSub(){
   else if(curIndSub==='rsi') renderRSI();
   else if(curIndSub==='bb') renderBB();
   else if(curIndSub==='macd') renderMACD();
+  else if(curIndSub==='super') renderSupertrend();
+  else if(curIndSub==='psar') renderPSAR();
   else if(curIndSub==='mom') renderMomentum();
   else if(curIndSub==='range') renderRangeInd();
 }
 
-// ══════════ 내 번호 분석 엔진 ══════════
+// ══════════ 내 번호 분석 엔진 (v2.5 확장형) ══════════
 function analyzeMyNumbers() {
-  // 1. 입력값 수집 및 검증
   const inputs = [1,2,3,4,5,6].map(i => parseInt(document.getElementById(`myNum${i}`).value));
-  
   const validNums = inputs.filter(n => !isNaN(n) && n >= 1 && n <= 45);
   const uniqueNums = new Set(validNums);
   
@@ -1055,30 +1268,35 @@ function analyzeMyNumbers() {
   
   const myNums = [...uniqueNums].sort((a,b) => a-b);
   
-  // 2. 기초 통계 분석 (합계, 홀짝, 고저)
   const sum = myNums.reduce((a,b) => a+b, 0);
   const odd = myNums.filter(n => n % 2 !== 0).length;
   const even = 6 - odd;
   const low = myNums.filter(n => n <= 22).length;
   const high = 6 - low;
   
-  // 3. 보조지표 종합 점수 분석 (기존 calcSignalScores 재활용)
-  const allScores = calcSignalScores(); // 번호별 종합 스코어 배열
+  const allScores = calcSignalScores(); 
   let totalScore = 0;
   
   const myIndData = myNums.map(n => {
     const scoreObj = allScores.find(x => x.num === n);
     const score = scoreObj ? scoreObj.score : 50;
-    const rsi = calcRSI(n, 20); // 기존 RSI 함수 호출
+    const rsi = calcRSI(n, 20);
+    const st = calcSupertrendData(n);
+    const ps = calcPSARData(n);
+    
     totalScore += score;
-    return { num: n, score, rsi };
+    return { 
+      num: n, 
+      score, 
+      rsi, 
+      isSuperUp: st.trend.length > 0 ? st.trend[st.trend.length - 1] : true,
+      isPsarUp: ps.isUp && ps.isUp.length > 0 ? ps.isUp[ps.isUp.length - 1] : true
+    };
   });
   
   const avgScore = (totalScore / 6).toFixed(1);
   
-  // 4. 결과 HTML 렌더링
   let html = `
-    <!-- 기초 패턴 분석 -->
     <div class="card mt8">
       <div class="card-title">📝 기초 패턴 분석</div>
       <div class="flex-center gap6 mb10" style="justify-content:center; padding:10px 0;">
@@ -1100,48 +1318,44 @@ function analyzeMyNumbers() {
       </div>
     </div>
     
-    <!-- 보조지표 종합 평가 -->
     <div class="card mt8">
-      <div class="card-title">🎯 보조지표 정밀 평가 (LMA, MACD, BB 등)</div>
+      <div class="card-title">🎯 보조지표 정밀 평가 (7종 가중치 융합)</div>
       <div class="stat mb8" style="background:rgba(240,192,64,.08); border:1px solid rgba(240,192,64,.2)">
         <div class="stat-val text-gold">${avgScore}점</div>
         <div class="stat-label">조합 평균 시그널 스코어 (기준점: 50점)</div>
       </div>
-      <table>
+      <table style="line-height: 1.8;">
         <thead>
           <tr>
             <th>번호</th>
             <th class="text-right">종합 점수</th>
-            <th class="text-right">RSI 상태 (20주기)</th>
+            <th class="text-right">RSI 강도</th>
+            <th class="text-center">슈퍼트렌드</th>
+            <th class="text-center">파라볼릭SAR</th>
           </tr>
         </thead>
         <tbody>
           ${myIndData.map(item => {
-            let rsiText = '<span class="text-dim">보통 (횡보)</span>';
+            let rsiText = `<span class="text-dim">보통 (${item.rsi})</span>`;
             if(item.rsi > 70) rsiText = `<span class="text-red fw700">과열 (${item.rsi})</span>`;
             if(item.rsi < 30) rsiText = `<span class="text-cyan fw700">침체 (${item.rsi})</span>`;
-            else rsiText = `<span class="text-dim">보통 (${item.rsi})</span>`;
+            
+            const superText = item.isSuperUp ? '<span class="text-green fw700">🟢 상승</span>' : '<span class="text-red">🔴 하락</span>';
+            const psarText = item.isPsarUp ? '<span class="text-green fw700">🟢 가속</span>' : '<span class="text-red">🔴 감속</span>';
             
             return `<tr>
               <td>${renderBall(item.num, true)}</td>
-              <td class="text-right fw700 ${item.score > 60 ? 'text-green' : item.score < 40 ? 'text-red' : ''}">${item.score}점</td>
+              <td class="text-right fw700 ${item.score > 58 ? 'text-green' : item.score < 42 ? 'text-red' : ''}">${item.score}점</td>
               <td class="text-right">${rsiText}</td>
+              <td class="text-center">${superText}</td>
+              <td class="text-center">${psarText}</td>
             </tr>`;
           }).join('')}
         </tbody>
       </table>
-      <div class="info-neutral mt8">💡 <strong>해석:</strong> 평균 스코어가 높을수록 최근 추세상 모멘텀이 좋거나(MACD 골든크로스), 기술적 반등 위치(볼린저 하단 이탈 후 회귀)에 있는 번호가 많이 포함되었음을 뜻합니다.</div>
-    </div>
-    
-    <!-- 수학적 검증 -->
-    <div class="card mt8">
-      <div class="card-title">🧮 수학적 검증 (초기하분포 & 포아송)</div>
-      <div style="font-size:11px;color:var(--textDim);line-height:1.6">
-        <p><strong class="text-gold">1. 초기하분포 (사전 확률)</strong><br>
-        입력하신 번호 조합이 1등에 당첨될 독립시행 확률은 수학적으로 <strong>1/8,145,060</strong>로, 자동/수동 관계없이 동일합니다.</p>
-        <p style="margin-top:8px"><strong class="text-gold">2. 포아송 적합도 (사후 모멘텀)</strong><br>
-        로또는 독립시행이지만, 대수의 법칙에 의해 전체 구간 빈도는 평균으로 수렴(Mean Reversion)하려는 성질이 있습니다. 위에서 분석된 '침체' 번호와 '과열' 번호가 적절히 섞여 있다면 시스템 트레이딩 관점에서 우수한 포트폴리오(조합)로 평가됩니다.</p>
-      </div>
+      <div class="info-neutral mt8">💡 <strong>종합 분석 가이드:</strong><br>
+      • 점수가 높은 번호(초록색)는 주요 이동평균 돌파 및 가속 밴드 위에서 활발하게 출현 주기를 단축 중인 <strong>핫 모멘텀 번호</strong>입니다.<br>
+      • '침체(RSI < 30)'면서 하락세인 번호는 장기 미출현군으로 분류되며, 대수의 법칙에 기반한 <strong>평균회귀(반등)</strong> 관점에서 전략적으로 조합에 섞어볼 수 있습니다.</div>
     </div>
   `;
   
