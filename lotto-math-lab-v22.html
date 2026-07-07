@@ -21,13 +21,8 @@ body{background:var(--bg);color:var(--text);font-family:'Pretendard',-apple-syst
 .header h1{font-size:26px;font-weight:800;color:var(--gold);letter-spacing:-1px}
 .header p{font-size:12px;color:var(--textDim);margin-top:4px}
 
-/* 무한 스크롤 방지용 차트 래퍼 추가 */
-.chart-wrapper {
-  position: relative;
-  width: 100%;
-}
+.chart-wrapper { position: relative; width: 100%; }
 
-/* 데이터 상태바 */
 .data-bar{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:11px;color:var(--textDim);flex-wrap:wrap;gap:6px}
 .data-bar .status{display:flex;align-items:center;gap:6px}
 .data-bar .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
@@ -35,16 +30,16 @@ body{background:var(--bg);color:var(--text);font-family:'Pretendard',-apple-syst
 .dot-yellow{background:var(--gold);box-shadow:0 0 6px var(--gold);animation:pulse 1s infinite}
 .dot-red{background:var(--red);box-shadow:0 0 6px var(--red)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.progress-wrap{width:100%;background:var(--bg);border-radius:4px;height:6px;margin-top:6px;overflow:hidden;display:none}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--goldBright));border-radius:4px;transition:width .3s;width:0}
+
 /* 탭 */
 .tabs{display:flex;gap:3px;margin-bottom:14px;background:var(--card);border-radius:10px;padding:3px;border:1px solid var(--border)}
 .tab{flex:1;padding:9px 0;text-align:center;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px;transition:all .2s;background:transparent;color:var(--textDim)}
 .tab.active{background:var(--gold);color:var(--bg)}
-.sub-tabs{display:flex;gap:3px;margin-bottom:10px}
-.sub-tab{flex:1;padding:6px 0;border:none;border-radius:7px;cursor:pointer;font-weight:700;font-size:11px;transition:all .2s;background:var(--border);color:var(--text)}
+.sub-tabs{display:flex;gap:3px;margin-bottom:10px;overflow-x:auto;}
+.sub-tab{flex:1;padding:6px 10px;border:none;border-radius:7px;cursor:pointer;font-weight:700;font-size:11px;transition:all .2s;background:var(--border);color:var(--text);white-space:nowrap;}
 .sub-tab.active{background:var(--gold);color:var(--bg)}
-/* 카드 */
+
+/* 카드 & 테이블 */
 .card{background:var(--card);border-radius:10px;border:1px solid var(--border);padding:14px;margin-bottom:10px}
 .card-title{font-size:14px;font-weight:700;color:var(--gold);margin-bottom:10px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
@@ -56,13 +51,13 @@ body{background:var(--bg);color:var(--text);font-family:'Pretendard',-apple-syst
 .info-green{background:rgba(46,213,115,.1);border:1px solid rgba(46,213,115,.2)}
 .info-red{background:rgba(255,71,87,.1);border:1px solid rgba(255,71,87,.2)}
 .info-neutral{background:var(--bg);border-radius:7px;padding:8px;font-size:11px;color:var(--textDim);margin-top:8px}
-/* 테이블 */
 table{width:100%;border-collapse:collapse;font-size:11px}
 th{padding:7px 5px;text-align:left;border-bottom:1px solid var(--border);color:var(--textDim);font-weight:600;font-size:10px}
 td{padding:6px 5px;border-bottom:1px solid rgba(30,45,69,.12)}
 .text-right{text-align:right}.text-center{text-align:center}
-.text-gold{color:var(--gold)}.text-red{color:var(--red)}.text-cyan{color:var(--cyan)}.text-green{color:var(--green)}.text-purple{color:var(--purple)}.text-dim{color:var(--textDim)}
+.text-gold{color:var(--gold)}.text-red{color:var(--red)}.text-cyan{color:var(--cyan)}.text-green{color:var(--green)}.text-dim{color:var(--textDim)}
 .fw700{font-weight:700}
+
 /* 볼 */
 .ball{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;font-weight:800;font-size:13px;color:#000;margin:2px}
 .ball-sm{width:26px;height:26px;font-size:11px}
@@ -71,48 +66,55 @@ td{padding:6px 5px;border-bottom:1px solid rgba(30,45,69,.12)}
 .ball-3{background:#FF6B6B;box-shadow:0 2px 6px rgba(255,107,107,.3)}
 .ball-4{background:#A29BFE;box-shadow:0 2px 6px rgba(162,155,254,.3)}
 .ball-5{background:#55E6C1;box-shadow:0 2px 6px rgba(85,230,193,.3)}
-/* 버튼 */
+
+/* 1~45 번호 선택 버튼 */
+.num-selector { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.num-btn { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg); color: var(--textDim); font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; user-select: none; }
+.num-btn:hover { border-color: var(--goldDim); color: var(--gold); }
+.num-btn.active { background: var(--gold); color: var(--bg); border-color: var(--gold); box-shadow: 0 0 6px rgba(240,192,64,0.6); }
+
+/* 기타 버튼 & 폼 */
 .btn{padding:8px 16px;border:none;border-radius:7px;cursor:pointer;font-weight:700;font-size:12px;transition:all .2s}
 .btn-primary{background:var(--gold);color:var(--bg)}
 .btn-primary:hover{background:var(--goldBright)}
 .btn-primary:disabled{opacity:.5;cursor:default}
-.btn-sec{background:var(--border);color:var(--text)}
 .btn-sm{padding:5px 10px;font-size:11px}
 select,input[type=number]{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px}
-/* 전략 */
 .strategy-btn{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);cursor:pointer;color:var(--text);text-align:left;width:100%;font-size:12px;margin-bottom:4px}
 .strategy-btn.active{border-color:var(--gold);background:rgba(240,192,64,.08)}
 .strategy-btn .name{font-weight:700}.strategy-btn.active .name{color:var(--gold)}
 .strategy-btn .desc{font-size:10px;color:var(--textDim);margin-top:1px}
-/* 결과행 */
 .result-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;flex-wrap:wrap;gap:4px}
 .result-row+.result-row{border-top:1px solid rgba(30,45,69,.12)}
 .result-meta{font-size:10px;color:var(--textDim);display:flex;gap:6px}
+
 /* 히트맵 */
 .heatmap{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;margin:10px 0}
 .hm-cell{aspect-ratio:1;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;border:2px solid transparent}
 .hm-cell:hover{transform:scale(1.1);border-color:var(--gold)}
 .hm-cell.selected{border-color:var(--gold);box-shadow:0 0 8px var(--gold)}
+
 /* 슬라이더 */
 input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;background:var(--border);outline:none}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--gold);cursor:pointer}
+
 /* 유틸 */
 .flex{display:flex}.flex-center{display:flex;align-items:center}.flex-between{display:flex;justify-content:space-between;align-items:center}
 .flex-wrap{flex-wrap:wrap}.gap4{gap:4px}.gap6{gap:6px}.gap8{gap:8px}.gap12{gap:12px}
 .mb6{margin-bottom:6px}.mb8{margin-bottom:8px}.mb10{margin-bottom:10px}.mb12{margin-bottom:12px}.mt8{margin-top:8px}.mt10{margin-top:10px}
 .mono{font-family:'Courier New',monospace;font-size:11px}
-
-/* 로딩창을 확실히 숨기기 위한 !important 추가 */
 .hidden{display:none !important}
-
 .footer{text-align:center;padding:16px 0 8px;font-size:10px;color:var(--textMuted)}
 p{margin-bottom:6px;line-height:1.6}
+
+/* 로딩 오버레이 */
 .loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(11,17,32,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999}
 .loading-overlay h2{color:var(--gold);font-size:20px;margin-bottom:16px}
 .loading-overlay p{color:var(--textDim);font-size:13px;margin-bottom:20px}
 .loading-bar{width:300px;height:8px;background:var(--card);border-radius:4px;overflow:hidden}
 .loading-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--goldBright));border-radius:4px;transition:width .2s;width:0}
 .loading-pct{color:var(--gold);font-size:14px;font-weight:700;margin-top:10px}
+
 @media(max-width:500px){
   .heatmap{grid-template-columns:repeat(5,1fr)}
   .grid2{grid-template-columns:1fr 1fr}
@@ -120,6 +122,7 @@ p{margin-bottom:6px;line-height:1.6}
   .ball{width:28px;height:28px;font-size:11px}
   .tabs{overflow-x:auto}
   .tab{font-size:11px;white-space:nowrap;padding:8px 4px}
+  .num-btn { width: 24px; height: 24px; font-size: 10px; }
 }
 </style>
 </head>
@@ -160,6 +163,7 @@ p{margin-bottom:6px;line-height:1.6}
     <button class="sub-tab active" onclick="switchSubTab('freq')">번호 빈도</button>
     <button class="sub-tab" onclick="switchSubTab('zone')">구간 분포</button>
     <button class="sub-tab" onclick="switchSubTab('pattern')">패턴 분석</button>
+    <button class="sub-tab" onclick="switchSubTab('omr')">OMR 분석</button>
   </div>
   <div id="sub-freq">
     <div class="card"><div class="card-title">📊 번호별 출현 빈도 (총 <span id="totalDraws"></span>회차)</div>
@@ -183,6 +187,32 @@ p{margin-bottom:6px;line-height:1.6}
     <div class="card"><div class="card-title">🔗 연속번호 출현</div><div class="grid2"><div class="stat"><div class="stat-val" id="consecPct"></div><div class="stat-label">연속번호 포함 비율</div></div><div class="stat"><div class="stat-val" id="consecCount"></div><div class="stat-label">해당 회차 수</div></div></div><div class="info-neutral">💡 실제 로또에서 연속번호가 포함되는 비율은 약 60~65%로 매우 흔함</div></div>
     <div class="card"><div class="card-title">🎯 포아송 분포 적합도</div><div class="text-dim mb8" style="font-size:11px">각 번호의 출현 횟수가 포아송 분포(λ=<span id="poissonLambda"></span>)를 따르는지 비교</div>
       <div class="chart-wrapper" style="height: 170px;"><canvas id="poissonChart"></canvas></div>
+    </div>
+    <!-- 수학 공식 추가 부분 -->
+    <div class="card">
+      <div class="card-title">🧮 핵심 수학 공식 2선</div>
+      <div style="font-size:11px;color:var(--textDim);line-height:1.6">
+        <p><strong class="text-gold">1. 초기하분포 (Hypergeometric Dist.)</strong><br>
+        로또 당첨 확률 계산의 기초 모델입니다. 45개 중 6개를 비복원 추출할 때, 내가 고른 번호가 k개 일치할 확률을 계산합니다.<br>
+        <span class="mono" style="display:inline-block;padding:6px;background:var(--bg);border-radius:4px;margin-top:4px;width:100%">P(X=k) = [C(K,k) × C(N-K, n-k)] / C(N,n)</span></p>
+        <p style="margin-top:10px"><strong class="text-gold">2. 베이즈 정리 (Bayes' Theorem)</strong><br>
+        과거 당첨 데이터를 기반으로 특정 패턴의 출현 확률(사전 확률)을 지속적으로 갱신(사후 확률)하는 보조지표의 수학적 근거입니다.<br>
+        <span class="mono" style="display:inline-block;padding:6px;background:var(--bg);border-radius:4px;margin-top:4px;width:100%">P(A|B) = [P(B|A) × P(A)] / P(B)</span></p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- OMR 분석 탭 -->
+  <div id="sub-omr" class="hidden">
+    <div class="card">
+      <div class="card-title">📝 OMR 기준 가로줄 출현 비율</div>
+      <div class="chart-wrapper" style="height: 180px;"><canvas id="omrRowChart"></canvas></div>
+      <div class="info-neutral">💡 가로 7열 기준 (1줄: 1~7, 2줄: 8~14 ... 7줄: 43~45)</div>
+    </div>
+    <div class="card">
+      <div class="card-title">📝 OMR 기준 세로줄 출현 비율</div>
+      <div class="chart-wrapper" style="height: 180px;"><canvas id="omrColChart"></canvas></div>
+      <div class="info-neutral">💡 세로 7행 기준 (1열: 1,8,15..., 2열: 2,9,16... 7열: 7,14,21...)</div>
     </div>
   </div>
 </div>
@@ -236,13 +266,17 @@ p{margin-bottom:6px;line-height:1.6}
     <button class="sub-tab" onclick="switchIndSub('bb')">볼린저</button>
     <button class="sub-tab" onclick="switchIndSub('macd')">MACD</button>
     <button class="sub-tab" onclick="switchIndSub('mom')">모멘텀</button>
+    <button class="sub-tab" onclick="switchIndSub('range')">번호대</button>
   </div>
 
   <!-- LMA -->
   <div id="ind-lma">
     <div class="card"><div class="card-title">📈 LMA (Lotto Moving Average)</div>
       <div class="text-dim mb8" style="font-size:11px">번호별 출현 빈도의 단기(10회)/장기(50회) 이동평균 비교</div>
-      <div class="mb8"><span style="font-size:11px;font-weight:600">번호 선택: </span><select id="lmaNum" onchange="renderLMA()"></select></div>
+      <div class="mb8">
+        <span style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">번호 선택 (1~45): </span>
+        <div id="lmaNumSelector" class="num-selector"></div>
+      </div>
       <div class="chart-wrapper" style="height: 200px;"><canvas id="lmaChart"></canvas></div>
       <div class="grid2 mt8"><div class="card" style="margin:0;padding:10px"><div class="text-green fw700 mb6" style="font-size:11px">🔺 골든크로스 (상승신호)</div><div id="goldenList" style="font-size:11px"></div></div><div class="card" style="margin:0;padding:10px"><div class="text-red fw700 mb6" style="font-size:11px">🔻 데드크로스 (하락신호)</div><div id="deadList" style="font-size:11px"></div></div></div>
     </div>
@@ -252,7 +286,7 @@ p{margin-bottom:6px;line-height:1.6}
   <div id="ind-rsi" class="hidden">
     <div class="card"><div class="card-title">📊 LRI (Lotto RSI)</div>
       <div class="text-dim mb8" style="font-size:11px">최근 N회차 기준 번호별 상대강도지수 (0~100)</div>
-      <div class="mb8"><span style="font-size:11px;font-weight:600">RSI 기간: </span><select id="rsiPeriod" onchange="renderRSI()"><option value="14">14회</option><option value="20" selected>20회</option><option value="30">30회</option></select></div>
+      <div class="mb8"><span style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">RSI 기간: </span><select id="rsiPeriod" onchange="renderRSI()"><option value="14">14회</option><option value="20" selected>20회</option><option value="30">30회</option></select></div>
       <div class="chart-wrapper" style="height: 220px;"><canvas id="rsiChart"></canvas></div>
       <div class="grid2 mt8"><div class="card" style="margin:0;padding:10px"><div class="text-red fw700 mb6" style="font-size:11px">🔴 과열 (RSI > 70)</div><div id="rsiHot" style="font-size:11px"></div></div><div class="card" style="margin:0;padding:10px"><div class="text-cyan fw700 mb6" style="font-size:11px">🔵 침체 (RSI < 30)</div><div id="rsiCold" style="font-size:11px"></div></div></div>
     </div>
@@ -262,7 +296,10 @@ p{margin-bottom:6px;line-height:1.6}
   <div id="ind-bb" class="hidden">
     <div class="card"><div class="card-title">📉 볼린저밴드</div>
       <div class="text-dim mb8" style="font-size:11px">출현 빈도 이동평균 ± 2σ 밴드. 밴드 이탈 = 통계적 이상치</div>
-      <div class="mb8"><span style="font-size:11px;font-weight:600">번호 선택: </span><select id="bbNum" onchange="renderBB()"></select></div>
+      <div class="mb8">
+        <span style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">번호 선택 (1~45): </span>
+        <div id="bbNumSelector" class="num-selector"></div>
+      </div>
       <div class="chart-wrapper" style="height: 200px;"><canvas id="bbChart"></canvas></div>
       <div class="grid2 mt8"><div class="card" style="margin:0;padding:10px"><div class="text-red fw700 mb6" style="font-size:11px">⬆ 상단 돌파 (과다출현)</div><div id="bbUpper" style="font-size:11px"></div></div><div class="card" style="margin:0;padding:10px"><div class="text-cyan fw700 mb6" style="font-size:11px">⬇ 하단 이탈 (과소출현)</div><div id="bbLower" style="font-size:11px"></div></div></div>
     </div>
@@ -272,7 +309,10 @@ p{margin-bottom:6px;line-height:1.6}
   <div id="ind-macd" class="hidden">
     <div class="card"><div class="card-title">📊 MACD</div>
       <div class="text-dim mb8" style="font-size:11px">EMA(12)-EMA(26) + Signal(9). 추세 전환 감지</div>
-      <div class="mb8"><span style="font-size:11px;font-weight:600">번호 선택: </span><select id="macdNum" onchange="renderMACD()"></select></div>
+      <div class="mb8">
+        <span style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">번호 선택 (1~45): </span>
+        <div id="macdNumSelector" class="num-selector"></div>
+      </div>
       <div class="chart-wrapper" style="height: 220px;"><canvas id="macdChart"></canvas></div>
     </div>
   </div>
@@ -283,6 +323,16 @@ p{margin-bottom:6px;line-height:1.6}
       <div class="text-dim mb8" style="font-size:11px">5구간의 최근 출현 모멘텀 비교 (최근 10회 vs 이전 10회)</div>
       <div class="chart-wrapper" style="height: 280px;"><canvas id="momChart"></canvas></div>
       <table class="mt8"><thead><tr><th>구간</th><th class="text-right">최근10회</th><th class="text-right">이전10회</th><th class="text-right">변화율</th></tr></thead><tbody id="momBody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- 번호대 흐름 보조지표 -->
+  <div id="ind-range" class="hidden">
+    <div class="card">
+      <div class="card-title">📊 10번대~40번대 보조지표 (최근 20회 흐름)</div>
+      <div class="text-dim mb8" style="font-size:11px">단번대, 10번대, 20번대, 30번대, 40번대의 회차별 출현 개수 추세</div>
+      <div class="chart-wrapper" style="height: 250px;"><canvas id="rangeChart"></canvas></div>
+      <div class="grid3 mt8" id="rangeStats"></div>
     </div>
   </div>
 
@@ -310,10 +360,10 @@ const firebaseConfig = {
 let db = null;
 let DRAWS = [];
 const N=45, PICK=6, COMBOS=8145060;
+let indSelected = { lma: 1, bb: 1, macd: 1 }; // 선택된 번호 상태 저장
 
 // ══════════ 데이터 로딩 시스템 ══════════
 async function initApp(){
-  // 1) 같은 폴더의 lotto-data.json 로드
   try {
     updateLoading('lotto-data.json 로드 중...', 10);
     const res = await fetch('lotto-data.json');
@@ -324,7 +374,6 @@ async function initApp(){
     }
   } catch(e){ console.log('JSON 파일 로드 실패:', e.message); }
 
-  // 2) Firestore에서 더 최신 데이터 확인
   try {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
@@ -348,7 +397,6 @@ async function initApp(){
     }
   } catch(e){ console.log('Firestore 연결 실패:', e.message); }
 
-  // 3) 그래도 없으면 localStorage 캐시 확인
   if(DRAWS.length === 0){
     const cached = localStorage.getItem('lotto_draws');
     if(cached){
@@ -357,7 +405,6 @@ async function initApp(){
     }
   }
 
-  // 4) 아무 데이터도 없으면 임시 데이터 생성 (무한 로딩 버그 방지)
   if(DRAWS.length === 0){
     updateLoading('⚠️ 데이터를 찾을 수 없어 테스트용 임시 데이터를 생성합니다.', 90);
     DRAWS = [
@@ -374,12 +421,10 @@ async function initApp(){
     ];
   }
 
-  // 5) localStorage 캐싱
   try { localStorage.setItem('lotto_draws', JSON.stringify(DRAWS)); } catch(e){}
 
   updateLoading(`${DRAWS.length}회차 로드 완료!`, 100);
 
-  // 로딩 화면 숨기기
   document.getElementById('loadingOverlay').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
   
@@ -404,28 +449,6 @@ async function loadFromFirestore(){
   } catch(e){
     console.log('Firestore 읽기 실패:', e.message);
   }
-}
-
-async function saveToFirestore(drawData){
-  if(!db) return;
-  try {
-    const batch = db.batch();
-    let count = 0;
-    for(const d of drawData){
-      const ref = db.collection('draws').doc(String(d.round));
-      batch.set(ref, { no1:d.nums[0],no2:d.nums[1],no3:d.nums[2],no4:d.nums[3],no5:d.nums[4],no6:d.nums[5],bonus:d.bonus,date:d.date });
-      count++;
-      // Firestore batch 최대 500개 제한
-      if(count >= 499){
-        await batch.commit();
-        count = 0;
-      }
-    }
-    if(count > 0) await batch.commit();
-    // meta 정보 저장
-    const last = drawData[drawData.length - 1];
-    await db.collection('meta').doc('info').set({ lastDraw: last.round, lastUpdate: new Date().toISOString().slice(0,10) });
-  } catch(e){ console.log('Firestore 저장 실패:', e.message); }
 }
 
 // 공통 유틸
@@ -474,16 +497,16 @@ function switchTab(id){
 }
 function switchSubTab(id){
   document.querySelectorAll('#tab-stats .sub-tab').forEach((t,i)=>{
-    t.classList.toggle('active',['freq','zone','pattern'][i]===id);
+    t.classList.toggle('active',['freq','zone','pattern','omr'][i]===id);
   });
-  ['freq','zone','pattern'].forEach(s=>document.getElementById('sub-'+s).classList.toggle('hidden',s!==id));
+  ['freq','zone','pattern','omr'].forEach(s=>document.getElementById('sub-'+s).classList.toggle('hidden',s!==id));
   curSub=id; renderStatsTab();
 }
 function switchIndSub(id){
   document.querySelectorAll('#tab-indicator .sub-tab').forEach((t,i)=>{
-    t.classList.toggle('active',['lma','rsi','bb','macd','mom'][i]===id);
+    t.classList.toggle('active',['lma','rsi','bb','macd','mom','range'][i]===id);
   });
-  ['lma','rsi','bb','macd','mom'].forEach(s=>document.getElementById('ind-'+s).classList.toggle('hidden',s!==id));
+  ['lma','rsi','bb','macd','mom','range'].forEach(s=>document.getElementById('ind-'+s).classList.toggle('hidden',s!==id));
   curIndSub=id; renderIndicatorSub();
 }
 
@@ -501,7 +524,8 @@ function renderStatsTab(){
   document.getElementById('expectedVal').textContent=expected.toFixed(1);
   if(curSub==='freq') renderFreqSub(freq,expected,total);
   else if(curSub==='zone') renderZoneSub(total);
-  else renderPatternSub(freq,expected,total);
+  else if(curSub==='pattern') renderPatternSub(freq,expected,total);
+  else if(curSub==='omr') renderOMRSub(total);
 }
 function renderFreqSub(freq,expected,total){
   destroyChart('freqChart');
@@ -553,6 +577,36 @@ function renderPatternSub(freq,expected,total){
   for(let i=1;i<=N;i++){const k=Math.min(freq[i],maxK);obs[k]++}
   destroyChart('poissonChart');
   CI.poissonChart=new Chart(document.getElementById('poissonChart'),{type:'bar',data:{labels:Array.from({length:maxK+1},(_,i)=>i+'회'),datasets:[{label:'실제',data:obs,backgroundColor:'#F0C040',borderRadius:3,barPercentage:.6},{label:'포아송',data:Array.from({length:maxK+1},(_,k)=>+(N*poissonPMF(k,lambda)).toFixed(2)),backgroundColor:'#556677',borderRadius:3,barPercentage:.6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8899AA',font:{size:10}}},tooltip:chartTooltip},scales:{x:{ticks:{color:'#8899AA',font:{size:9}},grid:{display:false}},y:{ticks:{color:'#556677',font:{size:9}},grid:{color:chartGridColor}}}}});
+}
+function renderOMRSub(total){
+  const rows = new Array(7).fill(0), cols = new Array(7).fill(0);
+  getDrawNums().forEach(d=>{
+    d.forEach(n=>{
+      const r = Math.floor((n-1)/7);
+      const c = (n-1)%7;
+      rows[r]++;
+      cols[c]++;
+    });
+  });
+  const totalBalls = total * 6;
+  const rowPct = rows.map(v=>+((v/totalBalls)*100).toFixed(1));
+  const colPct = cols.map(v=>+((v/totalBalls)*100).toFixed(1));
+
+  destroyChart('omrRowChart');
+  CI.omrRowChart = new Chart(document.getElementById('omrRowChart'),{
+    type:'bar', data:{
+      labels:['가로1줄(1~7)','가로2줄(8~14)','가로3줄(15~21)','가로4줄(22~28)','가로5줄(29~35)','가로6줄(36~42)','가로7줄(43~45)'],
+      datasets:[{data:rowPct, backgroundColor:'#A29BFE', borderRadius:3, barPercentage: 0.7}]
+    }, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:chartTooltip}, scales:{y:{ticks:{color:'#556677',font:{size:9},callback:v=>v+'%'}, grid:{color:chartGridColor}}, x:{ticks:{color:'#8899AA',font:{size:9}},grid:{display:false}}}}
+  });
+
+  destroyChart('omrColChart');
+  CI.omrColChart = new Chart(document.getElementById('omrColChart'),{
+    type:'bar', data:{
+      labels:['세로1열','세로2열','세로3열','세로4열','세로5열','세로6열','세로7열'],
+      datasets:[{data:colPct, backgroundColor:'#55E6C1', borderRadius:3, barPercentage: 0.7}]
+    }, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:chartTooltip}, scales:{y:{ticks:{color:'#556677',font:{size:9},callback:v=>v+'%'}, grid:{color:chartGridColor}}, x:{ticks:{color:'#8899AA',font:{size:9}},grid:{display:false}}}}
+  });
 }
 
 // 탭2: 번호생성
@@ -617,17 +671,33 @@ const WEIGHTS = {lma:20, rsi:25, bb:20, macd:20, mom:15};
 const WEIGHT_NAMES = {lma:'LMA 이동평균',rsi:'RSI 상대강도',bb:'볼린저밴드',macd:'MACD',mom:'구간 모멘텀'};
 
 function initIndicatorSelects(){
-  ['lmaNum','bbNum','macdNum'].forEach(id=>{
-    const sel=document.getElementById(id);
-    sel.innerHTML='';
-    for(let i=1;i<=N;i++){const o=document.createElement('option');o.value=i;o.textContent=i+'번';sel.appendChild(o)}
-  });
   document.getElementById('weightSliders').innerHTML=Object.entries(WEIGHTS).map(([k,v])=>`<div class="flex-between mb6"><span style="font-size:11px">${WEIGHT_NAMES[k]}</span><div class="flex-center gap6"><input type="range" min="0" max="50" value="${v}" id="w_${k}" style="width:120px"><span style="font-size:11px;width:30px;text-align:right" id="wv_${k}">${v}%</span></div></div>`).join('');
   Object.keys(WEIGHTS).forEach(k=>{
     document.getElementById('w_'+k).addEventListener('input',e=>{
       WEIGHTS[k]=+e.target.value;
       document.getElementById('wv_'+k).textContent=e.target.value+'%';
     });
+  });
+
+  // 드롭다운을 1~45번 터치 버튼 그리드로 변경
+  ['lma', 'bb', 'macd'].forEach(ind => {
+    const container = document.getElementById(`${ind}NumSelector`);
+    if(!container) return;
+    container.innerHTML = '';
+    for(let i=1; i<=N; i++){
+      const btn = document.createElement('div');
+      btn.className = `num-btn ${i === indSelected[ind] ? 'active' : ''}`;
+      btn.textContent = i;
+      btn.onclick = () => {
+        indSelected[ind] = i;
+        Array.from(container.children).forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        if(ind === 'lma') renderLMA();
+        else if(ind === 'bb') renderBB();
+        else if(ind === 'macd') renderMACD();
+      };
+      container.appendChild(btn);
+    }
   });
 }
 
@@ -652,7 +722,7 @@ function calcEMA(data, period){
 }
 
 function renderLMA(){
-  const num = +document.getElementById('lmaNum').value;
+  const num = indSelected.lma; // 드롭다운 대신 상태 변수 참조
   const draws = getDrawNums();
   if(draws.length < 50) return;
   const shortP=10, longP=50;
@@ -715,7 +785,7 @@ function renderRSI(){
 }
 
 function renderBB(){
-  const num=+document.getElementById('bbNum').value;
+  const num = indSelected.bb; // 드롭다운 대신 상태 변수 참조
   const draws=getDrawNums();
   const windowSize=20;
   if(draws.length<windowSize) return;
@@ -753,7 +823,7 @@ function renderBB(){
 }
 
 function renderMACD(){
-  const num=+document.getElementById('macdNum').value;
+  const num = indSelected.macd; // 드롭다운 대신 상태 변수 참조
   const draws=getDrawNums();
   const raw=draws.map(d=>d.includes(num)?1:0);
   if(raw.length<30) return;
@@ -793,6 +863,70 @@ function renderMomentum(){
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8899AA',font:{size:10}}},tooltip:chartTooltip},scales:{r:{ticks:{color:'#556677',font:{size:9},backdropColor:'transparent'},grid:{color:'#1E2D45'},pointLabels:{color:'#8899AA',font:{size:11}}}}}});
 
   document.getElementById('momBody').innerHTML=zones.map(z=>`<tr><td class="fw700">${z.name}</td><td class="text-right">${z.recent}회</td><td class="text-right">${z.prev}회</td><td class="text-right ${z.change>0?'text-green':'text-red'}">${z.change>0?'+':''}${z.change}%</td></tr>`).join('');
+}
+
+function renderRangeInd(){
+  const draws = getDrawNums();
+  const period = 20;
+  const recent = draws.slice(-period);
+  if(recent.length < 2) return;
+
+  const data = {
+    '단번대': [], '10번대': [], '20번대': [], '30번대': [], '40번대': []
+  };
+
+  recent.forEach(d => {
+    let counts = [0,0,0,0,0];
+    d.forEach(n => {
+      if(n>=1 && n<=9) counts[0]++;
+      else if(n>=10 && n<=19) counts[1]++;
+      else if(n>=20 && n<=29) counts[2]++;
+      else if(n>=30 && n<=39) counts[3]++;
+      else if(n>=40 && n<=45) counts[4]++;
+    });
+    data['단번대'].push(counts[0]);
+    data['10번대'].push(counts[1]);
+    data['20번대'].push(counts[2]);
+    data['30번대'].push(counts[3]);
+    data['40번대'].push(counts[4]);
+  });
+
+  const labels = Array.from({length:recent.length}, (_,i) => (draws.length - recent.length + i + 1) + '회');
+
+  destroyChart('rangeChart');
+  CI.rangeChart = new Chart(document.getElementById('rangeChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {label: '단번대(1~9)', data: data['단번대'], borderColor: '#FECA57', backgroundColor: '#FECA57', borderWidth: 2, tension: 0.2},
+        {label: '10번대(10~19)', data: data['10번대'], borderColor: '#48DBFB', backgroundColor: '#48DBFB', borderWidth: 2, tension: 0.2},
+        {label: '20번대(20~29)', data: data['20번대'], borderColor: '#FF6B6B', backgroundColor: '#FF6B6B', borderWidth: 2, tension: 0.2},
+        {label: '30번대(30~39)', data: data['30번대'], borderColor: '#A29BFE', backgroundColor: '#A29BFE', borderWidth: 2, tension: 0.2},
+        {label: '40번대(40~45)', data: data['40번대'], borderColor: '#55E6C1', backgroundColor: '#55E6C1', borderWidth: 2, tension: 0.2}
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#8899AA', font: {size: 10} } },
+        tooltip: chartTooltip
+      },
+      scales: {
+        x: { ticks: { color: '#556677', font: {size: 8} }, grid: {display: false} },
+        y: { min: 0, max: 6, ticks: { stepSize: 1, color: '#556677', font: {size: 9} }, grid: {color: chartGridColor} }
+      }
+    }
+  });
+
+  const statsHtml = Object.keys(data).map((key, i) => {
+    const arr = data[key];
+    const avg = (arr.reduce((a,b)=>a+b,0) / arr.length).toFixed(1);
+    const last = arr[arr.length-1];
+    const colors = ['#FECA57','#48DBFB','#FF6B6B','#A29BFE','#55E6C1'];
+    return `<div class="stat"><div class="stat-val" style="color:${colors[i]}">${avg}개</div><div class="stat-label">${key} 평균<br>(최근: ${last}개)</div></div>`;
+  }).join('');
+  document.getElementById('rangeStats').innerHTML = statsHtml;
 }
 
 function calcSignalScores(){
@@ -882,6 +1016,7 @@ function renderIndicatorSub(){
   else if(curIndSub==='bb') renderBB();
   else if(curIndSub==='macd') renderMACD();
   else if(curIndSub==='mom') renderMomentum();
+  else if(curIndSub==='range') renderRangeInd();
 }
 
 // 앱 시작
