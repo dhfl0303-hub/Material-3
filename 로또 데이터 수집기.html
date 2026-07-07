@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>로또 데이터 수집기</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0B1120;color:#E8ECF1;font-family:'Pretendard',-apple-system,'Noto Sans KR',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.container{max-width:500px;width:100%;text-align:center}
+h1{color:#F0C040;font-size:24px;margin-bottom:8px}
+p{color:#8899AA;font-size:13px;margin-bottom:24px}
+.card{background:#111B2E;border:1px solid #1E2D45;border-radius:12px;padding:24px;margin-bottom:16px}
+.progress-wrap{width:100%;background:#0B1120;border-radius:6px;height:10px;overflow:hidden;margin:16px 0}
+.progress-fill{height:100%;background:linear-gradient(90deg,#F0C040,#FFD866);border-radius:6px;transition:width .3s;width:0}
+.status{font-size:13px;color:#8899AA;margin-bottom:8px;min-height:20px}
+.pct{font-size:28px;font-weight:800;color:#F0C040;margin:8px 0}
+.btn{padding:14px 32px;border:none;border-radius:10px;cursor:pointer;font-weight:700;font-size:15px;transition:all .2s;margin:6px}
+.btn-primary{background:#F0C040;color:#0B1120}
+.btn-primary:hover{background:#FFD866}
+.btn-primary:disabled{opacity:.4;cursor:default}
+.btn-sec{background:#1E2D45;color:#E8ECF1}
+.btn-sec:hover{background:#2A3F5F}
+.count{font-size:12px;color:#556677;margin-top:12px}
+.result{margin-top:16px;padding:12px;background:#0B1120;border-radius:8px;font-size:12px;color:#2ED573;display:none}
+.error{color:#FF4757}
+.log{margin-top:12px;max-height:150px;overflow-y:auto;text-align:left;font-size:11px;color:#556677;padding:8px;background:#0B1120;border-radius:6px;display:none}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🎰 로또 데이터 수집기</h1>
+  <p>동행복권 API에서 역대 전체 당첨번호를 수집합니다</p>
+
+  <div class="card">
+    <div class="status" id="status">시작 버튼을 눌러주세요</div>
+    <div class="pct" id="pct">0%</div>
+    <div class="progress-wrap"><div class="progress-fill" id="fill"></div></div>
+    <div class="count" id="count">수집된 데이터: 0회차</div>
+
+    <button class="btn btn-primary" id="startBtn" onclick="startFetch()">🚀 데이터 수집 시작</button>
+    <button class="btn btn-sec" id="dlBtn" onclick="downloadJSON()" style="display:none">💾 JSON 다운로드</button>
+
+    <div class="result" id="result"></div>
+    <div class="log" id="log"></div>
+  </div>
+
+  <div class="card">
+    <div style="font-size:12px;color:#8899AA;text-align:left;line-height:1.7">
+      <strong style="color:#F0C040">사용 방법:</strong><br>
+      1. 위 "데이터 수집 시작" 클릭<br>
+      2. 1회~최신회차까지 자동 수집 (약 3~5분)<br>
+      3. 완료 후 "JSON 다운로드" 클릭<br>
+      4. 다운로드된 <strong>lotto-data.json</strong> 파일을 Material-3 레포에 업로드<br>
+      5. Firestore에도 자동 저장됩니다
+    </div>
+  </div>
+</div>
+
+<script>
+// Firebase (Firestore) 설정
+const firebaseConfig = {
+  apiKey: "AIzaSyCLUNqnDrXLMkZHyxWfbM1Zfbimdk3AKWw",
+  authDomain: "ma-db-d0c98.firebaseapp.com",
+  projectId: "ma-db-d0c98",
+  storageBucket: "ma-db-d0c98.firebasestorage.app",
+  messagingSenderId: "497220756438",
+  appId: "1:497220756438:web:72610748c39c6e29eb3a77"
+};
+
+let db = null;
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+} catch(e) { console.log('Firestore 연결 실패:', e); }
+
+let allDraws = [];
+
+function log(msg) {
+  const el = document.getElementById('log');
+  el.style.display = 'block';
+  el.innerHTML += msg + '<br>';
+  el.scrollTop = el.scrollHeight;
+}
+
+function setStatus(msg) { document.getElementById('status').textContent = msg; }
+function setPct(p) {
+  document.getElementById('pct').textContent = p + '%';
+  document.getElementById('fill').style.width = p + '%';
+}
+function setCount(n) { document.getElementById('count').textContent = `수집된 데이터: ${n}회차`; }
+
+// CORS 프록시를 통해 동행복권 API 호출
+async function fetchDraw(round) {
+  const apiUrl = `https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${round}`;
+
+  // 방법1: 직접 호출 시도
+  try {
+    const res = await fetch(apiUrl);
+    const json = await res.json();
+    if (json.returnValue === 'success') {
+      return {
+        round: json.drwNo,
+        nums: [json.drwtNo1,json.drwtNo2,json.drwtNo3,json.drwtNo4,json.drwtNo5,json.drwtNo6].sort((a,b)=>a-b),
+        bonus: json.bnusNo,
+        date: json.drwNoDate
+      };
+    }
+  } catch(e) {}
+
+  // 방법2: allorigins 프록시
+  try {
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`;
+    const res = await fetch(proxyUrl);
+    const wrapper = await res.json();
+    const json = JSON.parse(wrapper.contents);
+    if (json.returnValue === 'success') {
+      return {
+        round: json.drwNo,
+        nums: [json.drwtNo1,json.drwtNo2,json.drwtNo3,json.drwtNo4,json.drwtNo5,json.drwtNo6].sort((a,b)=>a-b),
+        bonus: json.bnusNo,
+        date: json.drwNoDate
+      };
+    }
+  } catch(e) {}
+
+  // 방법3: corsproxy.io
+  try {
+    const proxyUrl2 = `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`;
+    const res = await fetch(proxyUrl2);
+    const json = await res.json();
+    if (json.returnValue === 'success') {
+      return {
+        round: json.drwNo,
+        nums: [json.drwtNo1,json.drwtNo2,json.drwtNo3,json.drwtNo4,json.drwtNo5,json.drwtNo6].sort((a,b)=>a-b),
+        bonus: json.bnusNo,
+        date: json.drwNoDate
+      };
+    }
+  } catch(e) {}
+
+  return null;
+}
+
+async function findLatestRound() {
+  setStatus('최신 회차 탐색 중...');
+  const weeks = Math.floor((Date.now() - new Date('2002-12-07').getTime()) / (7*24*60*60*1000));
+  let guess = Math.min(weeks + 1, 1500);
+
+  // 큰 단위로 유효 회차 찾기
+  while (guess > 0) {
+    const data = await fetchDraw(guess);
+    if (data) {
+      // 위로 더 있는지 확인
+      for (let i = guess+1; i <= guess+10; i++) {
+        const next = await fetchDraw(i);
+        if (next) guess = i; else break;
+      }
+      log(`✅ 최신 회차: ${guess}회`);
+      return guess;
+    }
+    guess -= 10;
+  }
+  return 0;
+}
+
+async function startFetch() {
+  const btn = document.getElementById('startBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ 수집 중...';
+  allDraws = [];
+
+  // 1) 최신 회차 찾기
+  const latest = await findLatestRound();
+  if (latest === 0) {
+    setStatus('❌ API 연결 실패. 인터넷 연결을 확인해주세요.');
+    btn.disabled = false;
+    btn.textContent = '🚀 다시 시도';
+    return;
+  }
+
+  // 2) 전체 수집 (5개씩 병렬)
+  const batchSize = 5;
+  let loaded = 0;
+  let failed = 0;
+
+  for (let i = 1; i <= latest; i += batchSize) {
+    const batch = [];
+    for (let j = i; j < Math.min(i + batchSize, latest + 1); j++) {
+      batch.push(fetchDraw(j));
+    }
+    const results = await Promise.allSettled(batch);
+    results.forEach((r, idx) => {
+      if (r.status === 'fulfilled' && r.value) {
+        allDraws.push(r.value);
+        loaded++;
+      } else {
+        failed++;
+        log(`⚠️ ${i + idx}회차 실패`);
+      }
+    });
+
+    const pct = Math.min(99, Math.round((loaded / latest) * 100));
+    setPct(pct);
+    setStatus(`${loaded}/${latest}회차 수집 중...`);
+    setCount(loaded);
+
+    // 프록시 부하 방지 딜레이
+    await new Promise(r => setTimeout(r, 200));
+  }
+
+  allDraws.sort((a, b) => a.round - b.round);
+  setPct(100);
+  setStatus(`✅ 완료! ${allDraws.length}회차 수집 (실패: ${failed}건)`);
+  setCount(allDraws.length);
+
+  // 3) Firestore 저장 시도
+  if (db && allDraws.length > 0) {
+    setStatus('Firestore에 저장 중...');
+    try {
+      // 500개씩 배치 저장
+      for (let i = 0; i < allDraws.length; i += 499) {
+        const batch = db.batch();
+        const chunk = allDraws.slice(i, i + 499);
+        chunk.forEach(d => {
+          const ref = db.collection('draws').doc(String(d.round));
+          batch.set(ref, { no1:d.nums[0],no2:d.nums[1],no3:d.nums[2],no4:d.nums[3],no5:d.nums[4],no6:d.nums[5],bonus:d.bonus,date:d.date });
+        });
+        await batch.commit();
+        log(`📦 Firestore 저장: ${Math.min(i+499, allDraws.length)}/${allDraws.length}`);
+      }
+      // meta 저장
+      await db.collection('meta').doc('info').set({
+        lastDraw: allDraws[allDraws.length-1].round,
+        lastUpdate: new Date().toISOString().slice(0,10)
+      });
+      log('✅ Firestore 저장 완료!');
+    } catch(e) {
+      log('⚠️ Firestore 저장 실패: ' + e.message);
+    }
+  }
+
+  setStatus(`✅ 총 ${allDraws.length}회차 수집 완료! JSON 다운로드 해주세요.`);
+
+  // 버튼 전환
+  btn.style.display = 'none';
+  document.getElementById('dlBtn').style.display = 'inline-block';
+  const res = document.getElementById('result');
+  res.style.display = 'block';
+  res.textContent = `📊 ${allDraws[0].round}회 (${allDraws[0].date}) ~ ${allDraws[allDraws.length-1].round}회 (${allDraws[allDraws.length-1].date})`;
+}
+
+function downloadJSON() {
+  const json = JSON.stringify(allDraws, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'lotto-data.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
