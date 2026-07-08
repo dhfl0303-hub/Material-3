@@ -183,7 +183,7 @@
         .btn-del-row { background: none; border: none; color: #ef4444; font-size: 1.2rem; font-weight: bold; cursor: pointer; border-radius: 6px; padding: 4px 8px; transition: all 0.2s; }
         .btn-del-row:hover { background-color: #fee2e2; }
 
-        /* ★ 추가됨: 합계(Footer) 전용 디자인 ★ */
+        /* 합계(Footer) 전용 디자인 */
         .total-row {
             background-color: #f1f5f9;
             border-top: 2px solid #cbd5e1;
@@ -194,10 +194,10 @@
             font-size: 1.05rem;
         }
         .total-amount {
-            color: #4f46e5; /* 투입량 합계 (파란색 계열) */
+            color: #4f46e5; 
         }
         .total-ratio {
-            color: #10b981; /* 구성비 합계 (녹색 계열) */
+            color: #10b981; 
         }
 
         /* 산뜻한 버튼 디자인 */
@@ -347,7 +347,6 @@
                       </thead>
                       <tbody id="tableBody"></tbody>
                       
-                      <!-- ★ 추가됨: 표 하단 합계 영역 ★ -->
                       <tfoot>
                         <tr class="total-row">
                           <td colspan="4" style="text-align: right; padding-right: 20px;">합계</td>
@@ -373,7 +372,7 @@
         </div>
     </div>
 
-    <!-- Firebase 통신 자바스크립트 -->
+    <!-- Firebase 통신 및 자바스크립트 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -397,6 +396,36 @@
         let originalOrder = [];
         let rowCounter = 0; 
 
+        // ★ 새로 추가됨: 엔터 키를 눌렀을 때 아래 행으로 포커스를 옮겨주는 함수 ★
+        function setupKeyNav(tr) {
+            const inputs = Array.from(tr.querySelectorAll('input'));
+            inputs.forEach((input, colIdx) => {
+                input.addEventListener('keydown', (e) => {
+                    // 엔터 키가 감지되었을 때
+                    if (e.key === 'Enter') {
+                        e.preventDefault(); // 기본 폼 저장(Submit) 동작을 완벽히 차단합니다.
+                        
+                        const tbody = document.getElementById('tableBody');
+                        const rows = Array.from(tbody.querySelectorAll('tr'));
+                        const rowIdx = rows.indexOf(tr); // 현재 어느 줄에 있는지 파악합니다.
+
+                        // 만약 현재 위치가 표의 맨 마지막 줄이라면?
+                        if (rowIdx === rows.length - 1) {
+                            window.addRow(); // 새 빈 줄을 뿅 하고 추가해 줍니다.
+                            const newRow = tbody.lastElementChild;
+                            const newInputs = newRow.querySelectorAll('input');
+                            if (newInputs[colIdx]) newInputs[colIdx].focus(); // 추가된 줄의 똑같은 열로 커서를 이동합니다.
+                        } else {
+                            // 마지막 줄이 아니라면 단순히 바로 아랫줄의 똑같은 열로 커서를 넘겨줍니다.
+                            const nextRow = rows[rowIdx + 1];
+                            const nextInputs = nextRow.querySelectorAll('input');
+                            if (nextInputs[colIdx]) nextInputs[colIdx].focus();
+                        }
+                    }
+                });
+            });
+        }
+
         window.addRow = function() {
             rowCounter++; 
             const tbody = document.getElementById('tableBody');
@@ -414,6 +443,10 @@
               <td><button type="button" class="btn-del-row" onclick="deleteRow(this)" title="행 삭제">✕</button></td>
             `;
             tbody.appendChild(tr);
+            
+            // ★ 수정됨: 새롭게 줄이 생길 때마다 방금 만든 엔터 키 네비게이션 기능(setupKeyNav)을 덧붙여 줍니다 ★
+            setupKeyNav(tr);
+            
             window.calcRatio();
         };
 
@@ -423,23 +456,19 @@
             window.calcRatio();
         };
 
-        // ★ 수정됨: 실시간으로 합계를 계산하여 하단에 표시해 주는 함수 업데이트 ★
         window.calcRatio = function() {
             const rows = document.querySelectorAll('#tableBody tr');
             let total = 0;
             
-            // 모든 행의 투입량 숫자를 더합니다.
             rows.forEach(tr => { 
                 total += parseFloat(tr.querySelector('.amount-input').value) || 0; 
             });
             
-            // 각 행의 구성비(%)를 계산하여 표시합니다.
             rows.forEach(tr => {
                 const val = parseFloat(tr.querySelector('.amount-input').value) || 0;
                 tr.querySelector('.ratio-cell').textContent = (total > 0 && val > 0) ? ((val / total) * 100).toFixed(2) : '';
             });
 
-            // 화면 하단 합계(Footer)의 텍스트를 업데이트합니다. (소수점 자릿수 정리)
             document.getElementById('totalAmount').textContent = total > 0 ? total.toFixed(3) : '0.000';
             document.getElementById('totalRatio').textContent = total > 0 ? '100.00' : '0.00';
         };
@@ -620,7 +649,6 @@
                 sortState = 0;
                 document.getElementById('sortArrow').textContent = '';
                 
-                // 합계 수치도 초기화
                 document.getElementById('totalAmount').textContent = '0.000';
                 document.getElementById('totalRatio').textContent = '0.00';
                 
