@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LOTTO MATH LAB v2.5</title>
-<!-- 안정적인 cdnjs 서버로 라이브러리 주소 전면 교체 -->
 <script src="[https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js](https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js)"></script>
 <script src="[https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js](https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js)"></script>
 <script src="[https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-firestore-compat.min.js](https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-firestore-compat.min.js)"></script>
@@ -190,7 +189,6 @@ p{margin-bottom:6px;line-height:1.6}
     <div class="card"><div class="card-title">🎯 포아송 분포 적합도</div><div class="text-dim mb8" style="font-size:11px">각 번호의 출현 횟수가 포아송 분포(λ=<span id="poissonLambda"></span>)를 따르는지 비교</div>
       <div class="chart-wrapper" style="height: 170px;"><canvas id="poissonChart"></canvas></div>
     </div>
-    <!-- 수학 공식 추가 부분 -->
     <div class="card">
       <div class="card-title">🧮 핵심 수학 공식 2선</div>
       <div style="font-size:11px;color:var(--textDim);line-height:1.6">
@@ -204,7 +202,6 @@ p{margin-bottom:6px;line-height:1.6}
     </div>
   </div>
   
-  <!-- OMR 분석 탭 -->
   <div id="sub-omr" class="hidden">
     <div class="card">
       <div class="card-title">📝 OMR 기준 가로줄 출현 비율</div>
@@ -247,7 +244,6 @@ p{margin-bottom:6px;line-height:1.6}
 
 <!-- ═══════════ 탭4: 보조지표 ═══════════ -->
 <div id="tab-indicator" class="hidden">
-  <!-- 종합 시그널 스코어 -->
   <div class="card">
     <div class="card-title">🎯 종합 시그널 스코어</div>
     <div class="text-dim mb8" style="font-size:11px">보조지표 가중합산 → 번호별 최종 점수 (높을수록 최근 추세적 주목도가 높음)</div>
@@ -255,7 +251,6 @@ p{margin-bottom:6px;line-height:1.6}
     <div class="heatmap" id="signalHeatmap"></div>
   </div>
 
-  <!-- 가중치 조절 -->
   <div class="card">
     <div class="card-title">⚖️ 지표 가중치 조절</div>
     <div id="weightSliders"></div>
@@ -273,7 +268,6 @@ p{margin-bottom:6px;line-height:1.6}
     <button class="sub-tab" onclick="switchIndSub('range')">번호대</button>
   </div>
 
-  <!-- LMA -->
   <div id="ind-lma">
     <div class="card"><div class="card-title">📈 LMA (Lotto Moving Average)</div>
       <div class="text-dim mb8" style="font-size:11px">번호별 출현 빈도의 단기(10회)/장기(50회) 이동평균 비교</div>
@@ -286,7 +280,6 @@ p{margin-bottom:6px;line-height:1.6}
     </div>
   </div>
 
-  <!-- RSI -->
   <div id="ind-rsi" class="hidden">
     <div class="card"><div class="card-title">📊 LRI (Lotto RSI)</div>
       <div class="text-dim mb8" style="font-size:11px">최근 N회차 기준 번호별 상대강도지수 (0~100)</div>
@@ -296,7 +289,6 @@ p{margin-bottom:6px;line-height:1.6}
     </div>
   </div>
 
-  <!-- 볼린저밴드 -->
   <div id="ind-bb" class="hidden">
     <div class="card"><div class="card-title">📉 볼린저밴드</div>
       <div class="text-dim mb8" style="font-size:11px">출현 빈도 이동평균 ± 2σ 밴드. 밴드 이탈 = 통계적 이상치</div>
@@ -309,7 +301,6 @@ p{margin-bottom:6px;line-height:1.6}
     </div>
   </div>
 
-  <!-- MACD -->
   <div id="ind-macd" class="hidden">
     <div class="card"><div class="card-title">📊 MACD</div>
       <div class="text-dim mb8" style="font-size:11px">EMA(12)-EMA(26) + Signal(9). 추세 전환 감지</div>
@@ -321,7 +312,6 @@ p{margin-bottom:6px;line-height:1.6}
     </div>
   </div>
 
-  <!-- 슈퍼트렌드 -->
   <div id="ind-super" class="hidden">
     <div class="card">
       <div class="card-title">⚡ 슈퍼트렌드 (Supertrend)</div>
@@ -338,7 +328,6 @@ p{margin-bottom:6px;line-height:1.6}
     </div>
   </div>
 
-  <!-- 파라볼릭 SAR -->
   <div id="ind-psar" class="hidden">
     <div class="card">
       <div class="card-title">🎯 파라볼릭 SAR (Parabolic Stop And Reverse)</div>
@@ -351,7 +340,6 @@ p{margin-bottom:6px;line-height:1.6}
     </div>
   </div>
 
-  <!-- 구간 모멘텀 -->
   <div id="ind-mom" class="hidden">
     <div class="card"><div class="card-title">🎯 구간 모멘텀 오실레이터</div>
       <div class="text-dim mb8" style="font-size:11px">5구간의 최근 출현 모멘텀 비교 (최근 10회 vs 이전 10회)</div>
@@ -360,7 +348,6 @@ p{margin-bottom:6px;line-height:1.6}
     </div>
   </div>
 
-  <!-- 번호대 흐름 보조지표 -->
   <div id="ind-range" class="hidden">
     <div class="card">
       <div class="card-title">📊 10번대~40번대 보조지표 (최근 20회 흐름)</div>
@@ -421,7 +408,7 @@ async function initApp(){
     if(res.ok){
       DRAWS = await res.json();
       DRAWS.sort((a,b) => a.round - b.round);
-      updateLoading(`JSON에서 ${DRAWS.length}회차 로드 완료`, 70);
+      updateLoading('JSON에서 ' + DRAWS.length + '회차 로드 완료', 70);
     }
   } catch(e){ console.log('JSON 파일 로드 실패:', e.message); }
 
@@ -454,7 +441,7 @@ async function initApp(){
     const cached = localStorage.getItem('lotto_draws');
     if(cached){
       DRAWS = JSON.parse(cached);
-      updateLoading(`캐시에서 ${DRAWS.length}회차 로드`, 80);
+      updateLoading('캐시에서 ' + DRAWS.length + '회차 로드', 80);
     }
   }
 
@@ -476,7 +463,7 @@ async function initApp(){
 
   try { localStorage.setItem('lotto_draws', JSON.stringify(DRAWS)); } catch(e){}
 
-  updateLoading(`${DRAWS.length}회차 로드 완료!`, 100);
+  updateLoading(DRAWS.length + '회차 로드 완료!', 100);
 
   document.getElementById('loadingOverlay').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
@@ -498,7 +485,7 @@ async function loadFromFirestore(){
       DRAWS.push({ round: +doc.id, nums:[d.no1,d.no2,d.no3,d.no4,d.no5,d.no6], bonus:d.bonus, date:d.date });
     });
     DRAWS.sort((a,b) => a.round - b.round);
-    updateLoading(`Firestore에서 ${DRAWS.length}회차 로드 완료`, 90);
+    updateLoading('Firestore에서 ' + DRAWS.length + '회차 로드 완료', 90);
   } catch(e){
     console.log('Firestore 읽기 실패:', e.message);
   }
@@ -529,8 +516,8 @@ function updateStatusBar(){
   const last = DRAWS[DRAWS.length-1]?.round || '?';
   const lastDate = DRAWS[DRAWS.length-1]?.date || '';
   document.getElementById('statusDot').className = 'dot dot-green';
-  document.getElementById('statusText').textContent = `데이터 로드 완료 (${DRAWS.length}회차)`;
-  document.getElementById('dataRange').textContent = `${first}회 ~ ${last}회 | ${lastDate}`;
+  document.getElementById('statusText').textContent = '데이터 로드 완료 (' + DRAWS.length + '회차)';
+  document.getElementById('dataRange').textContent = first + '회 ~ ' + last + '회 | ' + lastDate;
 }
 
 let curTab='stats', curSub='freq', curIndSub='lma';
@@ -597,10 +584,10 @@ function renderFreqSub(freq,expected,total){
   document.getElementById('chiCritical').textContent=critical;
   const cb=document.getElementById('chiResult');
   cb.className='info-box mt8 '+(isR?'info-green':'info-red');
-  cb.textContent=isR?`✅ χ²(${chi2.toFixed(2)}) < 임계값 → 균등분포와 유의미한 차이 없음`:`⚠️ χ²(${chi2.toFixed(2)}) ≥ 임계값 → 편향 가능성`;
+  cb.textContent=isR ? '✅ χ²(' + chi2.toFixed(2) + ') < 임계값 → 균등분포와 유의미한 차이 없음' : '⚠️ χ²(' + chi2.toFixed(2) + ') ≥ 임계값 → 편향 가능성';
   const sorted=Array.from({length:N},(_,i)=>({num:i+1,count:freq[i+1],diff:+(freq[i+1]-expected).toFixed(1)})).sort((a,b)=>b.count-a.count);
-  document.getElementById('hotNums').innerHTML=sorted.slice(0,6).map(d=>`<div class="flex-between" style="padding:3px 0;font-size:11px">${renderBall(d.num,true)}<span class="text-red">${d.count}회 (+${d.diff})</span></div>`).join('');
-  document.getElementById('coldNums').innerHTML=sorted.slice(-6).reverse().map(d=>`<div class="flex-between" style="padding:3px 0;font-size:11px">${renderBall(d.num,true)}<span class="text-cyan">${d.count}회 (${d.diff})</span></div>`).join('');
+  document.getElementById('hotNums').innerHTML=sorted.slice(0,6).map(d=>'<div class="flex-between" style="padding:3px 0;font-size:11px">' + renderBall(d.num,true) + '<span class="text-red">' + d.count + '회 (+' + d.diff + ')</span></div>').join('');
+  document.getElementById('coldNums').innerHTML=sorted.slice(-6).reverse().map(d=>'<div class="flex-between" style="padding:3px 0;font-size:11px">' + renderBall(d.num,true) + '<span class="text-cyan">' + d.count + '회 (' + d.diff + ')</span></div>').join('');
 }
 function renderZoneSub(total){
   const zones=[{name:'1~9',r:[1,9]},{name:'10~19',r:[10,19]},{name:'20~29',r:[20,29]},{name:'30~39',r:[30,39]},{name:'40~45',r:[40,45]}];
@@ -613,7 +600,7 @@ function renderZoneSub(total){
   const sums=getDrawNums().map(d=>d.reduce((a,b)=>a+b,0));
   document.getElementById('sumAvg').textContent=mean(sums).toFixed(1);
   document.getElementById('sumStd').textContent='±'+stddev(sums).toFixed(1);
-  const bk={};sums.forEach(s=>{const b=Math.floor(s/20)*20;const k=`${b}~${b+19}`;bk[k]=(bk[k]||0)+1});
+  const bk={};sums.forEach(s=>{const b=Math.floor(s/20)*20;const k=b + '~' + (b+19);bk[k]=(bk[k]||0)+1});
   const sl=Object.keys(bk).sort();
   destroyChart('sumChart');
   if(typeof Chart !== 'undefined') {
@@ -621,12 +608,12 @@ function renderZoneSub(total){
   }
 }
 function renderPatternSub(freq,expected,total){
-  const dist={};getDrawNums().forEach(d=>{const o=d.filter(n=>n%2===1).length;const k=`${o}:${6-o}`;dist[k]=(dist[k]||0)+1});
+  const dist={};getDrawNums().forEach(d=>{const o=d.filter(n=>n%2===1).length;const k=o + ':' + (6-o);dist[k]=(dist[k]||0)+1});
   const oe=Object.entries(dist).map(([k,v])=>({ratio:k,count:v,pct:+((v/total)*100).toFixed(1)})).sort((a,b)=>b.count-a.count);
-  document.getElementById('oddEvenBody').innerHTML=oe.map(d=>`<tr><td>${d.ratio}</td><td class="text-right">${d.count}회</td><td class="text-right ${d.pct>25?'text-gold':'text-dim'}">${d.pct}%</td></tr>`).join('');
+  document.getElementById('oddEvenBody').innerHTML=oe.map(d=>'<tr><td>' + d.ratio + '</td><td class="text-right">' + d.count + '회</td><td class="text-right ' + (d.pct>25?'text-gold':'text-dim') + '">' + d.pct + '%</td></tr>').join('');
   let wc=0;getDrawNums().forEach(d=>{const s=[...d].sort((a,b)=>a-b);for(let i=0;i < s.length-1;i++){if(s[i+1]-s[i]===1){wc++;break}}});
   document.getElementById('consecPct').textContent=((wc/total)*100).toFixed(1)+'%';
-  document.getElementById('consecCount').textContent=`${wc}/${total}`;
+  document.getElementById('consecCount').textContent= wc + '/' + total;
   const lambda=expected;
   document.getElementById('poissonLambda').textContent=lambda.toFixed(2);
   const maxK=Math.ceil(lambda*2)+2;
@@ -672,7 +659,7 @@ function renderOMRSub(total){
 
 const strategies=[{id:'random',name:'완전 랜덤',desc:'순수 난수'},{id:'balanced',name:'균형 분포',desc:'구간별 균등 배분'},{id:'antiPop',name:'인기번호 회피',desc:'당첨금 극대화'},{id:'poisson',name:'포아송 보정',desc:'기대값 미달 보정'},{id:'gap',name:'갭 분석',desc:'최근 미출현 우선'}];
 let selStrat='balanced';
-function renderStrategies(){document.getElementById('strategyList').innerHTML=strategies.map(s=>`<button class="strategy-btn${s.id===selStrat?' active':''}" onclick="selStrat='${s.id}';renderStrategies()"><div><div class="name">${s.name}</div><div class="desc">${s.desc}</div></div>${s.id===selStrat?'<span class="text-gold">✓</span>':''}</button>`).join('')}
+function renderStrategies(){document.getElementById('strategyList').innerHTML=strategies.map(s=>'<button class="strategy-btn' + (s.id===selStrat?' active':'') + '" onclick="selStrat=\'' + s.id + '\';renderStrategies()"><div><div class="name">' + s.name + '</div><div class="desc">' + s.desc + '</div></div>' + (s.id===selStrat?'<span class="text-gold">✓</span>':'') + '</button>').join('')}
 
 function randomPick(){
   const p=Array.from({length:N},(_,i)=>i+1),r=[];
@@ -748,11 +735,11 @@ function generateNumbers(){
   const count=+document.getElementById('genCount').value,fn=genFns[selStrat],results=[];
   for(let i=0; i < count; i++){
     const nums=fn();
-    results.push({nums,sum:nums.reduce((a,b)=>a+b,0),oe:`${nums.filter(n=>n%2===1).length}:${nums.filter(n=>n%2===0).length}`,lh:`${nums.filter(n=>n<=22).length}:${nums.filter(n=>n > 22).length}`})
+    results.push({nums,sum:nums.reduce((a,b)=>a+b,0),oe:(nums.filter(n=>n%2===1).length + ':' + nums.filter(n=>n%2===0).length),lh:(nums.filter(n=>n<=22).length + ':' + nums.filter(n=>n > 22).length)})
   }
   document.getElementById('genResults').classList.remove('hidden');
-  document.getElementById('genResultTitle').textContent=`🎯 생성 결과 (${stratNames[selStrat]})`;
-  document.getElementById('genResultBody').innerHTML=results.map((r,i)=>`<div class="result-row"><div class="flex-center gap4"><span style="font-size:10px;color:var(--textDim);width:20px">#${i+1}</span>${r.nums.map(n=>renderBall(n)).join('')}</div><div class="result-meta"><span>합:${r.sum}</span><span>홀짝:${r.oe}</span><span>고저:${r.lh}</span></div></div>`).join('');
+  document.getElementById('genResultTitle').textContent='🎯 생성 결과 (' + stratNames[selStrat] + ')';
+  document.getElementById('genResultBody').innerHTML=results.map((r,i)=>'<div class="result-row"><div class="flex-center gap4"><span style="font-size:10px;color:var(--textDim);width:20px">#' + (i+1) + '</span>' + r.nums.map(n=>renderBall(n)).join('') + '</div><div class="result-meta"><span>합:' + r.sum + '</span><span>홀짝:' + r.oe + '</span><span>고저:' + r.lh + '</span></div></div>').join('');
 }
 
 function runSimulation(){
@@ -782,11 +769,11 @@ function runSimulation(){
     const re=document.getElementById('simROI');re.textContent=roi+'%';re.style.color=roi > 0?'var(--green)':'var(--red)';
     document.getElementById('simEV').textContent=Number(ev).toLocaleString()+'원';
     const vd=document.getElementById('simVerdict');vd.className='info-box '+(roi < 0?'info-red':'info-green');
-    vd.textContent=roi < 0?`📉 ${tt.toLocaleString()}장 기준, 투자금의 ${Math.abs(roi)}% 손실`:`📈 이례적 수익! 1등 당첨 포함 가능성`;
+    vd.textContent=roi < 0 ? '📉 ' + tt.toLocaleString() + '장 기준, 투자금의 ' + Math.abs(roi) + '% 손실' : '📈 이례적 수익! 1등 당첨 포함 가능성';
     destroyChart('profitChart');
     CI.profitChart=new Chart(document.getElementById('profitChart'),{type:'line',data:{labels:ph.map(p=>p.d),datasets:[{data:ph.map(p=>p.p),borderColor:'#F0C040',borderWidth:2,pointRadius:0,fill:false,tension:.1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...chartTooltip,callbacks:{label:c=>(c.parsed.y/10000).toLocaleString()+'만원'}}},scales:{x:{ticks:{color:'#556677',font:{size:8},maxTicksLimit:8},grid:{display:false}},y:{ticks:{color:'#556677',font:{size:8},callback:v=>(v/10000).toFixed(0)+'만'},grid:{color:chartGridColor}}}}});
     const th={6:'0.0000123%',5:'0.0018%',4:'0.0914%',3:'2.22%',2:'16.14%',1:'41.30%',0:'40.22%'};
-    document.getElementById('matchBody').innerHTML=[6,5,4,3,2,1,0].map(m=>`<tr${m>=3?' style="background:rgba(240,192,64,.03)"':''}><td class="${m>=3?'fw700 text-gold':''}">${m}개</td><td class="text-right">${(md[m]||0).toLocaleString()}</td><td class="text-right">${((md[m]/tt)*100).toFixed(4)}%</td><td class="text-right text-dim">${th[m]}</td></tr>`).join('');
+    document.getElementById('matchBody').innerHTML=[6,5,4,3,2,1,0].map(m=>'<tr' + (m>=3?' style="background:rgba(240,192,64,.03)"':'') + '><td class="' + (m>=3?'fw700 text-gold':'') + '">' + m + '개</td><td class="text-right">' + (md[m]||0).toLocaleString() + '</td><td class="text-right">' + ((md[m]/tt)*100).toFixed(4) + '%</td><td class="text-right text-dim">' + th[m] + '</td></tr>').join('');
     btn.disabled=false;btn.textContent='▶ 실행';
   },50);
 }
@@ -795,7 +782,7 @@ const WEIGHTS = {lma:15, rsi:20, bb:15, macd:15, super:15, psar:10, mom:10};
 const WEIGHT_NAMES = {lma:'LMA 이동평균',rsi:'RSI 상대강도',bb:'볼린저밴드',macd:'MACD',super:'슈퍼트렌드',psar:'파라볼릭SAR',mom:'구간 모멘텀'};
 
 function initIndicatorSelects(){
-  document.getElementById('weightSliders').innerHTML=Object.entries(WEIGHTS).map(([k,v])=>`<div class="flex-between mb6"><span style="font-size:11px">${WEIGHT_NAMES[k]}</span><div class="flex-center gap6"><input type="range" min="0" max="50" value="${v}" id="w_${k}" style="width:120px"><span style="font-size:11px;width:30px;text-align:right" id="wv_${k}">${v}%</span></div></div>`).join('');
+  document.getElementById('weightSliders').innerHTML=Object.entries(WEIGHTS).map(([k,v])=>'<div class="flex-between mb6"><span style="font-size:11px">' + WEIGHT_NAMES[k] + '</span><div class="flex-center gap6"><input type="range" min="0" max="50" value="' + v + '" id="w_' + k + '" style="width:120px"><span style="font-size:11px;width:30px;text-align:right" id="wv_' + k + '">' + v + '%</span></div></div>').join('');
   Object.keys(WEIGHTS).forEach(k=>{
     document.getElementById('w_'+k).addEventListener('input',e=>{
       WEIGHTS[k]=+e.target.value;
@@ -804,12 +791,12 @@ function initIndicatorSelects(){
   });
 
   ['lma', 'bb', 'macd', 'super', 'psar'].forEach(ind => {
-    const container = document.getElementById(`${ind}NumSelector`);
+    const container = document.getElementById(ind + 'NumSelector');
     if(!container) return;
     container.innerHTML = '';
     for(let i=1; i<=N; i++){
       const btn = document.createElement('div');
-      btn.className = `num-btn ${i === indSelected[ind] ? 'active' : ''}`;
+      btn.className = 'num-btn ' + (i === indSelected[ind] ? 'active' : '');
       btn.textContent = i;
       btn.onclick = () => {
         indSelected[ind] = i;
@@ -855,13 +842,13 @@ function renderLMA(){
   const longMA = getNumTimeSeries(num, longP);
   const offset = shortMA.length - longMA.length;
   const shortAligned = shortMA.slice(offset);
-  const labels = Array.from({length:longMA.length},(_,i)=>draws.length-longMA.length+i+1+'회');
+  const labels = Array.from({length:longMA.length},(_,i)=>(draws.length-longMA.length+i+1)+'회');
 
   destroyChart('lmaChart');
   if(typeof Chart !== 'undefined') {
     CI.lmaChart=new Chart(document.getElementById('lmaChart'),{type:'line',data:{labels,datasets:[
-      {label:`단기 MA(${shortP})`,data:shortAligned,borderColor:'#FF4757',borderWidth:2,pointRadius:0,tension:.3,fill:false},
-      {label:`장기 MA(${longP})`,data:longMA,borderColor:'#70A1FF',borderWidth:2,pointRadius:0,tension:.3,fill:false}
+      {label:'단기 MA(' + shortP + ')',data:shortAligned,borderColor:'#FF4757',borderWidth:2,pointRadius:0,tension:.3,fill:false},
+      {label:'장기 MA(' + longP + ')',data:longMA,borderColor:'#70A1FF',borderWidth:2,pointRadius:0,tension:.3,fill:false}
     ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8899AA',font:{size:10}}},tooltip:chartTooltip},scales:{x:{ticks:{color:'#556677',font:{size:8},maxTicksLimit:8},grid:{display:false}},y:{ticks:{color:'#556677',font:{size:9}},grid:{color:chartGridColor}}}}});
   }
 
@@ -908,8 +895,8 @@ function renderRSI(){
   if(typeof Chart !== 'undefined') {
     CI.rsiChart=new Chart(document.getElementById('rsiChart'),{type:'bar',data:{labels:rsiData.map(d=>d.num),datasets:[{data:rsiData.map(d=>d.rsi),backgroundColor:colors,borderRadius:2,barPercentage:.7}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:chartTooltip},scales:{x:{ticks:{color:'#556677',font:{size:8},maxRotation:0},grid:{display:false}},y:{min:0,max:100,ticks:{color:'#556677',font:{size:9},stepSize:10},grid:{color:chartGridColor}}}}});
   }
-  document.getElementById('rsiHot').innerHTML=rsiData.filter(d=>d.rsi > 70).sort((a,b)=>b.rsi-a.rsi).map(d=>`<div class="flex-between" style="padding:2px 0">${renderBall(d.num,true)}<span class="text-red">${d.rsi}</span></div>`).join('')||'<span class="text-dim">없음</span>';
-  document.getElementById('rsiCold').innerHTML=rsiData.filter(d=>d.rsi < 30).sort((a,b)=>a.rsi-b.rsi).map(d=>`<div class="flex-between" style="padding:2px 0">${renderBall(d.num,true)}<span class="text-cyan">${d.rsi}</span></div>`).join('')||'<span class="text-dim">없음</span>';
+  document.getElementById('rsiHot').innerHTML=rsiData.filter(d=>d.rsi > 70).sort((a,b)=>b.rsi-a.rsi).map(d=>'<div class="flex-between" style="padding:2px 0">' + renderBall(d.num,true) + '<span class="text-red">' + d.rsi + '</span></div>').join('')||'<span class="text-dim">없음</span>';
+  document.getElementById('rsiCold').innerHTML=rsiData.filter(d=>d.rsi < 30).sort((a,b)=>a.rsi-b.rsi).map(d=>'<div class="flex-between" style="padding:2px 0">' + renderBall(d.num,true) + '<span class="text-cyan">' + d.rsi + '</span></div>').join('')||'<span class="text-dim">없음</span>';
 }
 
 function renderBB(){
@@ -1149,7 +1136,7 @@ function renderMomentum(){
     ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8899AA',font:{size:10}}},tooltip:chartTooltip},scales:{r:{ticks:{color:'#556677',font:{size:9},backdropColor:'transparent'},grid:{color:'#1E2D45'},pointLabels:{color:'#8899AA',font:{size:11}}}}}});
   }
 
-  document.getElementById('momBody').innerHTML=zones.map(z=>`<tr><td class="fw700">${z.name}</td><td class="text-right">${z.recent}회</td><td class="text-right">${z.prev}회</td><td class="text-right ${z.change > 0?'text-green':'text-red'}">${z.change > 0?'+':''}${z.change}%</td></tr>`).join('');
+  document.getElementById('momBody').innerHTML=zones.map(z=>'<tr><td class="fw700">' + z.name + '</td><td class="text-right">' + z.recent + '회</td><td class="text-right">' + z.prev + '회</td><td class="text-right ' + (z.change > 0?'text-green':'text-red') + '">' + (z.change > 0?'+':'') + z.change + '%</td></tr>').join('');
 }
 
 function renderRangeInd(){
@@ -1320,7 +1307,6 @@ function renderIndicatorSub(){
   else if(curIndSub==='range') renderRangeInd();
 }
 
-// ══════════ 내 번호 분석 엔진 ══════════
 function analyzeMyNumbers() {
   const inputs = [1,2,3,4,5,6].map(i => parseInt(document.getElementById('myNum' + i).value));
   const validNums = inputs.filter(n => !isNaN(n) && n >= 1 && n <= 45);
@@ -1361,7 +1347,6 @@ function analyzeMyNumbers() {
   
   const avgScore = (totalScore / 6).toFixed(1);
   
-  // 백틱(Template Literal) 내부에 다시 백틱을 쓰는 중첩 방식 제거 (Syntax Error 원인)
   let rowsHtml = myIndData.map(item => {
     let rsiText = '<span class="text-dim">보통 (' + item.rsi + ')</span>';
     if(item.rsi > 70) rsiText = '<span class="text-red fw700">과열 (' + item.rsi + ')</span>';
@@ -1383,60 +1368,56 @@ function analyzeMyNumbers() {
     '</tr>';
   }).join('');
   
-  let html = `
-    <div class="card mt8">
-      <div class="card-title">📝 기초 패턴 분석</div>
-      <div class="flex-center gap6 mb10" style="justify-content:center; padding:10px 0;">
-        ${myNums.map(n => renderBall(n)).join('')}
-      </div>
-      <div class="grid3">
-        <div class="stat">
-          <div class="stat-val ${sum >= 100 && sum <= 175 ? 'text-green' : 'text-red'}">${sum}</div>
-          <div class="stat-label">합계<br>(권장: 100~175)</div>
-        </div>
-        <div class="stat">
-          <div class="stat-val ${odd === 3 || odd === 4 || odd === 2 ? 'text-green' : 'text-red'}">${odd}:${even}</div>
-          <div class="stat-label">홀:짝<br>(이론적 대세: 3:3)</div>
-        </div>
-        <div class="stat">
-          <div class="stat-val ${low === 3 || low === 4 || low === 2 ? 'text-green' : 'text-red'}">${low}:${high}</div>
-          <div class="stat-label">저:고<br>(22기준 비율)</div>
-        </div>
-      </div>
-    </div>
-    
-    <div class="card mt8">
-      <div class="card-title">🎯 보조지표 정밀 평가 (7종 가중치 융합)</div>
-      <div class="stat mb8" style="background:rgba(240,192,64,.08); border:1px solid rgba(240,192,64,.2)">
-        <div class="stat-val text-gold">${avgScore}점</div>
-        <div class="stat-label">조합 평균 시그널 스코어 (기준점: 50점)</div>
-      </div>
-      <table style="line-height: 1.8;">
-        <thead>
-          <tr>
-            <th>번호</th>
-            <th class="text-right">종합 점수</th>
-            <th class="text-right">RSI 강도</th>
-            <th class="text-center">슈퍼트렌드</th>
-            <th class="text-center">파라볼릭SAR</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rowsHtml}
-        </tbody>
-      </table>
-      <div class="info-neutral mt8">💡 <strong>종합 분석 가이드:</strong><br>
-      • 점수가 높은 번호(초록색)는 주요 이동평균 돌파 및 가속 밴드 위에서 활발하게 출현 주기를 단축 중인 <strong>핫 모멘텀 번호</strong>입니다.<br>
-      • '침체(RSI &lt; 30)'면서 하락세인 번호는 장기 미출현군으로 분류되며, 대수의 법칙에 기반한 <strong>평균회귀(반등)</strong> 관점에서 전략적으로 조합에 섞어볼 수 있습니다.</div>
-    </div>
-  `;
+  let html = '<div class="card mt8">' +
+    '<div class="card-title">📝 기초 패턴 분석</div>' +
+    '<div class="flex-center gap6 mb10" style="justify-content:center; padding:10px 0;">' +
+      myNums.map(n => renderBall(n)).join('') +
+    '</div>' +
+    '<div class="grid3">' +
+      '<div class="stat">' +
+        '<div class="stat-val ' + (sum >= 100 && sum <= 175 ? 'text-green' : 'text-red') + '">' + sum + '</div>' +
+        '<div class="stat-label">합계<br>(권장: 100~175)</div>' +
+      '</div>' +
+      '<div class="stat">' +
+        '<div class="stat-val ' + (odd === 3 || odd === 4 || odd === 2 ? 'text-green' : 'text-red') + '">' + odd + ':' + even + '</div>' +
+        '<div class="stat-label">홀:짝<br>(이론적 대세: 3:3)</div>' +
+      '</div>' +
+      '<div class="stat">' +
+        '<div class="stat-val ' + (low === 3 || low === 4 || low === 2 ? 'text-green' : 'text-red') + '">' + low + ':' + high + '</div>' +
+        '<div class="stat-label">저:고<br>(22기준 비율)</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>' +
+  '<div class="card mt8">' +
+    '<div class="card-title">🎯 보조지표 정밀 평가 (7종 가중치 융합)</div>' +
+    '<div class="stat mb8" style="background:rgba(240,192,64,.08); border:1px solid rgba(240,192,64,.2)">' +
+      '<div class="stat-val text-gold">' + avgScore + '점</div>' +
+      '<div class="stat-label">조합 평균 시그널 스코어 (기준점: 50점)</div>' +
+    '</div>' +
+    '<table style="line-height: 1.8;">' +
+      '<thead>' +
+        '<tr>' +
+          '<th>번호</th>' +
+          '<th class="text-right">종합 점수</th>' +
+          '<th class="text-right">RSI 강도</th>' +
+          '<th class="text-center">슈퍼트렌드</th>' +
+          '<th class="text-center">파라볼릭SAR</th>' +
+        '</tr>' +
+      '</thead>' +
+      '<tbody>' +
+        rowsHtml +
+      '</tbody>' +
+    '</table>' +
+    '<div class="info-neutral mt8">💡 <strong>종합 분석 가이드:</strong><br>' +
+    '• 점수가 높은 번호(초록색)는 주요 이동평균 돌파 및 가속 밴드 위에서 활발하게 출현 주기를 단축 중인 <strong>핫 모멘텀 번호</strong>입니다.<br>' +
+    '• \'침체(RSI &lt; 30)\'면서 하락세인 번호는 장기 미출현군으로 분류되며, 대수의 법칙에 기반한 <strong>평균회귀(반등)</strong> 관점에서 전략적으로 조합에 섞어볼 수 있습니다.</div>' +
+  '</div>';
   
   const resDiv = document.getElementById('analyzeResult');
   resDiv.innerHTML = html;
   resDiv.classList.remove('hidden');
 }
 
-// 앱 시작
 initApp();
 </script>
 </body>
