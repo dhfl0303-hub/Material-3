@@ -376,16 +376,20 @@ p{margin-bottom:6px;line-height:1.6}
 <div id="tab-analyze" class="hidden">
   <div class="card">
     <div class="card-title">🔢 분석할 번호 6개 입력</div>
-    <div class="text-dim mb8" style="font-size:11px">직접 선택한 6개의 번호를 수학 및 보조지표 기반으로 정밀 분석합니다.</div>
-    <div class="flex-center gap8 mb8" style="justify-content:space-between">
-      <input type="number" id="myNum1" min="1" max="45" placeholder="1" style="width:48px;text-align:center">
-      <input type="number" id="myNum2" min="1" max="45" placeholder="2" style="width:48px;text-align:center">
-      <input type="number" id="myNum3" min="1" max="45" placeholder="3" style="width:48px;text-align:center">
-      <input type="number" id="myNum4" min="1" max="45" placeholder="4" style="width:48px;text-align:center">
-      <input type="number" id="myNum5" min="1" max="45" placeholder="5" style="width:48px;text-align:center">
-      <input type="number" id="myNum6" min="1" max="45" placeholder="6" style="width:48px;text-align:center">
+    <div class="text-dim mb12" style="font-size:11px">직접 선택한 6개의 번호를 수학 및 보조지표 기반으로 정밀 분석합니다.</div>
+    
+    <!-- 입력 칸을 크고 굵게, 모바일에서 넘치면 자동으로 줄바꿈되도록 수정 -->
+    <div class="flex-center mb12" style="justify-content:center; gap:8px; flex-wrap:wrap; padding: 10px 0;">
+      <input type="number" id="myNum1" min="1" max="45" placeholder="1" style="width:70px; height:70px; font-size:26px; font-weight:900; text-align:center; border-radius:12px; border:2px solid var(--border); background:var(--bg); color:var(--gold); box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+      <input type="number" id="myNum2" min="1" max="45" placeholder="2" style="width:70px; height:70px; font-size:26px; font-weight:900; text-align:center; border-radius:12px; border:2px solid var(--border); background:var(--bg); color:var(--gold); box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+      <input type="number" id="myNum3" min="1" max="45" placeholder="3" style="width:70px; height:70px; font-size:26px; font-weight:900; text-align:center; border-radius:12px; border:2px solid var(--border); background:var(--bg); color:var(--gold); box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+      <input type="number" id="myNum4" min="1" max="45" placeholder="4" style="width:70px; height:70px; font-size:26px; font-weight:900; text-align:center; border-radius:12px; border:2px solid var(--border); background:var(--bg); color:var(--gold); box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+      <input type="number" id="myNum5" min="1" max="45" placeholder="5" style="width:70px; height:70px; font-size:26px; font-weight:900; text-align:center; border-radius:12px; border:2px solid var(--border); background:var(--bg); color:var(--gold); box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+      <input type="number" id="myNum6" min="1" max="45" placeholder="6" style="width:70px; height:70px; font-size:26px; font-weight:900; text-align:center; border-radius:12px; border:2px solid var(--border); background:var(--bg); color:var(--gold); box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
     </div>
-    <button class="btn btn-primary" style="width:100%" onclick="analyzeMyNumbers()">🔍 정밀 분석 실행</button>
+    
+    <!-- 버튼도 큼직하게 수정 -->
+    <button class="btn btn-primary" style="width:100%; padding:16px; font-size:16px; font-weight:800; border-radius:12px; letter-spacing: 1px;" onclick="analyzeMyNumbers()">🔍 정밀 분석 실행</button>
   </div>
   
   <!-- 분석 결과 출력 영역 -->
@@ -1336,20 +1340,20 @@ function analyzeMyNumbers() {
         </thead>
         <tbody>
           ${myIndData.map(item => {
-            let rsiText = `<span class="text-dim">보통 (${item.rsi})</span>`;
-            if(item.rsi > 70) rsiText = `<span class="text-red fw700">과열 (${item.rsi})</span>`;
-            if(item.rsi < 30) rsiText = `<span class="text-cyan fw700">침체 (${item.rsi})</span>`;
+            let rsiText = \`<span class="text-dim">보통 (\${item.rsi})</span>\`;
+            if(item.rsi > 70) rsiText = \`<span class="text-red fw700">과열 (\${item.rsi})</span>\`;
+            if(item.rsi < 30) rsiText = \`<span class="text-cyan fw700">침체 (\${item.rsi})</span>\`;
             
             const superText = item.isSuperUp ? '<span class="text-green fw700">🟢 상승</span>' : '<span class="text-red">🔴 하락</span>';
             const psarText = item.isPsarUp ? '<span class="text-green fw700">🟢 가속</span>' : '<span class="text-red">🔴 감속</span>';
             
-            return `<tr>
-              <td>${renderBall(item.num, true)}</td>
-              <td class="text-right fw700 ${item.score > 58 ? 'text-green' : item.score < 42 ? 'text-red' : ''}">${item.score}점</td>
-              <td class="text-right">${rsiText}</td>
-              <td class="text-center">${superText}</td>
-              <td class="text-center">${psarText}</td>
-            </tr>`;
+            return \`<tr>
+              <td>\${renderBall(item.num, true)}</td>
+              <td class="text-right fw700 \${item.score > 58 ? 'text-green' : item.score < 42 ? 'text-red' : ''}">\${item.score}점</td>
+              <td class="text-right">\${rsiText}</td>
+              <td class="text-center">\${superText}</td>
+              <td class="text-center">\${psarText}</td>
+            </tr>\`;
           }).join('')}
         </tbody>
       </table>
@@ -1357,7 +1361,7 @@ function analyzeMyNumbers() {
       • 점수가 높은 번호(초록색)는 주요 이동평균 돌파 및 가속 밴드 위에서 활발하게 출현 주기를 단축 중인 <strong>핫 모멘텀 번호</strong>입니다.<br>
       • '침체(RSI < 30)'면서 하락세인 번호는 장기 미출현군으로 분류되며, 대수의 법칙에 기반한 <strong>평균회귀(반등)</strong> 관점에서 전략적으로 조합에 섞어볼 수 있습니다.</div>
     </div>
-  `;
+  \`;
   
   const resDiv = document.getElementById('analyzeResult');
   resDiv.innerHTML = html;
