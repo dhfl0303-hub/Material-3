@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>신제품 현황표 관리 시스템</title>
+    <style>
+        /* 1. 글로벌 및 폰트 설정 */
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        body { 
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            /* 탁한 회색을 버리고, 아주 밝고 화사한 쿨톤 배경으로 변경 */
+            background-color: #f8fafc; 
+            color: #1e293b; 
+            margin: 0;
+            padding: 40px 20px;
+            line-height: 1.5;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        /* 2. 카드 디자인 (상단에 엣지 있는 포인트 컬러 라인 추가) */
+        .card { 
+            background-color: #ffffff; 
+            padding: 45px 50px; 
+            border-radius: 16px; 
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025); 
+            margin-bottom: 30px; 
+            border: 1px solid #e2e8f0;
+            /* ★ 포인트: 밋밋함을 없애는 상단 인디고 블루 라인 */
+            border-top: 5px solid #4f46e5; 
+        }
+
+        /* 3. 타이포그래피 */
+        h2 { margin-top: 0; color: #0f172a; font-size: 1.6rem; font-weight: 800; margin-bottom: 1.5rem; letter-spacing: -0.5px; }
+        h3 { 
+            color: #334155; 
+            font-size: 1.15rem; 
+            font-weight: 700; 
+            margin-top: 2.5rem; 
+            margin-bottom: 1.5rem; 
+            padding-bottom: 0.5rem; 
+            border-bottom: 2px solid #f1f5f9; 
+        }
+        
+        /* 4. 폼 레이아웃 및 화사한 입력창 */
+        .grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .form-group { display: flex; flex-direction: column; }
+        label { font-weight: 600; font-size: 0.85rem; margin-bottom: 8px; color: #64748b; }
+        
+        input[type="text"], input[type="date"], input[type="number"] { 
+            padding: 12px 16px; 
+            border: 1px solid #cbd5e1; 
+            background-color: #ffffff;
+            border-radius: 8px; 
+            font-size: 0.95rem; 
+            transition: all 0.2s ease;
+            color: #0f172a;
+        }
+        input[type="text"]:focus, input[type="date"]:focus, input[type="number"]:focus { 
+            border-color: #4f46e5; 
+            outline: none; 
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); /* 화사한 파란빛 포커스 */
+        }
+        
+        /* 읽기 전용 폼 구분 */
+        input[readonly] { 
+            background-color: #f1f5f9; 
+            color: #475569; 
+            cursor: not-allowed; 
+            border: 1px solid #e2e8f0; 
+            font-weight: 600; 
+        }
+
+        /* 복합 입력창 (품목제조보고번호, 소비기한) */
+        .input-group { 
+            display: flex; align-items: stretch; 
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1; 
+            border-radius: 8px; 
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+        .input-group:focus-within {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+        }
+        .input-group span { 
+            display: flex;
+            align-items: center;
+            padding: 0 16px; 
+            background-color: #f8fafc;
+            color: #475569; 
+            font-size: 0.9rem; 
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .input-group input { 
+            flex: 1; 
+            border: none; 
+            border-radius: 0; 
+            background: transparent;
+            padding: 12px 16px;
+            font-size: 1rem;
+            color: #4f46e5; /* 입력되는 숫자에 포인트 색상 부여 */
+            font-weight: 700;
+            box-shadow: none; 
+        }
+        .input-group input:focus { box-shadow: none; }
+
+        /* 숫자 화살표 제거 */
+        input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type="number"] { -moz-appearance: textfield; }
+
+        /* 5. 파일 업로드 영역 */
+        .file-upload-area {
+            background-color: #f8fafc; 
+            padding: 24px; 
+            border: 1px dashed #cbd5e1; 
+            border-radius: 12px;
+        }
+        input[type="file"]::file-selector-button { 
+            padding: 8px 16px; 
+            border-radius: 6px; 
+            border: 1px solid #cbd5e1; 
+            background-color: #ffffff; 
+            color: #475569;
+            font-weight: 600;
+            cursor: pointer; 
+            transition: background-color 0.2s;
+            margin-right: 12px;
+        }
+        input[type="file"]::file-selector-button:hover { background-color: #e2e8f0; }
+
+        /* 6. 산뜻한 테이블 디자인 */
+        .table-card { 
+            border: 1px solid #e2e8f0; 
+            border-radius: 12px; 
+            overflow: hidden; 
+            margin-bottom: 20px; 
+            background-color: #ffffff;
+        }
+        table { width: 100%; border-collapse: collapse; min-width: 820px; }
+        
+        /* ★ 테이블 헤더를 산뜻한 옅은 파란빛으로 교체 */
+        thead th { 
+            background-color: #f8fafc; 
+            color: #334155; 
+            padding: 14px 10px; 
+            font-size: 0.85rem; 
+            font-weight: 700; 
+            text-align: center; 
+            border-bottom: 2px solid #e2e8f0;
+        }
+        th.sortable { cursor: pointer; transition: background-color 0.2s; }
+        th.sortable:hover { background-color: #f1f5f9; color: #4f46e5; }
+        .sort-arrow { margin-left: 6px; font-size: 11px; color: #4f46e5; }
+
+        tbody tr { border-bottom: 1px solid #f1f5f9; transition: background-color 0.15s; }
+        tbody tr:hover { background-color: #f8fafc; }
+        tbody tr:last-child { border-bottom: none; }
+        
+        tbody td { padding: 8px; text-align: center; vertical-align: middle; color: #334155; font-size: 0.95rem;}
+        
+        tbody td input { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid transparent; 
+            border-radius: 6px; 
+            font-size: 0.95rem; 
+            text-align: center; 
+            box-sizing: border-box;
+            background-color: transparent;
+            transition: all 0.2s;
+        }
+        tbody td input:hover { background-color: #f8fafc; border-color: #e2e8f0; }
+        tbody td input:focus { 
+            outline: none; 
+            background-color: #ffffff;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+        }
+        
+        .ratio-cell { font-weight: 700; color: #4f46e5; font-size: 0.95rem; }
+        .no-cell { font-weight: 600; color: #94a3b8; font-size: 0.85rem; }
+        .btn-del-row { background: none; border: none; color: #ef4444; font-size: 1.2rem; font-weight: bold; cursor: pointer; border-radius: 6px; padding: 4px 8px; transition: all 0.2s; }
+        .btn-del-row:hover { background-color: #fee2e2; }
+
+        /* 7. 산뜻한 버튼 디자인 */
+        .btn-add { 
+            background-color: #e0e7ff; 
+            color: #4338ca; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 0.9rem; 
+            font-weight: 700; 
+            cursor: pointer; 
+            margin-top: 15px;
+            transition: all 0.2s;
+        }
+        .btn-add:hover { background-color: #c7d2fe; }
+        
+        button[type="submit"] { 
+            width: 100%; 
+            padding: 18px; 
+            background-color: #4f46e5; 
+            color: white; 
+            border: none; 
+            border-radius: 10px; 
+            font-size: 1.1rem; 
+            font-weight: 700; 
+            cursor: pointer; 
+            margin-top: 30px;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3);
+            transition: all 0.2s;
+        }
+        button[type="submit"]:hover { background-color: #4338ca; transform: translateY(-1px); box-shadow: 0 6px 8px -1px rgba(79, 70, 229, 0.4); }
+        button[type="submit"]:active { transform: translateY(0); }
+        button[type="submit"]:disabled { background-color: #94a3b8; cursor: not-allowed; box-shadow: none; transform: none;}
+        
+        /* 8. 리스트 전용 스타일 */
+        .list-table th { background-color: #f8fafc; color: #334155; }
+        .list-table td { padding: 16px 12px; }
+        .file-link { 
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 6px 12px; 
+            background-color: #f1f5f9; 
+            color: #4f46e5; 
+            text-decoration: none; 
+            border-radius: 6px; 
+            font-size: 0.85rem; 
+            font-weight: 600;
+            margin: 3px; 
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
+        }
+        .file-link:hover { background-color: #e2e8f0; color: #3730a3; }
+        .empty-msg { text-align: center; padding: 50px; color: #94a3b8; font-weight: 600; font-size: 1rem; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- 상단: 등록된 신제품 목록 창 -->
+        <div class="card">
+            <h2>📊 등록된 신제품 현황 리스트</h2>
+            <div class="table-card" style="border: none; margin-bottom: 0;">
+                <table class="list-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 120px;">등록일</th>
+                            <th>제품명</th>
+                            <th>품목제조보고번호</th>
+                            <th>출시예정일</th>
+                            <th>보관조건</th>
+                            <th>첨부파일</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productListBody">
+                        <tr><td colspan="6" class="empty-msg">데이터를 불러오는 중입니다...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 하단: 신제품 등록 폼 -->
+        <div class="card">
+            <h2>✨ 실무용 신제품 현황 등록</h2>
+            <form id="product-form">
+                
+                <h3>1. 제품 기본 정보</h3>
+                <div class="grid-layout">
+                    <div class="form-group"><label>제품명 *</label><input type="text" id="productName" required></div>
+                    <div class="form-group"><label>업체명</label><input type="text" id="companyName"></div>
+                    <div class="form-group"><label>매입처</label><input type="text" id="vendor"></div>
+                    
+                    <div class="form-group">
+                        <label>품목제조보고번호</label>
+                        <div class="input-group">
+                            <span style="border-right: 1px solid #cbd5e1;">20210395253 -</span>
+                            <input type="text" id="reportNumberSuffix" maxlength="3">
+                        </div>
+                    </div>
+
+                    <div class="form-group"><label>포장지 규격</label><input type="text" id="packSpec"></div>
+                    <div class="form-group"><label>개별 포장지 규격</label><input type="text" id="individualPack"></div>
+                    <div class="form-group"><label>박스 규격</label><input type="text" id="boxSpec"></div>
+                    
+                    <div class="form-group">
+                        <label>소비기한</label>
+                        <div class="input-group">
+                            <span style="border-right: 1px solid #cbd5e1;">제조일로부터</span>
+                            <input type="number" id="expireMonth" style="text-align: center;">
+                            <span style="border-left: 1px solid #cbd5e1;">개월까지</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group"><label>MOQ (최소주문수량)</label><input type="number" id="moq"></div>
+                    <div class="form-group"><label>리드타임</label><input type="text" id="leadTime"></div>
+                    
+                    <div class="form-group"><label>출시예정일</label><input type="text" id="releaseDate" maxlength="10"></div>
+                    <div class="form-group"><label>보관조건</label><input type="text" id="storageCondition" value="-18℃ 냉동보관" readonly></div>
+                </div>
+
+                <h3>2. 배합비 정보</h3>
+                <div class="table-card" style="margin-bottom: 0;">
+                    <table id="recipeTable">
+                      <thead>
+                        <tr>
+                          <th style="width: 50px;">No.</th>
+                          <th style="width: 120px;">식품유형</th>
+                          <th style="width: 160px;">재료명</th>
+                          <th style="width: 200px;">내용</th>
+                          
+                          <th class="sortable" style="width: 120px;" onclick="toggleSort()" title="클릭하여 정렬하기">
+                              투입량(g)<span class="sort-arrow" id="sortArrow"></span>
+                          </th>
+                          
+                          <th style="width: 100px;">구성비(%)</th>
+                          <th style="width: 120px;">알레르기</th>
+                          <th style="width: 60px;">삭제</th>
+                        </tr>
+                      </thead>
+                      <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+                <button type="button" class="btn-add" onclick="addRow()">+ 재료 행 추가하기</button>
+
+                <h3>3. 필수 품질 서류 첨부 (PDF 전용)</h3>
+                <div class="grid-layout file-upload-area">
+                    <div class="form-group"><label>제조공정도</label><input type="file" id="processFile" accept=".pdf"></div>
+                    <div class="form-group"><label>영양성분성적서</label><input type="file" id="nutritionFile" accept=".pdf"></div>
+                    <div class="form-group"><label>품목제조보고서</label><input type="file" id="reportFile" accept=".pdf"></div>
+                </div>
+
+                <button type="submit" id="submitBtn">모든 데이터 저장하기</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase 통신 자바스크립트는 완벽히 동일합니다. -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+
+        // 본인의 Firebase 설정값으로 교체
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        let sortState = 0; 
+        let originalOrder = [];
+        let rowCounter = 0; 
+
+        window.addRow = function() {
+            rowCounter++; 
+            const tbody = document.getElementById('tableBody');
+            const tr = document.createElement('tr');
+            tr.dataset.rowId = String(rowCounter); 
+
+            tr.innerHTML = `
+              <td class="no-cell">${tbody.children.length + 1}</td>
+              <td><input type="text" class="food-type"></td>
+              <td><input type="text" class="material-name"></td>
+              <td><input type="text" class="material-desc"></td>
+              <td><input type="number" class="amount-input" step="any" oninput="calcRatio()"></td>
+              <td class="ratio-cell"></td>
+              <td><input type="text" class="allergen-info"></td>
+              <td><button type="button" class="btn-del-row" onclick="deleteRow(this)" title="행 삭제">✕</button></td>
+            `;
+            tbody.appendChild(tr);
+            window.calcRatio();
+        };
+
+        window.deleteRow = function(btn) {
+            btn.closest('tr').remove();
+            reNumberRows(); 
+            window.calcRatio();
+        };
+
+        window.calcRatio = function() {
+            const rows = document.querySelectorAll('#tableBody tr');
+            let total = 0;
+            rows.forEach(tr => { total += parseFloat(tr.querySelector('.amount-input').value) || 0; });
+            rows.forEach(tr => {
+                const val = parseFloat(tr.querySelector('.amount-input').value) || 0;
+                tr.querySelector('.ratio-cell').textContent = (total > 0 && val > 0) ? ((val / total) * 100).toFixed(2) : '';
+            });
+        };
+
+        function reNumberRows() {
+            document.querySelectorAll('#tableBody tr').forEach((tr, i) => {
+                tr.querySelector('.no-cell').textContent = i + 1;
+            });
+        }
+
+        window.toggleSort = function() {
+            sortState = (sortState + 1) % 3; 
+            const arrow = document.getElementById('sortArrow');
+            const tbody = document.getElementById('tableBody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+
+            if (sortState === 0) {
+                arrow.textContent = '';
+                if (originalOrder.length > 0) {
+                    originalOrder.forEach(id => {
+                        const tr = rows.find(r => r.dataset.rowId === id);
+                        if (tr) tbody.appendChild(tr);
+                    });
+                }
+            } else {
+                if (sortState === 1) originalOrder = rows.map(r => r.dataset.rowId);
+                
+                rows.sort((a, b) => {
+                    const va = parseFloat(a.querySelector('.amount-input').value) || 0;
+                    const vb = parseFloat(b.querySelector('.amount-input').value) || 0;
+                    return sortState === 1 ? vb - va : va - vb;
+                });
+                
+                arrow.textContent = sortState === 1 ? ' ▼' : ' ▲';
+                rows.forEach(tr => tbody.appendChild(tr));
+            }
+            reNumberRows(); 
+        };
+
+        async function loadProducts() {
+            const tbody = document.getElementById('productListBody');
+            try {
+                const q = query(collection(db, "products"), orderBy("createdAt", "desc"));
+                const querySnapshot = await getDocs(q);
+                
+                tbody.innerHTML = ''; 
+
+                if (querySnapshot.empty) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="empty-msg">등록된 제품이 없습니다.</td></tr>`;
+                    return;
+                }
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    let dateStr = "";
+                    if (data.createdAt) {
+                        const date = data.createdAt.toDate();
+                        dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+                    }
+
+                    let fileLinks = "";
+                    if(data.processFileUrl) fileLinks += `<a href="${data.processFileUrl}" target="_blank" class="file-link">공정도</a>`;
+                    if(data.nutritionFileUrl) fileLinks += `<a href="${data.nutritionFileUrl}" target="_blank" class="file-link">영양성분</a>`;
+                    if(data.reportFileUrl) fileLinks += `<a href="${data.reportFileUrl}" target="_blank" class="file-link">품목제조보고</a>`;
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${dateStr}</td>
+                        <td style="font-weight: 700; color: #4f46e5;">${data.productName}</td>
+                        <td><span style="color:#64748b; font-family:monospace; font-size:1.05rem;">${data.reportNumber || '-'}</span></td>
+                        <td>${data.releaseDate || '-'}</td>
+                        <td><span style="background-color:#f1f5f9; padding:4px 8px; border-radius:4px; font-size:0.85rem; color:#64748b; font-weight:600; border: 1px solid #e2e8f0;">${data.storageCondition || '-'}</span></td>
+                        <td>${fileLinks || '-'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error("데이터 불러오기 에러:", error);
+                tbody.innerHTML = `<tr><td colspan="6" class="empty-msg" style="color:red;">데이터를 불러오는데 실패했습니다.</td></tr>`;
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            for (let i = 0; i < 10; i++) window.addRow();
+            loadProducts();
+
+            const releaseDateInput = document.getElementById('releaseDate');
+            releaseDateInput.addEventListener('input', function(e) {
+                let val = e.target.value.replace(/\D/g, ''); 
+                let formatted = '';
+
+                if (val.length > 4) {
+                    formatted += val.substring(0, 4) + '.'; 
+                    if (val.length > 6) {
+                        formatted += val.substring(4, 6) + '.' + val.substring(6, 8); 
+                    } else {
+                        formatted += val.substring(4); 
+                    }
+                } else {
+                    formatted = val; 
+                }
+                
+                e.target.value = formatted;
+            });
+
+            const reportSuffixInput = document.getElementById('reportNumberSuffix');
+            reportSuffixInput.addEventListener('input', function(e) {
+                e.target.value = e.target.value.replace(/\D/g, '');
+            });
+        });
+
+        document.getElementById('product-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerText = "데이터 안전하게 저장 중...";
+
+            try {
+                const uploadFile = async (fileInputId, folderName) => {
+                    const file = document.getElementById(fileInputId).files[0];
+                    if (!file) return null;
+                    const storageRef = ref(storage, `${folderName}/${Date.now()}_${file.name}`);
+                    await uploadBytes(storageRef, file);
+                    return await getDownloadURL(storageRef);
+                };
+
+                const processFileUrl = await uploadFile('processFile', 'process_files');
+                const nutritionFileUrl = await uploadFile('nutritionFile', 'nutrition_files');
+                const reportFileUrl = await uploadFile('reportFile', 'report_files'); 
+
+                const mixRatioData = [];
+                document.querySelectorAll('#tableBody tr').forEach((tr) => {
+                    const amount = parseFloat(tr.querySelector('.amount-input').value) || 0;
+                    if (amount > 0) {
+                        mixRatioData.push({
+                            foodType: tr.querySelector('.food-type').value,
+                            materialName: tr.querySelector('.material-name').value,
+                            description: tr.querySelector('.material-desc').value,
+                            amount: amount,
+                            ratio: tr.querySelector('.ratio-cell').textContent,
+                            allergen: tr.querySelector('.allergen-info').value
+                        });
+                    }
+                });
+
+                const expireMonthVal = document.getElementById('expireMonth').value;
+                const finalExpireDate = expireMonthVal ? `제조일로부터 ${expireMonthVal}개월까지` : '';
+
+                const reportSuffixVal = document.getElementById('reportNumberSuffix').value;
+                const finalReportNumber = reportSuffixVal ? `20210395253-${reportSuffixVal}` : '';
+
+                const productData = {
+                    productName: document.getElementById('productName').value,
+                    companyName: document.getElementById('companyName').value,
+                    vendor: document.getElementById('vendor').value,
+                    reportNumber: finalReportNumber,
+                    packSpec: document.getElementById('packSpec').value,
+                    individualPack: document.getElementById('individualPack').value,
+                    boxSpec: document.getElementById('boxSpec').value,
+                    expireDate: finalExpireDate,
+                    moq: document.getElementById('moq').value,
+                    leadTime: document.getElementById('leadTime').value,
+                    releaseDate: document.getElementById('releaseDate').value,
+                    storageCondition: document.getElementById('storageCondition').value,
+                    mixRatio: mixRatioData, 
+                    processFileUrl: processFileUrl,
+                    nutritionFileUrl: nutritionFileUrl,
+                    reportFileUrl: reportFileUrl, 
+                    createdAt: new Date()
+                };
+
+                await addDoc(collection(db, "products"), productData);
+                
+                document.getElementById('product-form').reset();
+                document.getElementById('tableBody').innerHTML = '';
+                
+                sortState = 0;
+                document.getElementById('sortArrow').textContent = '';
+                
+                for (let i = 0; i < 10; i++) window.addRow();
+                await loadProducts(); 
+                
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            } catch (error) {
+                console.error("저장 에러: ", error);
+                alert("저장에 실패했습니다. 콘솔 창을 확인해주세요.");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "모든 데이터 저장하기";
+            }
+        });
+    </script>
+</body>
+</html>
