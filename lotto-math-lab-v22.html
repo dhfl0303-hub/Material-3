@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LOTTO MATH LAB v2.0</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0B1120;--card:#111B2E;--border:#1E2D45;--borderL:#2A3F5F;
+  --gold:#F0C040;--goldDim:#C49A20;--goldBright:#FFD866;
+  --red:#FF4757;--green:#2ED573;--blue:#3742FA;--cyan:#70A1FF;
+  --purple:#A29BFE;--orange:#FFA502;
+  --text:#E8ECF1;--textDim:#8899AA;--textMuted:#556677;
+}
+body{background:var(--bg);color:var(--text);font-family:'Pretendard',-apple-system,'Noto Sans KR',sans-serif;padding:12px;max-width:860px;margin:0 auto}
+.header{text-align:center;padding:20px 0 8px}
+.header h1{font-size:26px;font-weight:800;color:var(--gold);letter-spacing:-1px}
+.header p{font-size:12px;color:var(--textDim);margin-top:4px}
+/* 데이터 상태바 */
+.data-bar{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:11px;color:var(--textDim);flex-wrap:wrap;gap:6px}
+.data-bar .status{display:flex;align-items:center;gap:6px}
+.data-bar .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot-green{background:var(--green);box-shadow:0 0 6px var(--green)}
+.dot-yellow{background:var(--gold);box-shadow:0 0 6px var(--gold);animation:pulse 1s infinite}
+.dot-red{background:var(--red);box-shadow:0 0 6px var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.progress-wrap{width:100%;background:var(--bg);border-radius:4px;height:6px;margin-top:6px;overflow:hidden;display:none}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--goldBright));border-radius:4px;transition:width .3s;width:0}
+/* 탭 */
+.tabs{display:flex;gap:3px;margin-bottom:14px;background:var(--card);border-radius:10px;padding:3px;border:1px solid var(--border)}
+.tab{flex:1;padding:9px 0;text-align:center;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px;transition:all .2s;background:transparent;color:var(--textDim)}
+.tab.active{background:var(--gold);color:var(--bg)}
+.sub-tabs{display:flex;gap:3px;margin-bottom:10px}
+.sub-tab{flex:1;padding:6px 0;border:none;border-radius:7px;cursor:pointer;font-weight:700;font-size:11px;transition:all .2s;background:var(--border);color:var(--text)}
+.sub-tab.active{background:var(--gold);color:var(--bg)}
+/* 카드 */
+.card{background:var(--card);border-radius:10px;border:1px solid var(--border);padding:14px;margin-bottom:10px}
+.card-title{font-size:14px;font-weight:700;color:var(--gold);margin-bottom:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.stat{text-align:center;padding:10px;background:var(--bg);border-radius:8px}
+.stat-val{font-size:20px;font-weight:800;color:var(--gold)}
+.stat-label{font-size:10px;color:var(--textDim);margin-top:2px}
+.info-box{padding:8px 10px;border-radius:7px;font-size:11px;margin-top:8px}
+.info-green{background:rgba(46,213,115,.1);border:1px solid rgba(46,213,115,.2)}
+.info-red{background:rgba(255,71,87,.1);border:1px solid rgba(255,71,87,.2)}
+.info-neutral{background:var(--bg);border-radius:7px;padding:8px;font-size:11px;color:var(--textDim);margin-top:8px}
+/* 테이블 */
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{padding:7px 5px;text-align:left;border-bottom:1px solid var(--border);color:var(--textDim);font-weight:600;font-size:10px}
+td{padding:6px 5px;border-bottom:1px solid rgba(30,45,69,.12)}
+.text-right{text-align:right}.text-center{text-align:center}
+.text-gold{color:var(--gold)}.text-red{color:var(--red)}.text-cyan{color:var(--cyan)}.text-green{color:var(--green)}.text-purple{color:var(--purple)}.text-dim{color:var(--textDim)}
+.fw700{font-weight:700}
+/* 볼 */
+.ball{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;font-weight:800;font-size:13px;color:#000;margin:2px}
+.ball-sm{width:26px;height:26px;font-size:11px}
+.ball-1{background:#FECA57;box-shadow:0 2px 6px rgba(254,202,87,.3)}
+.ball-2{background:#48DBFB;box-shadow:0 2px 6px rgba(72,219,251,.3)}
+.ball-3{background:#FF6B6B;box-shadow:0 2px 6px rgba(255,107,107,.3)}
+.ball-4{background:#A29BFE;box-shadow:0 2px 6px rgba(162,155,254,.3)}
+.ball-5{background:#55E6C1;box-shadow:0 2px 6px rgba(85,230,193,.3)}
+/* 버튼 */
+.btn{padding:8px 16px;border:none;border-radius:7px;cursor:pointer;font-weight:700;font-size:12px;transition:all .2s}
+.btn-primary{background:var(--gold);color:var(--bg)}
+.btn-primary:hover{background:var(--goldBright)}
+.btn-primary:disabled{opacity:.5;cursor:default}
+.btn-sec{background:var(--border);color:var(--text)}
+.btn-sm{padding:5px 10px;font-size:11px}
+select,input[type=number]{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px}
+/* 전략 */
+.strategy-btn{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);cursor:pointer;color:var(--text);text-align:left;width:100%;font-size:12px;margin-bottom:4px}
+.strategy-btn.active{border-color:var(--gold);background:rgba(240,192,64,.08)}
+.strategy-btn .name{font-weight:700}.strategy-btn.active .name{color:var(--gold)}
+.strategy-btn .desc{font-size:10px;color:var(--textDim);margin-top:1px}
+/* 결과행 */
+.result-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;flex-wrap:wrap;gap:4px}
+.result-row+.result-row{border-top:1px solid rgba(30,45,69,.12)}
+.result-meta{font-size:10px;color:var(--textDim);display:flex;gap:6px}
+/* 히트맵 */
+.heatmap{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;margin:10px 0}
+.hm-cell{aspect-ratio:1;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;border:2px solid transparent}
+.hm-cell:hover{transform:scale(1.1);border-color:var(--gold)}
+.hm-cell.selected{border-color:var(--gold);box-shadow:0 0 8px var(--gold)}
+/* 슬라이더 */
+input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;background:var(--border);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--gold);cursor:pointer}
+/* 유틸 */
+.flex{display:flex}.flex-center{display:flex;align-items:center}.flex-between{display:flex;justify-content:space-between;align-items:center}
+.flex-wrap{flex-wrap:wrap}.gap4{gap:4px}.gap6{gap:6px}.gap8{gap:8px}.gap12{gap:12px}
+.mb6{margin-bottom:6px}.mb8{margin-bottom:8px}.mb10{margin-bottom:10px}.mb12{margin-bottom:12px}.mt8{margin-top:8px}.mt10{margin-top:10px}
+.mono{font-family:'Courier New',monospace;font-size:11px}
+.hidden{display:none}
+.footer{text-align:center;padding:16px 0 8px;font-size:10px;color:var(--textMuted)}
+p{margin-bottom:6px;line-height:1.6}
+.loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(11,17,32,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999}
+.loading-overlay h2{color:var(--gold);font-size:20px;margin-bottom:16px}
+.loading-overlay p{color:var(--textDim);font-size:13px;margin-bottom:20px}
+.loading-bar{width:300px;height:8px;background:var(--card);border-radius:4px;overflow:hidden}
+.loading-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--goldBright));border-radius:4px;transition:width .2s;width:0}
+.loading-pct{color:var(--gold);font-size:14px;font-weight:700;margin-top:10px}
+@media(max-width:500px){
+  .heatmap{grid-template-columns:repeat(5,1fr)}
+  .grid2{grid-template-columns:1fr 1fr}
+  .stat-val{font-size:17px}
+  .ball{width:28px;height:28px;font-size:11px}
+  .tabs{overflow-x:auto}
+  .tab{font-size:11px;white-space:nowrap;padding:8px 4px}
+}
+</style>
+</head>
+<body>
+
+<!-- 로딩 오버레이 -->
+<div class="loading-overlay" id="loadingOverlay">
+  <h2>🎰 LOTTO MATH LAB</h2>
+  <p id="loadingMsg">데이터를 불러오는 중...</p>
+  <div class="loading-bar"><div class="loading-bar-fill" id="loadingFill"></div></div>
+  <div class="loading-pct" id="loadingPct">0%</div>
+</div>
+
+<div id="mainApp" class="hidden">
+
+<div class="header">
+  <h1>LOTTO MATH LAB</h1>
+  <p>수학·통계·보조지표 기반 로또 분석 엔진</p>
+</div>
+
+<!-- 데이터 상태바 -->
+<div class="data-bar">
+  <div class="status"><div class="dot dot-green" id="statusDot"></div><span id="statusText">데이터 로드 중...</span></div>
+  <div><span id="dataRange"></span></div>
+</div>
+
+<!-- 메인 탭 -->
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('stats')">📊 통계</button>
+  <button class="tab" onclick="switchTab('generate')">🎲 생성</button>
+  <button class="tab" onclick="switchTab('simulate')">🧪 시뮬</button>
+  <button class="tab" onclick="switchTab('indicator')">📉 보조지표</button>
+</div>
+
+<!-- ═══════════ 탭1: 통계분석 ═══════════ -->
+<div id="tab-stats">
+  <div class="sub-tabs">
+    <button class="sub-tab active" onclick="switchSubTab('freq')">번호 빈도</button>
+    <button class="sub-tab" onclick="switchSubTab('zone')">구간 분포</button>
+    <button class="sub-tab" onclick="switchSubTab('pattern')">패턴 분석</button>
+  </div>
+  <div id="sub-freq">
+    <div class="card"><div class="card-title">📊 번호별 출현 빈도 (총 <span id="totalDraws"></span>회차)</div><canvas id="freqChart" height="200"></canvas>
+      <div class="flex-center gap12 mt8" style="justify-content:center;font-size:10px;color:var(--textDim)"><span><span class="text-red">●</span> 기대값 초과</span><span><span class="text-cyan">●</span> 기대값 미만</span><span class="text-gold">--- 기대값 (<span id="expectedVal"></span>회)</span></div>
+    </div>
+    <div class="card"><div class="card-title">🔬 카이제곱(χ²) 검정</div><div class="grid2"><div class="stat"><div class="stat-val" id="chiStat"></div><div class="stat-label">χ² 통계량</div></div><div class="stat"><div class="stat-val" id="chiCritical"></div><div class="stat-label">임계값 (α=0.05)</div></div></div><div id="chiResult" class="info-box mt8"></div></div>
+    <div class="card"><div class="card-title">🔥 핫/콜드 번호</div><div class="grid2"><div><div class="text-red fw700 mb6" style="font-size:11px">HOT (다빈출)</div><div id="hotNums"></div></div><div><div class="text-cyan fw700 mb6" style="font-size:11px">COLD (저빈출)</div><div id="coldNums"></div></div></div></div>
+  </div>
+  <div id="sub-zone" class="hidden">
+    <div class="card"><div class="card-title">📐 구간별 출현 비율 vs 기대 비율</div><canvas id="zoneChart" height="200"></canvas></div>
+    <div class="card"><div class="card-title">📈 번호 합계 분포</div><div class="grid2"><div class="stat"><div class="stat-val" id="sumAvg"></div><div class="stat-label">평균 합계</div></div><div class="stat"><div class="stat-val" id="sumStd"></div><div class="stat-label">표준편차</div></div></div><canvas id="sumChart" height="150" class="mt8"></canvas><div class="info-neutral">💡 이론적 합계 범위: 21(최소)~255(최대), 중심극한정리에 의해 정규분포에 근사</div></div>
+  </div>
+  <div id="sub-pattern" class="hidden">
+    <div class="card"><div class="card-title">⚖️ 홀짝 비율 분포</div><table><thead><tr><th>홀:짝</th><th class="text-right">출현</th><th class="text-right">비율</th></tr></thead><tbody id="oddEvenBody"></tbody></table><div class="info-neutral">💡 통계적으로 3:3, 4:2, 2:4 비율이 전체의 약 75% 차지</div></div>
+    <div class="card"><div class="card-title">🔗 연속번호 출현</div><div class="grid2"><div class="stat"><div class="stat-val" id="consecPct"></div><div class="stat-label">연속번호 포함 비율</div></div><div class="stat"><div class="stat-val" id="consecCount"></div><div class="stat-label">해당 회차 수</div></div></div><div class="info-neutral">💡 실제 로또에서 연속번호가 포함되는 비율은 약 60~65%로 매우 흔함</div></div>
+    <div class="card"><div class="card-title">🎯 포아송 분포 적합도</div><div class="text-dim mb8" style="font-size:11px">각 번호의 출현 횟수가 포아송 분포(λ=<span id="poissonLambda"></span>)를 따르는지 비교</div><canvas id="poissonChart" height="170"></canvas></div>
+  </div>
+</div>
+
+<!-- ═══════════ 탭2: 번호생성 ═══════════ -->
+<div id="tab-generate" class="hidden">
+  <div class="card"><div class="card-title">🧮 번호 생성 전략</div><div id="strategyList"></div></div>
+  <div class="card"><div class="flex-between flex-wrap gap8 mb8"><div><span style="font-size:12px;font-weight:600">세트 수: </span><select id="genCount"><option value="1">1</option><option value="3">3</option><option value="5" selected>5</option><option value="10">10</option></select></div><button class="btn btn-primary" onclick="generateNumbers()">🎲 번호 생성</button></div></div>
+  <div id="genResults" class="hidden"><div class="card"><div class="card-title" id="genResultTitle"></div><div id="genResultBody"></div></div></div>
+  <div class="card"><div class="card-title">📘 전략별 수학 원리</div><div style="font-size:11px;color:var(--textDim);line-height:1.6"><p><strong class="text-gold">균형 분포</strong> — 5개 구간에서 골고루 추출. 역대 당첨번호의 구간 분포가 균등에 가까운 점에 기반.</p><p><strong class="text-gold">인기번호 회피</strong> — 게임이론 기반. 생일번호(1~31), 7·3·11 등을 피해 당첨 시 분배 인원 최소화.</p><p><strong class="text-gold">포아송 보정</strong> — 기대 출현 횟수(λ) 대비 실제 출현이 적은 번호에 가중치 부여.</p><p><strong class="text-gold">갭 분석</strong> — 최근 15회차 미출현 번호 우선 선택. 복원추출이므로 이론적 근거는 약하나 실무 활용 多.</p></div></div>
+</div>
+
+<!-- ═══════════ 탭3: 시뮬레이션 ═══════════ -->
+<div id="tab-simulate" class="hidden">
+  <div class="card"><div class="card-title">🎰 몬테카를로 시뮬레이션</div><div class="text-dim mb8" style="font-size:11px">N회 추첨을 가상 실행하여 수익률을 계산합니다.</div>
+    <div class="flex-between flex-wrap gap8"><div class="flex-center gap8"><div><div class="text-dim" style="font-size:10px;margin-bottom:3px">추첨 횟수</div><select id="simCount"><option value="1000">1,000</option><option value="5000">5,000</option><option value="10000" selected>10,000</option><option value="50000">50,000</option></select></div><div><div class="text-dim" style="font-size:10px;margin-bottom:3px">회당 구매</div><select id="simTickets"><option value="1">1장</option><option value="5" selected>5장</option><option value="10">10장</option></select></div></div><button class="btn btn-primary" id="simBtn" onclick="runSimulation()">▶ 실행</button></div>
+  </div>
+  <div id="simResults" class="hidden">
+    <div class="card"><div class="card-title">📊 결과</div><div class="grid2 mb8"><div class="stat"><div class="stat-val" id="simSpent"></div><div class="stat-label">총 투자액</div></div><div class="stat"><div class="stat-val" id="simWon"></div><div class="stat-label">총 당첨금</div></div><div class="stat"><div class="stat-val" id="simROI"></div><div class="stat-label">수익률 (ROI)</div></div><div class="stat"><div class="stat-val" id="simEV"></div><div class="stat-label">장당 기대값</div></div></div><div id="simVerdict" class="info-box"></div></div>
+    <div class="card"><div class="card-title">📈 누적 손익</div><canvas id="profitChart" height="180"></canvas></div>
+    <div class="card"><div class="card-title">🎯 일치 번호 분포</div><table><thead><tr><th>일치</th><th class="text-right">횟수</th><th class="text-right">비율</th><th class="text-right">이론</th></tr></thead><tbody id="matchBody"></tbody></table></div>
+  </div>
+  <div class="card"><div class="card-title">📋 당첨 확률 이론값</div><table><thead><tr><th>등수</th><th>조건</th><th class="text-right">확률</th></tr></thead><tbody><tr><td class="fw700 text-gold">1등</td><td>6개</td><td class="text-right text-dim">1/8,145,060</td></tr><tr><td class="fw700">2등</td><td>5개+보너스</td><td class="text-right text-dim">1/1,357,510</td></tr><tr><td class="fw700">3등</td><td>5개</td><td class="text-right text-dim">1/44,917</td></tr><tr><td class="fw700">4등</td><td>4개</td><td class="text-right text-dim">1/733</td></tr><tr><td class="fw700">5등</td><td>3개</td><td class="text-right text-dim">1/45</td></tr></tbody></table>
+    <div style="margin-top:8px;font-size:11px;padding:8px 10px;background:var(--bg);border-radius:7px;color:var(--textDim);line-height:1.5"><strong class="text-gold">기대값:</strong> E(X) = Σ(당첨금×확률) ≈ 400~500원/장 → <span class="text-red">기대 수익률 ≈ -50%</span></div>
+  </div>
+  <div class="card"><div class="card-title">🧠 켈리 기준 (Kelly Criterion)</div><div style="font-size:11px;color:var(--textDim);line-height:1.6"><p>최적 베팅 비율: <strong class="text-gold">f* = (bp - q) / b</strong></p><div class="mono" style="padding:8px;background:var(--bg);border-radius:7px;margin:6px 0">b=2,000,000 | p=1/8,145,060 | q≈1<br>f* ≈ -0.000000377 (음수)</div><p class="text-red">⚠️ 음수 = 수학적으로 베팅하지 않는 것이 최적. 이월 ~40억 이상 시 양수 전환.</p></div></div>
+</div>
+
+<!-- ═══════════ 탭4: 보조지표 ═══════════ -->
+<div id="tab-indicator" class="hidden">
+  <!-- 종합 시그널 스코어 -->
+  <div class="card">
+    <div class="card-title">🎯 종합 시그널 스코어</div>
+    <div class="text-dim mb8" style="font-size:11px">5개 보조지표 가중합산 → 번호별 최종 점수 (높을수록 주목)</div>
+    <div class="flex-between mb8"><div class="text-dim" style="font-size:10px">이번 분석 기준 추천 번호</div><div id="topBalls"></div></div>
+    <div class="heatmap" id="signalHeatmap"></div>
+  </div>
+
+  <!-- 가중치 조절 -->
+  <div class="card">
+    <div class="card-title">⚖️ 지표 가중치 조절</div>
+    <div id="weightSliders"></div>
+    <button class="btn btn-primary btn-sm mt8" onclick="recalcSignal()">🔄 재계산</button>
+  </div>
+
+  <div class="sub-tabs">
+    <button class="sub-tab active" onclick="switchIndSub('lma')">LMA</button>
+    <button class="sub-tab" onclick="switchIndSub('rsi')">RSI</button>
+    <button class="sub-tab" onclick="switchIndSub('bb')">볼린저</button>
+    <button class="sub-tab" onclick="switchIndSub('macd')">MACD</button>
+    <button class="sub-tab" onclick="switchIndSub('mom')">모멘텀</button>
+  </div>
+
+  <!-- LMA -->
+  <div id="ind-lma">
+    <div class="card"><div class="card-title">📈 LMA (Lotto Moving Average)</div>
+      <div class="text-dim mb8" style="font-size:11px">번호별 출현 빈도의 단기(10회)/장기(50회) 이동평균 비교</div>
+      <div class="mb8"><span style="font-size:11px;font-weight:600">번호 선택: </span><select id="lmaNum" onchange="renderLMA()"></select></div>
+      <canvas id="lmaChart" height="200"></canvas>
+      <div class="grid2 mt8"><div class="card" style="margin:0;padding:10px"><div class="text-green fw700 mb6" style="font-size:11px">🔺 골든크로스 (상승신호)</div><div id="goldenList" style="font-size:11px"></div></div><div class="card" style="margin:0;padding:10px"><div class="text-red fw700 mb6" style="font-size:11px">🔻 데드크로스 (하락신호)</div><div id="deadList" style="font-size:11px"></div></div></div>
+    </div>
+  </div>
+
+  <!-- RSI -->
+  <div id="ind-rsi" class="hidden">
+    <div class="card"><div class="card-title">📊 LRI (Lotto RSI)</div>
+      <div class="text-dim mb8" style="font-size:11px">최근 N회차 기준 번호별 상대강도지수 (0~100)</div>
+      <div class="mb8"><span style="font-size:11px;font-weight:600">RSI 기간: </span><select id="rsiPeriod" onchange="renderRSI()"><option value="14">14회</option><option value="20" selected>20회</option><option value="30">30회</option></select></div>
+      <canvas id="rsiChart" height="220"></canvas>
+      <div class="grid2 mt8"><div class="card" style="margin:0;padding:10px"><div class="text-red fw700 mb6" style="font-size:11px">🔴 과열 (RSI > 70)</div><div id="rsiHot" style="font-size:11px"></div></div><div class="card" style="margin:0;padding:10px"><div class="text-cyan fw700 mb6" style="font-size:11px">🔵 침체 (RSI < 30)</div><div id="rsiCold" style="font-size:11px"></div></div></div>
+    </div>
+  </div>
+
+  <!-- 볼린저밴드 -->
+  <div id="ind-bb" class="hidden">
+    <div class="card"><div class="card-title">📉 볼린저밴드</div>
+      <div class="text-dim mb8" style="font-size:11px">출현 빈도 이동평균 ± 2σ 밴드. 밴드 이탈 = 통계적 이상치</div>
+      <div class="mb8"><span style="font-size:11px;font-weight:600">번호 선택: </span><select id="bbNum" onchange="renderBB()"></select></div>
+      <canvas id="bbChart" height="200"></canvas>
+      <div class="grid2 mt8"><div class="card" style="margin:0;padding:10px"><div class="text-red fw700 mb6" style="font-size:11px">⬆ 상단 돌파 (과다출현)</div><div id="bbUpper" style="font-size:11px"></div></div><div class="card" style="margin:0;padding:10px"><div class="text-cyan fw700 mb6" style="font-size:11px">⬇ 하단 이탈 (과소출현)</div><div id="bbLower" style="font-size:11px"></div></div></div>
+    </div>
+  </div>
+
+  <!-- MACD -->
+  <div id="ind-macd" class="hidden">
+    <div class="card"><div class="card-title">📊 MACD</div>
+      <div class="text-dim mb8" style="font-size:11px">EMA(12)-EMA(26) + Signal(9). 추세 전환 감지</div>
+      <div class="mb8"><span style="font-size:11px;font-weight:600">번호 선택: </span><select id="macdNum" onchange="renderMACD()"></select></div>
+      <canvas id="macdChart" height="220"></canvas>
+    </div>
+  </div>
+
+  <!-- 구간 모멘텀 -->
+  <div id="ind-mom" class="hidden">
+    <div class="card"><div class="card-title">🎯 구간 모멘텀 오실레이터</div>
+      <div class="text-dim mb8" style="font-size:11px">5구간의 최근 출현 모멘텀 비교 (최근 10회 vs 이전 10회)</div>
+      <canvas id="momChart" height="280"></canvas>
+      <table class="mt8"><thead><tr><th>구간</th><th class="text-right">최근10회</th><th class="text-right">이전10회</th><th class="text-right">변화율</th></tr></thead><tbody id="momBody"></tbody></table>
+    </div>
+  </div>
+
+  <div class="info-box info-neutral mt8" style="font-size:10px;text-align:center">⚠️ 본 지표는 독립시행 게임에 종속시행 분석 기법을 적용한 실험적 도구입니다. 평균회귀 경향은 대수의 법칙에 의해 장기적으로만 유효하며, 단기 예측력은 보장되지 않습니다.</div>
+</div>
+
+<div class="footer">⚠️ 본 도구는 수학적 분석 목적이며, 당첨을 보장하지 않습니다. 로또는 독립시행 확률 게임입니다.</div>
+
+</div><!-- /mainApp -->
+
+<script>
+// ══════════════════════════════════════════════
+// 🔧 Firebase 설정 (본인 프로젝트로 교체)
+// ══════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyCLUNqnDrXLMkZHyxWfbM1Zfbimdk3AKWw",
+  authDomain: "ma-db-d0c98.firebaseapp.com",
+  projectId: "ma-db-d0c98",
+  storageBucket: "ma-db-d0c98.firebasestorage.app",
+  messagingSenderId: "497220756438",
+  appId: "1:497220756438:web:72610748c39c6e29eb3a77",
+  measurementId: "G-KJBJ0TCN4P"
+};
+
+let db = null;
+let DRAWS = [];
+const N=45, PICK=6, COMBOS=8145060;
+
+// ══════════ 데이터 로딩 시스템 ══════════
+async function initApp(){
+  // 1) 같은 폴더의 lotto-data.json 로드 (가장 빠르고 확실)
+  try {
+    updateLoading('lotto-data.json 로드 중...', 10);
+    const res = await fetch('lotto-data.json');
+    if(res.ok){
+      DRAWS = await res.json();
+      DRAWS.sort((a,b) => a.round - b.round);
+      updateLoading(`JSON에서 ${DRAWS.length}회차 로드 완료`, 70);
+    }
+  } catch(e){ console.log('JSON 파일 로드 실패:', e.message); }
+
+  // 2) Firestore에서 더 최신 데이터 확인
+  try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    if(DRAWS.length > 0){
+      // JSON보다 최신 데이터가 Firestore에 있는지 확인
+      const metaSnap = await db.collection('meta').doc('info').get();
+      if(metaSnap.exists){
+        const lastInDB = metaSnap.data().lastDraw;
+        const lastInJSON = DRAWS[DRAWS.length-1].round;
+        if(lastInDB > lastInJSON){
+          updateLoading('Firestore에서 최신 데이터 추가 로드...', 80);
+          const snapshot = await db.collection('draws').where(firebase.firestore.FieldPath.documentId(), '>', String(lastInJSON)).get();
+          snapshot.forEach(doc => {
+            const d = doc.data();
+            DRAWS.push({ round:+doc.id, nums:[d.no1,d.no2,d.no3,d.no4,d.no5,d.no6], bonus:d.bonus, date:d.date });
+          });
+          DRAWS.sort((a,b) => a.round - b.round);
+        }
+      }
+    } else {
+      // JSON 실패 시 Firestore 전체 로드
+      await loadFromFirestore();
+    }
+  } catch(e){ console.log('Firestore 연결 실패:', e.message); }
+
+  // 3) 그래도 없으면 localStorage
+  if(DRAWS.length === 0){
+    const cached = localStorage.getItem('lotto_draws');
+    if(cached){
+      DRAWS = JSON.parse(cached);
+      updateLoading(`캐시에서 ${DRAWS.length}회차 로드`, 80);
+    }
+  }
+
+  // 4) 아무 데이터도 없으면 안내
+  if(DRAWS.length === 0){
+    updateLoading('⚠️ 데이터 없음! lotto-data-fetcher.html로 데이터를 먼저 수집해주세요.', 0);
+    document.getElementById('loadingPct').textContent = '❌';
+    document.getElementById('loadingPct').style.color = '#FF4757';
+    return;
+  }
+
+  // 5) localStorage 캐싱
+  try { localStorage.setItem('lotto_draws', JSON.stringify(DRAWS)); } catch(e){}
+
+  updateLoading(`${DRAWS.length}회차 로드 완료!`, 100);
+
+  // UI 초기화
+  document.getElementById('loadingOverlay').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  updateStatusBar();
+  renderStatsTab();
+  renderStrategies();
+  initIndicatorSelects();
+}
+
+async function loadFromFirestore(){
+  updateLoading('Firestore에서 데이터 로드 중...', 10);
+  try {
+    const snapshot = await db.collection('draws').get();
+    if(snapshot.empty) return;
+    DRAWS = [];
+    snapshot.forEach(doc => {
+      const d = doc.data();
+      DRAWS.push({ round: +doc.id, nums:[d.no1,d.no2,d.no3,d.no4,d.no5,d.no6], bonus:d.bonus, date:d.date });
+    });
+    DRAWS.sort((a,b) => a.round - b.round);
+    updateLoading(`Firestore에서 ${DRAWS.length}회차 로드 완료`, 90);
+  } catch(e){
+    console.log('Firestore 읽기 실패:', e.message);
+  }
+}
+
+async function saveToFirestore(drawData){
+  if(!db) return;
+  try {
+    const batch = db.batch();
+    let count = 0;
+    for(const d of drawData){
+      const ref = db.collection('draws').doc(String(d.round));
+      batch.set(ref, { no1:d.nums[0],no2:d.nums[1],no3:d.nums[2],no4:d.nums[3],no5:d.nums[4],no6:d.nums[5],bonus:d.bonus,date:d.date });
+      count++;
+      // Firestore batch 최대 500개 제한
+      if(count >= 499){
+        await batch.commit();
+        count = 0;
+      }
+    }
+    if(count > 0) await batch.commit();
+    // meta 정보 저장
+    const last = drawData[drawData.length - 1];
+    await db.collection('meta').doc('info').set({ lastDraw: last.round, lastUpdate: new Date().toISOString().slice(0,10) });
+  } catch(e){ console.log('Firestore 저장 실패:', e.message); }
+}
+
+async function loadFromAPI(){
+  updateLoading('동행복권 API에서 데이터 로드 중...', 5);
+  // 최신 회차 추정
+  let maxRound = DRAWS.length > 0 ? DRAWS[DRAWS.length-1].round : 0;
+  if(maxRound === 0){
+    const weeks = Math.floor((Date.now() - new Date('2002-12-07').getTime()) / (7*24*60*60*1000));
+    maxRound = Math.min(weeks + 1, 1300);
+    let testRound = maxRound;
+    while(testRound > 0){
+      try {
+        const r = await fetchDraw(testRound);
+        if(r){ maxRound = testRound; break; }
+        testRound -= 10;
+      } catch(e){ testRound -= 10; }
+    }
+    for(let i = maxRound+1; i <= maxRound+15; i++){
+      try {
+        const r = await fetchDraw(i);
+        if(r) maxRound = i; else break;
+      } catch(e){ break; }
+    }
+  }
+
+  const startRound = DRAWS.length > 0 ? DRAWS[DRAWS.length-1].round + 1 : 1;
+  const total = maxRound - startRound + 1;
+  if(total <= 0){ updateLoading('데이터 최신 상태', 100); return; }
+
+  const batchSize = 10;
+  let loaded = 0;
+  const newDraws = [];
+  for(let i = startRound; i <= maxRound; i += batchSize){
+    const batch = [];
+    for(let j = i; j < Math.min(i + batchSize, maxRound + 1); j++){
+      batch.push(fetchDraw(j));
+    }
+    const results = await Promise.allSettled(batch);
+    results.forEach(r => {
+      if(r.status === 'fulfilled' && r.value){
+        DRAWS.push(r.value);
+        newDraws.push(r.value);
+        loaded++;
+      }
+    });
+    const pct = Math.min(95, Math.round((loaded / total) * 95) + 5);
+    updateLoading(`${loaded}/${total}회차 로드 중... (${startRound}~${maxRound}회)`, pct);
+  }
+  DRAWS.sort((a,b) => a.round - b.round);
+
+  // Firestore에 저장
+  if(newDraws.length > 0) await saveToFirestore(newDraws);
+  updateLoading(`총 ${DRAWS.length}회차 로드 완료!`, 100);
+}
+
+// ★ Cloudflare Workers 프록시 주소 (CORS 우회)
+const PROXY_URL = 'https://lotto-proxy.dhfl0303.workers.dev/lotto';
+
+async function fetchDraw(round){
+  try {
+    const res = await fetch(`${PROXY_URL}?round=${round}`);
+    const data = await res.json();
+    if(data.error || !data.round) return null;
+    return {
+      round: data.round,
+      nums: data.nums,
+      bonus: data.bonus,
+      date: data.date
+    };
+  } catch(e){ return null; }
+}
+
+async function checkAndUpdateLatest(){
+  if(DRAWS.length === 0) return;
+  const lastRound = DRAWS[DRAWS.length-1].round;
+  const newDraws = [];
+  for(let i = lastRound+1; i <= lastRound+5; i++){
+    try {
+      const r = await fetchDraw(i);
+      if(r){
+        DRAWS.push(r);
+        newDraws.push(r);
+      } else break;
+    } catch(e){ break; }
+  }
+  if(newDraws.length > 0) await saveToFirestore(newDraws);
+}
+
+function updateLoading(msg, pct){
+  document.getElementById('loadingMsg').textContent = msg;
+  document.getElementById('loadingFill').style.width = pct + '%';
+  document.getElementById('loadingPct').textContent = pct + '%';
+}
+
+function updateStatusBar(){
+  const first = DRAWS[0]?.round || '?';
+  const last = DRAWS[DRAWS.length-1]?.round || '?';
+  const lastDate = DRAWS[DRAWS.length-1]?.date || '';
+  document.getElementById('statusDot').className = 'dot dot-green';
+  document.getElementById('statusText').textContent = `데이터 로드 완료 (${DRAWS.length}회차)`;
+  document.getElementById('dataRange').textContent = `${first}회 ~ ${last}회 | ${lastDate}`;
+}
+
+// ══════════ 공통 유틸 ══════════
+function getDrawNums(){ return DRAWS.map(d => d.nums); }
+function ballClass(n){ if(n<=10)return'ball ball-1';if(n<=20)return'ball ball-2';if(n<=30)return'ball ball-3';if(n<=40)return'ball ball-4';return'ball ball-5'; }
+function renderBall(n,sm){ return `<span class="${ballClass(n)}${sm?' ball-sm':''}">${n}</span>`; }
+
+const CI = {}; // chart instances
+function destroyChart(id){ if(CI[id]){CI[id].destroy();delete CI[id]} }
+const chartTooltip = {backgroundColor:'#111B2E',borderColor:'#1E2D45',borderWidth:1,titleColor:'#E8ECF1',bodyColor:'#E8ECF1'};
+const chartGridColor = '#1E2D4530';
+
+function mean(a){return a.reduce((s,v)=>s+v,0)/a.length}
+function stddev(a){const m=mean(a);return Math.sqrt(a.reduce((s,v)=>s+(v-m)**2,0)/a.length)}
+function factorial(n){let r=1;for(let i=2;i<=n;i++)r*=i;return r}
+function poissonPMF(k,lam){return Math.pow(lam,k)*Math.exp(-lam)/factorial(Math.min(k,170))}
+
+// ══════════ 탭 전환 ══════════
+let curTab='stats', curSub='freq', curIndSub='lma';
+function switchTab(id){
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    const tabs=['stats','generate','simulate','indicator'];
+    t.classList.toggle('active',tabs[i]===id);
+  });
+  ['stats','generate','simulate','indicator'].forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('hidden',t!==id);
+  });
+  curTab=id;
+  if(id==='stats')renderStatsTab();
+  if(id==='indicator')renderIndicatorTab();
+}
+function switchSubTab(id){
+  document.querySelectorAll('#tab-stats .sub-tab').forEach((t,i)=>{
+    t.classList.toggle('active',['freq','zone','pattern'][i]===id);
+  });
+  ['freq','zone','pattern'].forEach(s=>document.getElementById('sub-'+s).classList.toggle('hidden',s!==id));
+  curSub=id; renderStatsTab();
+}
+function switchIndSub(id){
+  document.querySelectorAll('#tab-indicator .sub-tab').forEach((t,i)=>{
+    t.classList.toggle('active',['lma','rsi','bb','macd','mom'][i]===id);
+  });
+  ['lma','rsi','bb','macd','mom'].forEach(s=>document.getElementById('ind-'+s).classList.toggle('hidden',s!==id));
+  curIndSub=id; renderIndicatorSub();
+}
+
+// ══════════ 탭1: 통계분석 ══════════
+function getFreq(){
+  const f=new Array(N+1).fill(0);
+  getDrawNums().forEach(d=>d.forEach(n=>f[n]++));
+  return f;
+}
+function renderStatsTab(){
+  const draws=getDrawNums(), total=draws.length;
+  if(!total)return;
+  const freq=getFreq(), expected=(total*PICK)/N;
+  document.getElementById('totalDraws').textContent=total;
+  document.getElementById('expectedVal').textContent=expected.toFixed(1);
+  if(curSub==='freq') renderFreqSub(freq,expected,total);
+  else if(curSub==='zone') renderZoneSub(total);
+  else renderPatternSub(freq,expected,total);
+}
+function renderFreqSub(freq,expected,total){
+  destroyChart('freqChart');
+  const labels=Array.from({length:N},(_,i)=>i+1);
+  const counts=labels.map(i=>freq[i]);
+  const colors=labels.map(i=>freq[i]>expected?'#FF4757':freq[i]<expected-1?'#70A1FF':'#556677');
+  CI.freqChart=new Chart(document.getElementById('freqChart'),{
+    type:'bar',data:{labels,datasets:[
+      {type:'bar',data:counts,backgroundColor:colors,borderRadius:2,barPercentage:.7},
+      {type:'line',data:labels.map(()=>expected),borderColor:'#F0C040',borderWidth:2,borderDash:[5,5],pointRadius:0,fill:false}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:chartTooltip},scales:{x:{ticks:{color:'#556677',font:{size:8},maxRotation:0},grid:{display:false}},y:{ticks:{color:'#556677',font:{size:9}},grid:{color:chartGridColor}}}}
+  });
+  // 카이제곱
+  let chi2=0;for(let i=1;i<=N;i++)chi2+=Math.pow(freq[i]-expected,2)/expected;
+  const critical=60.48,isR=chi2<critical;
+  document.getElementById('chiStat').textContent=chi2.toFixed(2);
+  document.getElementById('chiCritical').textContent=critical;
+  const cb=document.getElementById('chiResult');
+  cb.className='info-box mt8 '+(isR?'info-green':'info-red');
+  cb.textContent=isR?`✅ χ²(${chi2.toFixed(2)}) < 임계값 → 균등분포와 유의미한 차이 없음`:`⚠️ χ²(${chi2.toFixed(2)}) ≥ 임계값 → 편향 가능성`;
+  // 핫콜드
+  const sorted=Array.from({length:N},(_,i)=>({num:i+1,count:freq[i+1],diff:+(freq[i+1]-expected).toFixed(1)})).sort((a,b)=>b.count-a.count);
+  document.getElementById('hotNums').innerHTML=sorted.slice(0,6).map(d=>`<div class="flex-between" style="padding:3px 0;font-size:11px">${renderBall(d.num,true)}<span class="text-red">${d.count}회 (+${d.diff})</span></div>`).join('');
+  document.getElementById('coldNums').innerHTML=sorted.slice(-6).reverse().map(d=>`<div class="flex-between" style="padding:3px 0;font-size:11px">${renderBall(d.num,true)}<span class="text-cyan">${d.count}회 (${d.diff})</span></div>`).join('');
+}
+function renderZoneSub(total){
+  const zones=[{name:'1~9',r:[1,9]},{name:'10~19',r:[10,19]},{name:'20~29',r:[20,29]},{name:'30~39',r:[30,39]},{name:'40~45',r:[40,45]}];
+  const all=total*PICK;
+  zones.forEach(z=>{let c=0;getDrawNums().forEach(d=>d.forEach(n=>{if(n>=z.r[0]&&n<=z.r[1])c++}));z.pct=+((c/all)*100).toFixed(1);z.exp=+(((z.r[1]-z.r[0]+1)/N)*100).toFixed(1)});
+  destroyChart('zoneChart');
+  CI.zoneChart=new Chart(document.getElementById('zoneChart'),{type:'bar',data:{labels:zones.map(z=>z.name),datasets:[{label:'실제',data:zones.map(z=>z.pct),backgroundColor:'#F0C040',borderRadius:3,barPercentage:.6},{label:'기대',data:zones.map(z=>z.exp),backgroundColor:'#556677',borderRadius:3,barPercentage:.6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8899AA',font:{size:10}}},tooltip:chartTooltip},scales:{x:{ticks:{color:'#8899AA',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#556677',font:{size:9},callback:v=>v+'%'},grid:{color:chartGridColor}}}}});
+  const sums=getDrawNums().map(d=>d.reduce((a,b)=>a+b,0));
+  document.getElementById('sumAvg').textContent=mean(sums).toFixed(1);
+  document.getElementById('sumStd').textContent='±'+stddev(sums).toFixed(1);
+  const bk={};sums.forEach(s=>{const b=Math.floor(s/20)*20;const k=`${b}~${b+19}`;bk[k]=(bk[k]||0)+1});
+  const sl=Object.keys(bk).sort();
+  destroyChart('sumChart');
+  CI.sumChart=new Chart(document.getElementById('sumChart'),{type:'bar',data:{labels:sl,datasets:[{data:sl.map(k=>bk[k]),backgroundColor:'#70A1FF',borderRadius:3,barPercentage:.7}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:chartTooltip},scales:{x:{ticks:{color:'#8899AA',font:{size:9}},grid:{display:false}},y:{ticks:{color:'#556677',font:{size:9}},grid:{color:chartGridColor}}}}});
+}
+function renderPatternSub(freq,expected,total){
+  const dist={};getDrawNums().forEach(d=>{const o=d.filter(n=>n%2===1).length;const k=`${o}:${6-o}`;dist[k]=(dist[k]||0)+1});
+  const oe=Object.entries(dist).map(([k,v])=>({ratio:k,count:v,pct:+((v/total)*100).toFixed(1)})).sort((a,b)=>b.count-a.count);
+  document.getElementById('oddEvenBody').innerHTML=oe.map(d=>`<tr><td>${d.ratio}</td><td class="text-right">${d.count}회</td><td class="text-right ${d.pct>25?'text-gold':'text-dim'}">${d.pct}%</td></tr>`).join('');
+  let wc=0;getDrawNums().forEach(d=>{const s=[...d].sort((a,b)=>a-b);for(let i=0;i<s.length-1;i++){if(s[i+1]-s[i]===1){wc++;break}}});
+  document.getElementById('consecPct').textContent=((wc/total)*100).toFixed(1)+'%';
+  document.getElementById('consecCount').textContent=`${wc}/${total}`;
+  const lambda=expected;
+  document.getElementById('poissonLambda').textContent=lambda.toFixed(2);
+  const maxK=Math.ceil(lambda*2)+2;
+  const obs=new Array(maxK+1).fill(0);
+  for(let i=1;i<=N;i++){const k=Math.min(freq[i],maxK);obs[k]++}
+  destroyChart('poissonChart');
+  CI.poissonChart=new Chart(document.getElementById('poissonChart'),{type:'bar',data:{labels:Array.from({length:maxK+1},(_,i)=>i+'회'),datasets:[{label:'실제',data:obs,backgroundColor:'#F0C040',borderRadius:3,barPercentage:.6},{label:'포아송',data:Array.from({length:maxK+1},(_,k)=>+(N*poissonPMF(k,lambda)).toFixed(2)),backgroundColor:'#556677',borderRadius:3,barPercentage:.6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8899AA',font:{size:10}}},tooltip:chartTooltip},scales:{x:{ticks:{color:'#8899AA',font:{size:9}},grid:{display:false}},y:{ticks:{color:'#556677',font:{size:9}},grid:{color:chartGridColor}}}}});
+}
+
+// ══════════ 탭2: 번호생성 ══════════
+const strategies=[{id:'random',name:'완전 랜덤',desc:'순수 난수'},{id:'balanced',name:'균형 분포',desc:'구간별 균등 배분'},{id:'antiPop',name:'인기번호 회피',desc:'당첨금 극대화'},{id:'poisson',name:'포아송 보정',desc:'기대값 미달 보정'},{id:'gap',name:'갭 분석',desc:'최근 미출현 우선'}];
+let selStrat='balanced';
+function renderStrategies(){document.getElementById('strategyList').innerHTML=strategies.map(s=>`<button class="strategy-btn${s.id===selStrat?' active':''}" onclick="selStrat='${s.id}';renderStrategies()"><div><div class="name">${s.name}</div><div class="desc">${s.desc}</div></div>${s.id===selStrat?'<span class="text-gold">✓</span>':''}</button>`).join('')}
+
+function randomPick(){const p=Array.from({length:N},(_,i)=>i+1),r=[];for(let i=0;i<PICK;i++){const x=Math.floor(Math.random()*p.length);r.push(p.splice(x,1)[0])}return r.sort((a,b)=>a-b)}
+function balancedPick(){const z=[[1,9],[10,19],[20,29],[30,39],[40,45]],pk=[2,1,1,1,1];for(let i=pk.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pk[i],pk[j]]=[pk[j],pk[i]]}const r=[];z.forEach((zone,i)=>{const pool=Array.from({length:zone[1]-zone[0]+1},(_,k)=>zone[0]+k);for(let j=0;j<pk[i]&&pool.length;j++){r.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0])}});while(r.length<6){const n=Math.floor(Math.random()*45)+1;if(!r.includes(n))r.push(n)}return r.sort((a,b)=>a-b)}
+function antiPopPick(){const pop=[7,3,11,13,17,21,1,5];const hi=Array.from({length:N},(_,i)=>i+1).filter(n=>n>=32);const lo=Array.from({length:N},(_,i)=>i+1).filter(n=>n<32&&!pop.includes(n));const r=[];for(let i=0;i<3&&hi.length;i++)r.push(hi.splice(Math.floor(Math.random()*hi.length),1)[0]);for(let i=0;i<3&&lo.length;i++)r.push(lo.splice(Math.floor(Math.random()*lo.length),1)[0]);return r.sort((a,b)=>a-b)}
+function poissonPick(){const freq=getFreq(),exp=(DRAWS.length*PICK)/N;const w=[];for(let i=1;i<=N;i++)w.push({n:i,w:Math.max(.1,exp-freq[i]+5)});const tw=w.reduce((s,x)=>s+x.w,0);const r=[],u=new Set();while(r.length<PICK){let rr=Math.random()*tw;for(const x of w){if(u.has(x.n))continue;rr-=x.w;if(rr<=0){r.push(x.n);u.add(x.n);break}}}return r.sort((a,b)=>a-b)}
+function gapPick(){const recent=getDrawNums().slice(-15),rn=new Set(recent.flat());const nr=Array.from({length:N},(_,i)=>i+1).filter(n=>!rn.has(n));const pool=nr.length>=3?[...nr]:Array.from({length:N},(_,i)=>i+1);const r=[];while(r.length<Math.min(3,pool.length)){const n=pool.splice(Math.floor(Math.random()*pool.length),1)[0];if(!r.includes(n))r.push(n)}while(r.length<PICK){const n=Math.floor(Math.random()*45)+1;if(!r.includes(n))r.push(n)}return r.sort((a,b)=>a-b)}
+
+const genFns={random:randomPick,balanced:balancedPick,antiPop:antiPopPick,poisson:poissonPick,gap:gapPick};
+const stratNames={random:'완전 랜덤',balanced:'균형 분포',antiPop:'인기번호 회피',poisson:'포아송 보정',gap:'갭 분석'};
+function generateNumbers(){
+  const count=+document.getElementById('genCount').value,fn=genFns[selStrat],results=[];
+  for(let i=0;i<count;i++){const nums=fn();results.push({nums,sum:nums.reduce((a,b)=>a+b,0),oe:`${nums.filter(n=>n%2===1).length}:${nums.filter(n=>n%2===0).length}`,lh:`${nums.filter(n=>n<=22).length}:${nums.filter(n=>n>22).length}`})}
+  document.getElementById('genResults').classList.remove('hidden');
+  document.getElementById('genResultTitle').textContent=`🎯 생성 결과 (${stratNames[selStrat]})`;
+  document.getElementById('genResultBody').innerHTML=results.map((r,i)=>`<div class="result-row"><div class="flex-center gap4"><span style="font-size:10px;color:var(--textDim);width:20px">#${i+1}</span>${r.nums.map(n=>renderBall(n)).join('')}</div><div class="result-meta"><span>합:${r.sum}</span><span>홀짝:${r.oe}</span><span>고저:${r.lh}</span></div></div>`).join('');
+}
+
+// ══════════ 탭3: 시뮬레이션 ══════════
+function runSimulation(){
+  const sc=+document.getElementById('simCount').value,tpd=+document.getElementById('simTickets').value;
+  const btn=document.getElementById('simBtn');btn.disabled=true;btn.textContent='⏳';
+  setTimeout(()=>{
+    let spent=0,won=0;const md={0:0,1:0,2:0,3:0,4:0,5:0,6:0},ph=[];
+    const si=Math.max(1,Math.floor(sc/100));
+    for(let d=0;d<sc;d++){
+      const pool=Array.from({length:45},(_,i)=>i+1),w=[];
+      for(let i=0;i<6;i++)w.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+      const bonus=pool[Math.floor(Math.random()*pool.length)];
+      for(let t=0;t<tpd;t++){
+        spent+=1000;const mp=Array.from({length:45},(_,i)=>i+1),my=[];
+        for(let i=0;i<6;i++)my.push(mp.splice(Math.floor(Math.random()*mp.length),1)[0]);
+        const m=my.filter(n=>w.includes(n)).length;md[m]++;
+        let p=0;if(m===6)p=2e9;else if(m===5&&my.includes(bonus))p=5e7;else if(m===5)p=1.5e6;else if(m===4)p=5e4;else if(m===3)p=5e3;
+        won+=p;
+      }
+      if(d%si===0||d===sc-1)ph.push({d:d+1,p:won-spent});
+    }
+    const tt=sc*tpd,roi=(((won-spent)/spent)*100).toFixed(2),ev=(won/tt).toFixed(0);
+    document.getElementById('simResults').classList.remove('hidden');
+    document.getElementById('simSpent').textContent=(spent/10000).toLocaleString()+'만';
+    const we=document.getElementById('simWon');we.textContent=(won/10000).toLocaleString()+'만';we.style.color=won>spent?'var(--green)':'var(--red)';
+    const re=document.getElementById('simROI');re.textContent=roi+'%';re.style.color=roi>0?'var(--green)':'var(--red)';
+    document.getElementById('simEV').textContent=Number(ev).toLocaleString()+'원';
+    const vd=document.getElementById('simVerdict');vd.className='info-box '+(roi<0?'info-red':'info-green');
+    vd.textContent=roi<0?`📉 ${tt.toLocaleString()}장 기준, 투자금의 ${Math.abs(roi)}% 손실`:`📈 이례적 수익! 1등 당첨 포함 가능성`;
+    destroyChart('profitChart');
+    CI.profitChart=new Chart(document.getElementById('profitChart'),{type:'line',data:{labels:ph.map(p=>p.d),datasets:[{data:ph.map(p=>p.p),borderColor:'#F0C040',borderWidth:2,pointRadius:0,fill:false,tension:.1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...chartTooltip,callbacks:{label:c=>(c.parsed.y/10000).toLocaleString()+'만원'}}},scales:{x:{ticks:{color:'#556677',font:{size:8},maxTicksLimit:8},grid:{display:false}},y:{ticks:{color:'#556677',font:{size:8},callback:v=>(v/10000).toFixed(0)+'만'},grid:{color:chartGridColor}}}}});
+    const th={6:'0.0000123%',5:'0.0018%',4:'0.0914%',3:'2.22%',2:'16.14%',1:'41.30%',0:'40.22%'};
+    document.getElementById('matchBody').innerHTML=[6,5,4,3,2,1,0].map(m=>`<tr${m>=3?' style="background:rgba(240,192,64,.03)"':''}><td class="${m>=3?'fw700 text-gold':''}">${m}개</td><td class="text-right">${(md[m]||0).toLocaleString()}</td><td class="text-right">${((md[m]/tt)*100).toFixed(4)}%</td><td class="text-right text-dim">${th[m]}</td></tr>`).join('');
+    btn.disabled=false;btn.textContent='▶ 실행';
+  },50);
+}
+
+// ══════════ 탭4: 보조지표 ══════════
+const WEIGHTS = {lma:20, rsi:25, bb:20, macd:20, mom:15};
+const WEIGHT_NAMES = {lma:'LMA 이동평균',rsi:'RSI 상대강도',bb:'볼린저밴드',macd:'MACD',mom:'구간 모멘텀'};
+
+function initIndicatorSelects(){
+  ['lmaNum','bbNum','macdNum'].forEach(id=>{
+    const sel=document.getElementById(id);
+    sel.innerHTML='';
+    for(let i=1;i<=N;i++){const o=document.createElement('option');o.value=i;o.textContent=i+'번';sel.appendChild(o)}
+  });
+  // 가중치 슬라이더
+  document.getElementById('weightSliders').innerHTML=Object.entries(WEIGHTS).map(([k,v])=>`<div class="flex-between mb6"><span style="font-size:11px">${WEIGHT_NAMES[k]}</span><div class="flex-center gap6"><input type="range" min="0" max="50" value="${v}" id="w_${k}" style="width:120px"><span style="font-size:11px;width:30px;text-align:right" id="wv_${k}">${v}%</span></div></div>`).join('');
+  Object.keys(WEIGHTS).forEach(k=>{
+    document.getElementById('w_'+k).addEventListener('input',e=>{
+      WEIGHTS[k]=+e.target.value;
+      document.getElementById('wv_'+k).textContent=e.target.value+'%';
+    });
+  });
+}
+
+// ── 번호별 출현 시계열 생성 (슬라이딩 윈도우) ──
+function getNumTimeSeries(num, windowSize){
+  const draws = getDrawNums();
+  const series = [];
+  for(let i = windowSize-1; i < draws.length; i++){
+    let count = 0;
+    for(let j = i-windowSize+1; j <= i; j++){
+      if(draws[j].includes(num)) count++;
+    }
+    series.push(count / windowSize);
+  }
+  return series;
+}
+
+// ── EMA 계산 ──
+function calcEMA(data, period){
+  const k = 2/(period+1);
+  const ema = [data[0]];
+  for(let i=1;i<data.length;i++) ema.push(data[i]*k + ema[i-1]*(1-k));
+  return ema;
+}
+
+// ── LMA (이동평균선) ──
+function renderLMA(){
+  const num = +document.getElementById('lmaNum').value;
+  const draws = getDrawNums();
+  if(draws.length < 50) return;
+  const shortP=10, longP=50;
+  const shortMA = getNumTimeSeries(num, shortP);
+  const longMA = getNumTimeSeries(num, longP);
+  // 길이 맞추기 (longMA가 더 짧음)
+  const offset = shortMA.length - longMA.length;
+  const shortAligned = shortMA.slice(offset);
+  const labels = Array.from({length:longMA.length},(_,i)=>draws.length-longMA.length+i+1+'회');
+
+  destroyChart('lmaChart');
+  CI.lmaChart=new Chart(document.getElementById('lmaChart'),{type:'line',data:{labels,datasets:[
+    {label:`단기 MA(${shortP})`,data:shortAligned,borderColor:'#FF4757',borderWidth:2,pointRadius:0,tension:.3,fill:false},
+    {label:`장기 MA(${longP})`,data:longMA,borderColor:'#70A1FF',borderWidth:2,pointRadius:0,tension:.3,fill:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8899AA',font:{size:10}}},tooltip:chartTooltip},scales:{x:{ticks:{color:'#556677',font:{size:8},maxTicksLimit:8},grid:{display:false}},y:{ticks:{color:'#556677',font:{size:9}},grid:{color:chartGridColor}}}}});
+
+  // 골든/데드크로스 목록
+  const gc=[],dc=[];
+  for(let n=1;n<=N;n++){
+    const s=getNumTimeSeries(n,shortP), l=getNumTimeSeries(n,longP);
+    const off=s.length-l.length;
+    const sa=s.slice(off);
+    if(sa.length<2||l.length<2) continue;
+    const prev=sa[sa.length-2]-l[l.length-2];
+    const curr=sa[sa.length-1]-l[l.length-1];
+    if(prev<=0 && curr>0) gc.push(n);
+    if(prev>=0 && curr<0) dc.push(n);
+  }
+  document.getElementById('goldenList').innerHTML=gc.length?gc.map(n=>renderBall(n,true)).join(''):'<span class="text-dim">없음</span>';
+  document.getElementById('deadList').innerHTML=dc.length?dc.map(n=>renderBall(n,true)).join(''):'<span class="text-dim">없음</span>';
+}
+
+// ── RSI ──
+function calcRSI(num, period){
+  const draws=getDrawNums();
+  if(draws.length<period+1) return 50;
+  // 각 회차에서 해당 번호 출현=1, 미출현=0
+  const changes=[];
+  for(let i=1;i<draws.length;i++){
+    const prev=draws[i-1].includes(num)?1:0;
+    const curr=draws[i].includes(num)?1:0;
+    changes.push(curr-prev);
+  }
+  // 최근 period개
+  const recent=changes.slice(-period);
+  let gains=0,losses=0;
+  recent.forEach(c=>{if(c>0)gains+=c;else losses+=Math.abs(c)});
+  const avgGain=gains/period, avgLoss=losses/period;
+  if(avgLoss===0) return 100;
+  const rs=avgGain/avgLoss;
+  return +(100-100/(1+rs)).toFixed(1);
+}
+
+function renderRSI(){
+  const period=+document.getElementById('rsiPeriod').value;
+  const rsiData=[];
+  for(let i=1;i<=N;i++) rsiData.push({num:i, rsi:calcRSI(i,period)});
+
+  destroyChart('rsiChart');
+  const colors=rsiData.map(d=>d.rsi>70?'#FF4757':d.rsi<30?'#70A1FF':'#556677');
+  CI.rsiChart=new Chart(document.getElementById('rsiChart'),{type:'bar',data:{labels:rsiData.map(d=>d.num),datasets:[{data:rsiData.map(d=>d.rsi),backgroundColor:colors,borderRadius:2,barPercentage:.7}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:chartTooltip,annotation:undefined},scales:{x:{ticks:{color:'#556677',font:{size:8},maxRotation:0},grid:{display:false}},y:{min:0,max:100,ticks:{color:'#556677',font:{size:9},stepSize:10},grid:{color:chartGridColor}}}}});
+
+  document.getElementById('rsiHot').innerHTML=rsiData.filter(d=>d.rsi>70).sort((a,b)=>b.rsi-a.rsi).map(d=>`<div class="flex-between" style="padding:2px 0">${renderBall(d.num,true)}<span class="text-red">${d.rsi}</span></div>`).join('')||'<span class="text-dim">없음</span>';
+  document.getElementById('rsiCold').innerHTML=rsiData.filter(d=>d.rsi<30).sort((a,b)=>a.rsi-b.rsi).map(d=>`<div class="flex-between" style="padding:2px 0">${renderBall(d.num,true)}<span class="text-cyan">${d.rsi}</span></div>`).join('')||'<span class="text-dim">없음</span>';
+}
+
+// ── 볼린저밴드 ──
+function renderBB(){
+  const num=+document.getElementById('bbNum').value;
+  const draws=getDrawNums();
+  const windowSize=20;
+  if(draws.length<windowSize) return;
+  const series=getNumTimeSeries(num, windowSize);
+  // 이동평균과 밴드 계산
+  const ma=[], upper=[], lower=[];
+  const bandWindow=20;
+  for(let i=bandWindow-1;i<series.length;i++){
+    const slice=series.slice(i-bandWindow+1,i+1);
+    const m=mean(slice), s=stddev(slice);
+    ma.push(m); upper.push(m+2*s); lower.push(m-2*s);
+  }
+  const labels=Array.from({length:ma.length},(_,i)=>'');
+  const actual=series.slice(series.length-ma.length);
+
+  destroyChart('bbChart');
+  CI.bbChart=new Chart(document.getElementById('bbChart'),{type:'line',data:{labels,datasets:[
+    {label:'상단밴드',data:upper,borderColor:'#FF475744',borderWidth:1,pointRadius:0,fill:false,borderDash:[3,3]},
+    {label:'이동평균',data:ma,borderColor:'#F0C040',borderWidth:2,pointRadius:0,fill:false},
+    {label:'하단밴드',data:lower,borderColor:'#70A1FF44',borderWidth:1,pointRadius:0,fill:false,borderDash:[3,3]},
+    {label:'실제 빈도',data:actual,borderColor:'#2ED573',borderWidth:1.5,pointRadius:0,fill:false,tension:.3}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8899AA',font:{size:9}}},tooltip:chartTooltip},scales:{x:{display:false},y:{ticks:{color:'#556677',font:{size:9}},grid:{color:chartGridColor}}}}});
+
+  // 밴드 이탈 번호 (전체 번호)
+  const upList=[],loList=[];
+  for(let n=1;n<=N;n++){
+    const s=getNumTimeSeries(n,windowSize);
+    if(s.length<bandWindow) continue;
+    const lastSlice=s.slice(-bandWindow);
+    const m=mean(lastSlice),sd=stddev(lastSlice);
+    const last=s[s.length-1];
+    if(last>m+2*sd) upList.push(n);
+    if(last<m-2*sd) loList.push(n);
+  }
+  document.getElementById('bbUpper').innerHTML=upList.length?upList.map(n=>renderBall(n,true)).join(''):'<span class="text-dim">없음</span>';
+  document.getElementById('bbLower').innerHTML=loList.length?loList.map(n=>renderBall(n,true)).join(''):'<span class="text-dim">없음</span>';
+}
+
+// ── MACD ──
+function renderMACD(){
+  const num=+document.getElementById('macdNum').value;
+  const draws=getDrawNums();
+  // 출현 시계열 (1=출현, 0=미출현)
+  const raw=draws.map(d=>d.includes(num)?1:0);
+  if(raw.length<30) return;
+  const ema12=calcEMA(raw,12), ema26=calcEMA(raw,26);
+  const macdLine=ema12.map((v,i)=>v-ema26[i]);
+  const signal=calcEMA(macdLine,9);
+  const histogram=macdLine.map((v,i)=>v-signal[i]);
+  // 최근 100개만
+  const len=Math.min(100,macdLine.length);
+  const ml=macdLine.slice(-len), sl=signal.slice(-len), hl=histogram.slice(-len);
+  const labels=Array.from({length:len},(_,i)=>'');
+
+  destroyChart('macdChart');
+  CI.macdChart=new Chart(document.getElementById('macdChart'),{type:'bar',data:{labels,datasets:[
+    {type:'line',label:'MACD',data:ml,borderColor:'#F0C040',borderWidth:2,pointRadius:0,fill:false,order:1},
+    {type:'line',label:'Signal',data:sl,borderColor:'#FF4757',borderWidth:1.5,pointRadius:0,fill:false,borderDash:[4,4],order:2},
+    {type:'bar',label:'Histogram',data:hl,backgroundColor:hl.map(v=>v>=0?'rgba(46,213,115,.5)':'rgba(255,71,87,.5)'),borderRadius:1,order:3}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8899AA',font:{size:9}}},tooltip:chartTooltip},scales:{x:{display:false},y:{ticks:{color:'#556677',font:{size:9}},grid:{color:chartGridColor}}}}});
+}
+
+// ── 구간 모멘텀 ──
+function renderMomentum(){
+  const draws=getDrawNums();
+  if(draws.length<20) return;
+  const recent10=draws.slice(-10), prev10=draws.slice(-20,-10);
+  const zones=[{name:'1~9',r:[1,9]},{name:'10~19',r:[10,19]},{name:'20~29',r:[20,29]},{name:'30~39',r:[30,39]},{name:'40~45',r:[40,45]}];
+  zones.forEach(z=>{
+    let rc=0,pc=0;
+    recent10.forEach(d=>d.forEach(n=>{if(n>=z.r[0]&&n<=z.r[1])rc++}));
+    prev10.forEach(d=>d.forEach(n=>{if(n>=z.r[0]&&n<=z.r[1])pc++}));
+    z.recent=rc;z.prev=pc;
+    z.change=pc>0?+(((rc-pc)/pc)*100).toFixed(1):(rc>0?100:0);
+  });
+
+  destroyChart('momChart');
+  CI.momChart=new Chart(document.getElementById('momChart'),{type:'radar',data:{labels:zones.map(z=>z.name),datasets:[
+    {label:'최근 10회',data:zones.map(z=>z.recent),backgroundColor:'rgba(240,192,64,.2)',borderColor:'#F0C040',borderWidth:2,pointBackgroundColor:'#F0C040'},
+    {label:'이전 10회',data:zones.map(z=>z.prev),backgroundColor:'rgba(112,161,255,.2)',borderColor:'#70A1FF',borderWidth:2,pointBackgroundColor:'#70A1FF'}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8899AA',font:{size:10}}},tooltip:chartTooltip},scales:{r:{ticks:{color:'#556677',font:{size:9},backdropColor:'transparent'},grid:{color:'#1E2D45'},pointLabels:{color:'#8899AA',font:{size:11}}}}}});
+
+  document.getElementById('momBody').innerHTML=zones.map(z=>`<tr><td class="fw700">${z.name}</td><td class="text-right">${z.recent}회</td><td class="text-right">${z.prev}회</td><td class="text-right ${z.change>0?'text-green':'text-red'}">${z.change>0?'+':''}${z.change}%</td></tr>`).join('');
+}
+
+// ── 종합 시그널 스코어 ──
+function calcSignalScores(){
+  const scores=[];
+  const draws=getDrawNums();
+  if(draws.length<50) return Array.from({length:N},(_,i)=>({num:i+1,score:50}));
+
+  for(let n=1;n<=N;n++){
+    let score=0, totalW=0;
+
+    // LMA 점수 (골든크로스 = 높은 점수)
+    const s=getNumTimeSeries(n,10), l=getNumTimeSeries(n,50);
+    if(s.length>0&&l.length>0){
+      const off=s.length-l.length;
+      const sa=s.slice(off);
+      if(sa.length>0&&l.length>0){
+        const diff=sa[sa.length-1]-l[l.length-1];
+        const lmaScore=50+diff*500; // 정규화
+        score+=Math.max(0,Math.min(100,lmaScore))*WEIGHTS.lma;
+        totalW+=WEIGHTS.lma;
+      }
+    }
+
+    // RSI 점수 (30 이하 = 높은 점수 → 평균회귀 기대)
+    const rsi=calcRSI(n,20);
+    const rsiScore=100-rsi; // 반전 (침체번호에 높은 점수)
+    score+=rsiScore*WEIGHTS.rsi;
+    totalW+=WEIGHTS.rsi;
+
+    // 볼린저 점수 (하단 이탈 = 높은 점수)
+    const ts=getNumTimeSeries(n,20);
+    if(ts.length>=20){
+      const lastSlice=ts.slice(-20);
+      const m=mean(lastSlice),sd=stddev(lastSlice);
+      const last=ts[ts.length-1];
+      const bbScore=sd>0?50-((last-m)/(2*sd))*50:50;
+      score+=Math.max(0,Math.min(100,bbScore))*WEIGHTS.bb;
+      totalW+=WEIGHTS.bb;
+    }
+
+    // MACD 점수
+    const raw=draws.map(d=>d.includes(n)?1:0);
+    if(raw.length>=30){
+      const ema12=calcEMA(raw,12),ema26=calcEMA(raw,26);
+      const macdVal=ema12[ema12.length-1]-ema26[ema26.length-1];
+      const macdScore=50+macdVal*1000;
+      score+=Math.max(0,Math.min(100,macdScore))*WEIGHTS.macd;
+      totalW+=WEIGHTS.macd;
+    }
+
+    // 모멘텀 점수
+    const recent10=draws.slice(-10),prev10=draws.slice(-20,-10);
+    const rc=recent10.filter(d=>d.includes(n)).length;
+    const pc=prev10.filter(d=>d.includes(n)).length;
+    const momScore=pc>0?Math.min(100,50+((rc-pc)/pc)*100):rc>0?70:50;
+    score+=momScore*WEIGHTS.mom;
+    totalW+=WEIGHTS.mom;
+
+    scores.push({num:n, score:totalW>0?+(score/totalW).toFixed(1):50});
+  }
+  return scores.sort((a,b)=>b.score-a.score);
+}
+
+function renderSignalHeatmap(){
+  const scores=calcSignalScores();
+  const max=Math.max(...scores.map(s=>s.score));
+  const min=Math.min(...scores.map(s=>s.score));
+  const range=max-min||1;
+
+  // 상위 6개
+  const top6=scores.slice(0,6);
+  document.getElementById('topBalls').innerHTML=top6.map(s=>renderBall(s.num)).join('');
+
+  // 히트맵 (번호 순)
+  const byNum=[...scores].sort((a,b)=>a.num-b.num);
+  document.getElementById('signalHeatmap').innerHTML=byNum.map(s=>{
+    const pct=(s.score-min)/range;
+    const r=Math.round(255*pct), g=Math.round(100+155*(1-pct)), b_=Math.round(60*(1-pct));
+    return `<div class="hm-cell" style="background:rgba(${r},${g},${b_},.7);color:${pct>.5?'#000':'#fff'}" title="${s.num}번: ${s.score}점">${s.num}</div>`;
+  }).join('');
+}
+
+function recalcSignal(){
+  renderSignalHeatmap();
+}
+
+function renderIndicatorTab(){
+  renderSignalHeatmap();
+  renderIndicatorSub();
+}
+
+function renderIndicatorSub(){
+  if(curIndSub==='lma') renderLMA();
+  else if(curIndSub==='rsi') renderRSI();
+  else if(curIndSub==='bb') renderBB();
+  else if(curIndSub==='macd') renderMACD();
+  else if(curIndSub==='mom') renderMomentum();
+}
+
+// ══════════ 앱 시작 ══════════
+initApp();
+</script>
+</body>
+</html>
