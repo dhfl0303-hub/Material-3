@@ -9,7 +9,6 @@
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
         body { 
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-            /* 탁한 회색을 버리고, 아주 밝고 화사한 쿨톤 배경으로 변경 */
             background-color: #f8fafc; 
             color: #1e293b; 
             margin: 0;
@@ -27,7 +26,6 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025); 
             margin-bottom: 30px; 
             border: 1px solid #e2e8f0;
-            /* ★ 포인트: 밋밋함을 없애는 상단 인디고 블루 라인 */
             border-top: 5px solid #4f46e5; 
         }
 
@@ -60,7 +58,7 @@
         input[type="text"]:focus, input[type="date"]:focus, input[type="number"]:focus { 
             border-color: #4f46e5; 
             outline: none; 
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); /* 화사한 파란빛 포커스 */
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); 
         }
         
         /* 읽기 전용 폼 구분 */
@@ -72,7 +70,7 @@
             font-weight: 600; 
         }
 
-        /* 복합 입력창 (품목제조보고번호, 소비기한) */
+        /* 복합 입력창 (품목제조보고번호, 소비기한, 중량) */
         .input-group { 
             display: flex; align-items: stretch; 
             background-color: #ffffff;
@@ -102,7 +100,7 @@
             background: transparent;
             padding: 12px 16px;
             font-size: 1rem;
-            color: #4f46e5; /* 입력되는 숫자에 포인트 색상 부여 */
+            color: #4f46e5; 
             font-weight: 700;
             box-shadow: none; 
         }
@@ -142,7 +140,6 @@
         }
         table { width: 100%; border-collapse: collapse; min-width: 820px; }
         
-        /* ★ 테이블 헤더를 산뜻한 옅은 파란빛으로 교체 */
         thead th { 
             background-color: #f8fafc; 
             color: #334155; 
@@ -288,6 +285,15 @@
                     <div class="form-group"><label>개별 포장지 규격</label><input type="text" id="individualPack"></div>
                     <div class="form-group"><label>박스 규격</label><input type="text" id="boxSpec"></div>
                     
+                    <!-- ★ 추가됨: 중량(g) 고정 복합 폼 구성 ★ -->
+                    <div class="form-group">
+                        <label>중량</label>
+                        <div class="input-group">
+                            <input type="number" id="weight" step="any">
+                            <span style="border-left: 1px solid #cbd5e1;">g</span>
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label>소비기한</label>
                         <div class="input-group">
@@ -340,7 +346,7 @@
         </div>
     </div>
 
-    <!-- Firebase 통신 자바스크립트는 완벽히 동일합니다. -->
+    <!-- Firebase 통신 자바스크립트 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -555,6 +561,10 @@
                     packSpec: document.getElementById('packSpec').value,
                     individualPack: document.getElementById('individualPack').value,
                     boxSpec: document.getElementById('boxSpec').value,
+                    
+                    // ★ 추가됨: 중량 데이터 수집 ★
+                    weight: document.getElementById('weight').value, 
+                    
                     expireDate: finalExpireDate,
                     moq: document.getElementById('moq').value,
                     leadTime: document.getElementById('leadTime').value,
