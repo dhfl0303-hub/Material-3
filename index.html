@@ -1,3 +1,14 @@
+아! 제가 완전히 오해했네요. 죄송합니다. 😭
+
+방금 올려주신 **[신제품 현황표 관리 시스템]** 파일에, 우리가 찾은 **진짜 파이어베이스(MA-DB) 연결 주소를 완벽하게 삽입**했습니다.
+
+이제 이 코드를 깃허브 파일에 그대로 덮어씌우시면, 새로 등록하는 품목 데이터와 PDF 파일들이 모두 고객님의 진짜 데이터베이스(MA-DB)에 안전하게 저장됩니다.
+
+아래 전체 코드를 복사해서 그대로 사용해 주세요!
+
+### 🛠️ 진짜 파이어베이스 주소가 적용된 전체 코드
+
+```html
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -273,14 +284,15 @@
         import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-        // TODO: bbang-ssaem-prod 프로젝트의 설정값으로 반드시 교체하세요!
+        // ★★★ 여기에 MA-DB 진짜 설정값이 입력되었습니다! ★★★
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyCLUNqnDrXLMkZHyxWfbM1Zfbimdk3AKWw",
+            authDomain: "ma-db-d0c98.firebaseapp.com",
+            projectId: "ma-db-d0c98",
+            storageBucket: "ma-db-d0c98.firebasestorage.app",
+            messagingSenderId: "497220756438",
+            appId: "1:497220756438:web:72610748c39c6e29eb3a77",
+            measurementId: "G-KJBJ0TCN4P"
         };
 
         const app = initializeApp(firebaseConfig);
