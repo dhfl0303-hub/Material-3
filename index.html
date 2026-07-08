@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>신제품 현황표 관리 시스템</title>
     <style>
-        /* 1. 글로벌 및 폰트 설정 */
+        /* 글로벌 및 폰트 설정 */
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
         body { 
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
@@ -18,7 +18,7 @@
 
         .container { max-width: 1200px; margin: 0 auto; }
         
-        /* 2. 카드 디자인 (상단에 엣지 있는 포인트 컬러 라인 추가) */
+        /* 카드 디자인 */
         .card { 
             background-color: #ffffff; 
             padding: 45px 50px; 
@@ -29,7 +29,7 @@
             border-top: 5px solid #4f46e5; 
         }
 
-        /* 3. 타이포그래피 */
+        /* 타이포그래피 */
         h2 { margin-top: 0; color: #0f172a; font-size: 1.6rem; font-weight: 800; margin-bottom: 1.5rem; letter-spacing: -0.5px; }
         h3 { 
             color: #334155; 
@@ -41,7 +41,7 @@
             border-bottom: 2px solid #f1f5f9; 
         }
         
-        /* 4. 폼 레이아웃 및 화사한 입력창 */
+        /* 폼 레이아웃 및 화사한 입력창 */
         .grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
         .form-group { display: flex; flex-direction: column; }
         label { font-weight: 600; font-size: 0.85rem; margin-bottom: 8px; color: #64748b; }
@@ -110,7 +110,7 @@
         input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         input[type="number"] { -moz-appearance: textfield; }
 
-        /* 5. 파일 업로드 영역 */
+        /* 파일 업로드 영역 */
         .file-upload-area {
             background-color: #f8fafc; 
             padding: 24px; 
@@ -130,7 +130,7 @@
         }
         input[type="file"]::file-selector-button:hover { background-color: #e2e8f0; }
 
-        /* 6. 산뜻한 테이블 디자인 */
+        /* 산뜻한 테이블 디자인 */
         .table-card { 
             border: 1px solid #e2e8f0; 
             border-radius: 12px; 
@@ -183,7 +183,24 @@
         .btn-del-row { background: none; border: none; color: #ef4444; font-size: 1.2rem; font-weight: bold; cursor: pointer; border-radius: 6px; padding: 4px 8px; transition: all 0.2s; }
         .btn-del-row:hover { background-color: #fee2e2; }
 
-        /* 7. 산뜻한 버튼 디자인 */
+        /* ★ 추가됨: 합계(Footer) 전용 디자인 ★ */
+        .total-row {
+            background-color: #f1f5f9;
+            border-top: 2px solid #cbd5e1;
+            font-weight: 800;
+        }
+        .total-row td {
+            padding: 16px 10px;
+            font-size: 1.05rem;
+        }
+        .total-amount {
+            color: #4f46e5; /* 투입량 합계 (파란색 계열) */
+        }
+        .total-ratio {
+            color: #10b981; /* 구성비 합계 (녹색 계열) */
+        }
+
+        /* 산뜻한 버튼 디자인 */
         .btn-add { 
             background-color: #e0e7ff; 
             color: #4338ca; 
@@ -216,7 +233,7 @@
         button[type="submit"]:active { transform: translateY(0); }
         button[type="submit"]:disabled { background-color: #94a3b8; cursor: not-allowed; box-shadow: none; transform: none;}
         
-        /* 8. 리스트 전용 스타일 */
+        /* 리스트 전용 스타일 */
         .list-table th { background-color: #f8fafc; color: #334155; }
         .list-table td { padding: 16px 12px; }
         .file-link { 
@@ -285,7 +302,6 @@
                     <div class="form-group"><label>개별 포장지 규격</label><input type="text" id="individualPack"></div>
                     <div class="form-group"><label>박스 규격</label><input type="text" id="boxSpec"></div>
                     
-                    <!-- ★ 추가됨: 중량(g) 고정 복합 폼 구성 ★ -->
                     <div class="form-group">
                         <label>중량</label>
                         <div class="input-group">
@@ -330,6 +346,17 @@
                         </tr>
                       </thead>
                       <tbody id="tableBody"></tbody>
+                      
+                      <!-- ★ 추가됨: 표 하단 합계 영역 ★ -->
+                      <tfoot>
+                        <tr class="total-row">
+                          <td colspan="4" style="text-align: right; padding-right: 20px;">합계</td>
+                          <td id="totalAmount" class="total-amount">0.000</td>
+                          <td id="totalRatio" class="total-ratio">0.00</td>
+                          <td colspan="2"></td>
+                        </tr>
+                      </tfoot>
+
                     </table>
                 </div>
                 <button type="button" class="btn-add" onclick="addRow()">+ 재료 행 추가하기</button>
@@ -396,14 +423,25 @@
             window.calcRatio();
         };
 
+        // ★ 수정됨: 실시간으로 합계를 계산하여 하단에 표시해 주는 함수 업데이트 ★
         window.calcRatio = function() {
             const rows = document.querySelectorAll('#tableBody tr');
             let total = 0;
-            rows.forEach(tr => { total += parseFloat(tr.querySelector('.amount-input').value) || 0; });
+            
+            // 모든 행의 투입량 숫자를 더합니다.
+            rows.forEach(tr => { 
+                total += parseFloat(tr.querySelector('.amount-input').value) || 0; 
+            });
+            
+            // 각 행의 구성비(%)를 계산하여 표시합니다.
             rows.forEach(tr => {
                 const val = parseFloat(tr.querySelector('.amount-input').value) || 0;
                 tr.querySelector('.ratio-cell').textContent = (total > 0 && val > 0) ? ((val / total) * 100).toFixed(2) : '';
             });
+
+            // 화면 하단 합계(Footer)의 텍스트를 업데이트합니다. (소수점 자릿수 정리)
+            document.getElementById('totalAmount').textContent = total > 0 ? total.toFixed(3) : '0.000';
+            document.getElementById('totalRatio').textContent = total > 0 ? '100.00' : '0.00';
         };
 
         function reNumberRows() {
@@ -561,10 +599,7 @@
                     packSpec: document.getElementById('packSpec').value,
                     individualPack: document.getElementById('individualPack').value,
                     boxSpec: document.getElementById('boxSpec').value,
-                    
-                    // ★ 추가됨: 중량 데이터 수집 ★
                     weight: document.getElementById('weight').value, 
-                    
                     expireDate: finalExpireDate,
                     moq: document.getElementById('moq').value,
                     leadTime: document.getElementById('leadTime').value,
@@ -584,6 +619,10 @@
                 
                 sortState = 0;
                 document.getElementById('sortArrow').textContent = '';
+                
+                // 합계 수치도 초기화
+                document.getElementById('totalAmount').textContent = '0.000';
+                document.getElementById('totalRatio').textContent = '0.00';
                 
                 for (let i = 0; i < 10; i++) window.addRow();
                 await loadProducts(); 
