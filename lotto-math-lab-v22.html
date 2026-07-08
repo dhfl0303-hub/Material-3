@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LOTTO MATH LAB v2.5</title>
-<script src="[https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js](https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js)"></script>
-<script src="[https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js](https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js)"></script>
-<script src="[https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js](https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js)"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -416,7 +416,7 @@ const firebaseConfig = {
 
 let db = null;
 let DRAWS = [];
-const N=45, PICK=6, COMBOS=8145060;
+const N = 45, PICK = 6, COMBOS = 8145060;
 let indSelected = { lma: 1, bb: 1, macd: 1, super: 1, psar: 1 }; // 선택된 번호 상태 저장
 
 // ══════════ 데이터 로딩 시스템 ══════════
@@ -597,7 +597,7 @@ function renderFreqSub(freq,expected,total){
     ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:chartTooltip},scales:{x:{ticks:{color:'#556677',font:{size:8},maxRotation:0},grid:{display:false}},y:{ticks:{color:'#556677',font:{size:9}},grid:{color:chartGridColor}}}}
   });
   let chi2=0;for(let i=1;i<=N;i++)chi2+=Math.pow(freq[i]-expected,2)/expected;
-  const critical=60.48,isR=chi2<critical;
+  const critical=60.48,isR=chi2 < critical;
   document.getElementById('chiStat').textContent=chi2.toFixed(2);
   document.getElementById('chiCritical').textContent=critical;
   const cb=document.getElementById('chiResult');
@@ -625,7 +625,7 @@ function renderPatternSub(freq,expected,total){
   const dist={};getDrawNums().forEach(d=>{const o=d.filter(n=>n%2===1).length;const k=`${o}:${6-o}`;dist[k]=(dist[k]||0)+1});
   const oe=Object.entries(dist).map(([k,v])=>({ratio:k,count:v,pct:+((v/total)*100).toFixed(1)})).sort((a,b)=>b.count-a.count);
   document.getElementById('oddEvenBody').innerHTML=oe.map(d=>`<tr><td>${d.ratio}</td><td class="text-right">${d.count}회</td><td class="text-right ${d.pct>25?'text-gold':'text-dim'}">${d.pct}%</td></tr>`).join('');
-  let wc=0;getDrawNums().forEach(d=>{const s=[...d].sort((a,b)=>a-b);for(let i=0;i<s.length-1;i++){if(s[i+1]-s[i]===1){wc++;break}}});
+  let wc=0;getDrawNums().forEach(d=>{const s=[...d].sort((a,b)=>a-b);for(let i=0;i < s.length-1;i++){if(s[i+1]-s[i]===1){wc++;break}}});
   document.getElementById('consecPct').textContent=((wc/total)*100).toFixed(1)+'%';
   document.getElementById('consecCount').textContent=`${wc}/${total}`;
   const lambda=expected;
@@ -672,17 +672,82 @@ const strategies=[{id:'random',name:'완전 랜덤',desc:'순수 난수'},{id:'b
 let selStrat='balanced';
 function renderStrategies(){document.getElementById('strategyList').innerHTML=strategies.map(s=>`<button class="strategy-btn${s.id===selStrat?' active':''}" onclick="selStrat='${s.id}';renderStrategies()"><div><div class="name">${s.name}</div><div class="desc">${s.desc}</div></div>${s.id===selStrat?'<span class="text-gold">✓</span>':''}</button>`).join('')}
 
-function randomPick(){const p=Array.from({length:N},(_,i)=>i+1),r=[];for(let i=0;i<PICK;i++){const x="Math.floor(Math.random()*p.length);r.push(p.splice(x,1)[0])}return">a-b)}
-function balancedPick(){const z=[[1,9],[10,19],[20,29],[30,39],[40,45]],pk=[2,1,1,1,1];for(let i=pk.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pk[i],pk[j]]=[pk[j],pk[i]]}const r=[];z.forEach((zone,i)=>{const pool=Array.from({length:zone[1]-zone[0]+1},(_,k)=>zone[0]+k);for(let j=0;j<pk[i]&&pool.length;j++){r.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0])}});while(r.length<6){const n=Math.floor(Math.random()*45)+1;if(!r.includes(n))r.push(n)}return r.sort((a,b)=>a-b)}
-function antiPopPick(){const pop=[7,3,11,13,17,21,1,5];const hi=Array.from({length:N},(_,i)=>i+1).filter(n=>n>=32);const lo=Array.from({length:N},(_,i)=>i+1).filter(n=>n<32&&!pop.includes(n));const r=[];for(let i=0;i<3&&hi.length;i++)r.push(hi.splice(Math.floor(Math.random()*hi.length),1)[0]);for(let i=0;i<3&&lo.length;i++)r.push(lo.splice(Math.floor(Math.random()*lo.length),1)[0]);return r.sort((a,b)=>a-b)}
-function poissonPick(){const freq=getFreq(),exp=(DRAWS.length*PICK)/N;const w=[];for(let i=1;i<=N;i++)w.push({n:i,w:Math.max(.1,exp-freq[i]+5)});const tw=w.reduce((s,x)=>s+x.w,0);const r=[],u=new Set();while(r.length<PICK){let of rr="Math.random()*tw;for(const" w){if(u.has(x.n))continue;rr-="x.w;if(rr<=0){r.push(x.n);u.add(x.n);break}}}return" x>a-b)}
-function gapPick(){const recent=getDrawNums().slice(-15),rn=new Set(recent.flat());const nr=Array.from({length:N},(_,i)=>i+1).filter(n=>!rn.has(n));const pool=nr.length>=3?[...nr]:Array.from({length:N},(_,i)=>i+1);const r=[];while(r.length<Math.min(3,pool.length)){const n="Math.floor(Math.random()*45)+1;if(!r.includes(n))r.push(n)}return">a-b)}
+function randomPick(){
+  const p=Array.from({length:N},(_,i)=>i+1),r=[];
+  for(let i=0; i < PICK; i++){
+    const x=Math.floor(Math.random()*p.length);
+    r.push(p.splice(x,1)[0]);
+  }
+  return r.sort((a,b)=>a-b);
+}
+function balancedPick(){
+  const z=[[1,9],[10,19],[20,29],[30,39],[40,45]],pk=[2,1,1,1,1];
+  for(let i=pk.length-1; i > 0; i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [pk[i],pk[j]]=[pk[j],pk[i]];
+  }
+  const r=[];
+  z.forEach((zone,i)=>{
+    const pool=Array.from({length:zone[1]-zone[0]+1},(_,k)=>zone[0]+k);
+    for(let j=0; j < pk[i] && pool.length; j++){
+      r.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+    }
+  });
+  while(r.length < 6){
+    const n=Math.floor(Math.random()*45)+1;
+    if(!r.includes(n))r.push(n);
+  }
+  return r.sort((a,b)=>a-b);
+}
+function antiPopPick(){
+  const pop=[7,3,11,13,17,21,1,5];
+  const hi=Array.from({length:N},(_,i)=>i+1).filter(n=>n>=32);
+  const lo=Array.from({length:N},(_,i)=>i+1).filter(n=>n < 32 && !pop.includes(n));
+  const r=[];
+  for(let i=0; i < 3 && hi.length; i++) r.push(hi.splice(Math.floor(Math.random()*hi.length),1)[0]);
+  for(let i=0; i < 3 && lo.length; i++) r.push(lo.splice(Math.floor(Math.random()*lo.length),1)[0]);
+  return r.sort((a,b)=>a-b);
+}
+function poissonPick(){
+  const freq=getFreq(),exp=(DRAWS.length*PICK)/N;
+  const w=[];
+  for(let i=1; i<=N; i++) w.push({n:i,w:Math.max(.1,exp-freq[i]+5)});
+  const tw=w.reduce((s,x)=>s+x.w,0);
+  const r=[],u=new Set();
+  while(r.length < PICK){
+    let rr=Math.random()*tw;
+    for(const x of w){
+      if(u.has(x.n)) continue;
+      rr-=x.w;
+      if(rr<=0){ r.push(x.n); u.add(x.n); break; }
+    }
+  }
+  return r.sort((a,b)=>a-b);
+}
+function gapPick(){
+  const recent=getDrawNums().slice(-15),rn=new Set(recent.flat());
+  const nr=Array.from({length:N},(_,i)=>i+1).filter(n=>!rn.has(n));
+  const pool=nr.length>=3 ? [...nr] : Array.from({length:N},(_,i)=>i+1);
+  const r=[];
+  while(r.length < Math.min(3,pool.length)){
+    const n=pool.splice(Math.floor(Math.random()*pool.length),1)[0];
+    if(!r.includes(n)) r.push(n);
+  }
+  while(r.length < PICK){
+    const n=Math.floor(Math.random()*45)+1;
+    if(!r.includes(n)) r.push(n);
+  }
+  return r.sort((a,b)=>a-b);
+}
 
 const genFns={random:randomPick,balanced:balancedPick,antiPop:antiPopPick,poisson:poissonPick,gap:gapPick};
 const stratNames={random:'완전 랜덤',balanced:'균형 분포',antiPop:'인기번호 회피',poisson:'포아송 보정',gap:'갭 분석'};
 function generateNumbers(){
   const count=+document.getElementById('genCount').value,fn=genFns[selStrat],results=[];
-  for(let i=0;i<count;i++){const nums=fn();results.push({nums,sum:nums.reduce((a,b)=>a+b,0),oe:`${nums.filter(n=>n%2===1).length}:${nums.filter(n=>n%2===0).length}`,lh:`${nums.filter(n=>n<=22).length}:${nums.filter(n=>n>22).length}`})}
+  for(let i=0; i < count; i++){
+    const nums=fn();
+    results.push({nums,sum:nums.reduce((a,b)=>a+b,0),oe:`${nums.filter(n=>n%2===1).length}:${nums.filter(n=>n%2===0).length}`,lh:`${nums.filter(n=>n<=22).length}:${nums.filter(n=>n > 22).length}`})
+  }
   document.getElementById('genResults').classList.remove('hidden');
   document.getElementById('genResultTitle').textContent=`🎯 생성 결과 (${stratNames[selStrat]})`;
   document.getElementById('genResultBody').innerHTML=results.map((r,i)=>`<div class="result-row"><div class="flex-center gap4"><span style="font-size:10px;color:var(--textDim);width:20px">#${i+1}</span>${r.nums.map(n=>renderBall(n)).join('')}</div><div class="result-meta"><span>합:${r.sum}</span><span>홀짝:${r.oe}</span><span>고저:${r.lh}</span></div></div>`).join('');
@@ -695,13 +760,13 @@ function runSimulation(){
   setTimeout(()=>{
     let spent=0,won=0;const md={0:0,1:0,2:0,3:0,4:0,5:0,6:0},ph=[];
     const si=Math.max(1,Math.floor(sc/100));
-    for(let d=0;d<sc;d++){
+    for(let d=0; d < sc; d++){
       const pool=Array.from({length:45},(_,i)=>i+1),w=[];
-      for(let i=0;i<6;i++)w.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+      for(let i=0; i < 6; i++) w.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
       const bonus=pool[Math.floor(Math.random()*pool.length)];
-      for(let t=0;t<tpd;t++){
+      for(let t=0; t < tpd; t++){
         spent+=1000;const mp=Array.from({length:45},(_,i)=>i+1),my=[];
-        for(let i=0;i<6;i++)my.push(mp.splice(Math.floor(Math.random()*mp.length),1)[0]);
+        for(let i=0; i < 6; i++) my.push(mp.splice(Math.floor(Math.random()*mp.length),1)[0]);
         const m=my.filter(n=>w.includes(n)).length;md[m]++;
         let p=0;if(m===6)p=2e9;else if(m===5&&my.includes(bonus))p=5e7;else if(m===5)p=1.5e6;else if(m===4)p=5e4;else if(m===3)p=5e3;
         won+=p;
@@ -711,11 +776,11 @@ function runSimulation(){
     const tt=sc*tpd,roi=(((won-spent)/spent)*100).toFixed(2),ev=(won/tt).toFixed(0);
     document.getElementById('simResults').classList.remove('hidden');
     document.getElementById('simSpent').textContent=(spent/10000).toLocaleString()+'만';
-    const we=document.getElementById('simWon');we.textContent=(won/10000).toLocaleString()+'만';we.style.color=won>spent?'var(--green)':'var(--red)';
-    const re=document.getElementById('simROI');re.textContent=roi+'%';re.style.color=roi>0?'var(--green)':'var(--red)';
+    const we=document.getElementById('simWon');we.textContent=(won/10000).toLocaleString()+'만';we.style.color=won > spent?'var(--green)':'var(--red)';
+    const re=document.getElementById('simROI');re.textContent=roi+'%';re.style.color=roi > 0?'var(--green)':'var(--red)';
     document.getElementById('simEV').textContent=Number(ev).toLocaleString()+'원';
-    const vd=document.getElementById('simVerdict');vd.className='info-box '+(roi<0?'info-red':'info-green');
-    vd.textContent=roi<0?`📉 ${tt.toLocaleString()}장 기준, 투자금의 ${Math.abs(roi)}% 손실`:`📈 이례적 수익! 1등 당첨 포함 가능성`;
+    const vd=document.getElementById('simVerdict');vd.className='info-box '+(roi < 0?'info-red':'info-green');
+    vd.textContent=roi < 0?`📉 ${tt.toLocaleString()}장 기준, 투자금의 ${Math.abs(roi)}% 손실`:`📈 이례적 수익! 1등 당첨 포함 가능성`;
     destroyChart('profitChart');
     CI.profitChart=new Chart(document.getElementById('profitChart'),{type:'line',data:{labels:ph.map(p=>p.d),datasets:[{data:ph.map(p=>p.p),borderColor:'#F0C040',borderWidth:2,pointRadius:0,fill:false,tension:.1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...chartTooltip,callbacks:{label:c=>(c.parsed.y/10000).toLocaleString()+'만원'}}},scales:{x:{ticks:{color:'#556677',font:{size:8},maxTicksLimit:8},grid:{display:false}},y:{ticks:{color:'#556677',font:{size:8},callback:v=>(v/10000).toFixed(0)+'만'},grid:{color:chartGridColor}}}}});
     const th={6:'0.0000123%',5:'0.0018%',4:'0.0914%',3:'2.22%',2:'16.14%',1:'41.30%',0:'40.22%'};
@@ -776,7 +841,7 @@ function getNumTimeSeries(num, windowSize){
 function calcEMA(data, period){
   const k = 2/(period+1);
   const ema = [data[0]];
-  for(let i=1;i<data.length;i++) ema.push(data[i]*k + ema[i-1]*(1-k));
+  for(let i=1; i < data.length; i++) ema.push(data[i]*k + ema[i-1]*(1-k));
   return ema;
 }
 
@@ -798,15 +863,15 @@ function renderLMA(){
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8899AA',font:{size:10}}},tooltip:chartTooltip},scales:{x:{ticks:{color:'#556677',font:{size:8},maxTicksLimit:8},grid:{display:false}},y:{ticks:{color:'#556677',font:{size:9}},grid:{color:chartGridColor}}}}});
 
   const gc=[],dc=[];
-  for(let n=1;n<=N;n++){
+  for(let n=1; n<=N; n++){
     const s=getNumTimeSeries(n,shortP), l=getNumTimeSeries(n,longP);
     const off=s.length-l.length;
     const sa=s.slice(off);
-    if(sa.length<2||l.length<2) continue;
+    if(sa.length < 2 || l.length < 2) continue;
     const prev=sa[sa.length-2]-l[l.length-2];
     const curr=sa[sa.length-1]-l[l.length-1];
-    if(prev<=0 && curr>0) gc.push(n);
-    if(prev>=0 && curr<0) dc.push(n);
+    if(prev<=0 && curr > 0) gc.push(n);
+    if(prev>=0 && curr < 0) dc.push(n);
   }
   document.getElementById('goldenList').innerHTML=gc.length?gc.map(n=>renderBall(n,true)).join(''):'<span class="text-dim">없음</span>';
   document.getElementById('deadList').innerHTML=dc.length?dc.map(n=>renderBall(n,true)).join(''):'<span class="text-dim">없음</span>';
@@ -814,16 +879,16 @@ function renderLMA(){
 
 function calcRSI(num, period){
   const draws=getDrawNums();
-  if(draws.length<period+1) return 50;
+  if(draws.length < period+1) return 50;
   const changes=[];
-  for(let i=1;i<draws.length;i++){
+  for(let i=1; i < draws.length; i++){
     const prev=draws[i-1].includes(num)?1:0;
     const curr=draws[i].includes(num)?1:0;
     changes.push(curr-prev);
   }
   const recent=changes.slice(-period);
   let gains=0,losses=0;
-  recent.forEach(c=>{if(c>0)gains+=c;else losses+=Math.abs(c)});
+  recent.forEach(c=>{if(c > 0)gains+=c;else losses+=Math.abs(c)});
   const avgGain=gains/period, avgLoss=losses/period;
   if(avgLoss===0) return 100;
   const rs=avgGain/avgLoss;
@@ -833,25 +898,25 @@ function calcRSI(num, period){
 function renderRSI(){
   const period=+document.getElementById('rsiPeriod').value;
   const rsiData=[];
-  for(let i=1;i<=N;i++) rsiData.push({num:i, rsi:calcRSI(i,period)});
+  for(let i=1; i<=N; i++) rsiData.push({num:i, rsi:calcRSI(i,period)});
 
   destroyChart('rsiChart');
-  const colors=rsiData.map(d=>d.rsi>70?'#FF4757':d.rsi<30?'#70A1FF':'#556677');
+  const colors=rsiData.map(d=>d.rsi > 70?'#FF4757':d.rsi < 30?'#70A1FF':'#556677');
   CI.rsiChart=new Chart(document.getElementById('rsiChart'),{type:'bar',data:{labels:rsiData.map(d=>d.num),datasets:[{data:rsiData.map(d=>d.rsi),backgroundColor:colors,borderRadius:2,barPercentage:.7}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:chartTooltip},scales:{x:{ticks:{color:'#556677',font:{size:8},maxRotation:0},grid:{display:false}},y:{min:0,max:100,ticks:{color:'#556677',font:{size:9},stepSize:10},grid:{color:chartGridColor}}}}});
 
-  document.getElementById('rsiHot').innerHTML=rsiData.filter(d=>d.rsi>70).sort((a,b)=>b.rsi-a.rsi).map(d=>`<div class="flex-between" style="padding:2px 0">${renderBall(d.num,true)}<span class="text-red">${d.rsi}</span></div>`).join('')||'<span class="text-dim">없음</span>';
-  document.getElementById('rsiCold').innerHTML=rsiData.filter(d=>d.rsi<30).sort((a,b)=>a.rsi-b.rsi).map(d=>`<div class="flex-between" style="padding:2px 0">${renderBall(d.num,true)}<span class="text-cyan">${d.rsi}</span></div>`).join('')||'<span class="text-dim">없음</span>';
+  document.getElementById('rsiHot').innerHTML=rsiData.filter(d=>d.rsi > 70).sort((a,b)=>b.rsi-a.rsi).map(d=>`<div class="flex-between" style="padding:2px 0">${renderBall(d.num,true)}<span class="text-red">${d.rsi}</span></div>`).join('')||'<span class="text-dim">없음</span>';
+  document.getElementById('rsiCold').innerHTML=rsiData.filter(d=>d.rsi < 30).sort((a,b)=>a.rsi-b.rsi).map(d=>`<div class="flex-between" style="padding:2px 0">${renderBall(d.num,true)}<span class="text-cyan">${d.rsi}</span></div>`).join('')||'<span class="text-dim">없음</span>';
 }
 
 function renderBB(){
   const num = indSelected.bb; 
   const draws=getDrawNums();
   const windowSize=20;
-  if(draws.length<windowSize) return;
+  if(draws.length < windowSize) return;
   const series=getNumTimeSeries(num, windowSize);
   const ma=[], upper=[], lower=[];
   const bandWindow=20;
-  for(let i=bandWindow-1;i<series.length;i++){
+  for(let i=bandWindow-1; i < series.length; i++){
     const slice=series.slice(i-bandWindow+1,i+1);
     const m=mean(slice), s=stddev(slice);
     ma.push(m); upper.push(m+2*s); lower.push(m-2*s);
@@ -868,14 +933,14 @@ function renderBB(){
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8899AA',font:{size:9}}},tooltip:chartTooltip},scales:{x:{display:false},y:{ticks:{color:'#556677',font:{size:9}},grid:{color:chartGridColor}}}}});
 
   const upList=[],loList=[];
-  for(let n=1;n<=N;n++){
+  for(let n=1; n<=N; n++){
     const s=getNumTimeSeries(n,windowSize);
-    if(s.length<bandWindow) continue;
+    if(s.length < bandWindow) continue;
     const lastSlice=s.slice(-bandWindow);
     const m=mean(lastSlice),sd=stddev(lastSlice);
     const last=s[s.length-1];
-    if(last>m+2*sd) upList.push(n);
-    if(last<m-2*sd) loList.push(n);
+    if(last > m+2*sd) upList.push(n);
+    if(last < m-2*sd) loList.push(n);
   }
   document.getElementById('bbUpper').innerHTML=upList.length?upList.map(n=>renderBall(n,true)).join(''):'<span class="text-dim">없음</span>';
   document.getElementById('bbLower').innerHTML=loList.length?loList.map(n=>renderBall(n,true)).join(''):'<span class="text-dim">없음</span>';
@@ -885,7 +950,7 @@ function renderMACD(){
   const num = indSelected.macd; 
   const draws=getDrawNums();
   const raw=draws.map(d=>d.includes(num)?1:0);
-  if(raw.length<30) return;
+  if(raw.length < 30) return;
   const ema12=calcEMA(raw,12), ema26=calcEMA(raw,26);
   const macdLine=ema12.map((v,i)=>v-ema26[i]);
   const signal=calcEMA(macdLine,9);
@@ -911,7 +976,7 @@ function calcSupertrendData(num) {
   const basicUpper = [], basicLower = [], finalUpper = [], finalLower = [], trendBand = [], isUpArr = [];
   
   // 1. 대용 ATR 및 상하단 베이스 채널 계산
-  for(let i=0; i<ts.length; i++){
+  for(let i=0; i < ts.length; i++){
     const start = Math.max(0, i - atrPeriod + 1);
     const slice = ts.slice(start, i + 1);
     const m = mean(slice), s = stddev(slice);
@@ -927,7 +992,7 @@ function calcSupertrendData(num) {
   trendBand.push(finalLower[0]);
   
   // 2. 슈퍼트렌드 스위칭 알고리즘 적용
-  for(let i=1; i<ts.length; i++){
+  for(let i=1; i < ts.length; i++){
     // 상단 밴드 정밀화
     if(basicUpper[i] < finalUpper[i-1] || ts[i-1] > finalUpper[i-1]) finalUpper.push(basicUpper[i]);
     else finalUpper.push(finalUpper[i-1]);
@@ -1005,7 +1070,7 @@ function calcPSARData(num) {
   
   let af = 0.02, maxAf = 0.2, ep = isUp[0] ? Math.max(ts[0], ts[1]) : Math.min(ts[0], ts[1]);
   
-  for(let i=1; i<ts.length; i++) {
+  for(let i=1; i < ts.length; i++) {
     isUp[i] = isUp[i-1];
     psar[i] = psar[i-1] + af * (ep - psar[i-1]);
     
@@ -1061,7 +1126,7 @@ function renderPSAR() {
 
 function renderMomentum(){
   const draws=getDrawNums();
-  if(draws.length<20) return;
+  if(draws.length < 20) return;
   const recent10=draws.slice(-10), prev10=draws.slice(-20,-10);
   const zones=[{name:'1~9',r:[1,9]},{name:'10~19',r:[10,19]},{name:'20~29',r:[20,29]},{name:'30~39',r:[30,39]},{name:'40~45',r:[40,45]}];
   zones.forEach(z=>{
@@ -1069,7 +1134,7 @@ function renderMomentum(){
     recent10.forEach(d=>d.forEach(n=>{if(n>=z.r[0]&&n<=z.r[1])rc++}));
     prev10.forEach(d=>d.forEach(n=>{if(n>=z.r[0]&&n<=z.r[1])pc++}));
     z.recent=rc;z.prev=pc;
-    z.change=pc>0?+(((rc-pc)/pc)*100).toFixed(1):(rc>0?100:0);
+    z.change=pc > 0?+(((rc-pc)/pc)*100).toFixed(1):(rc > 0?100:0);
   });
 
   destroyChart('momChart');
@@ -1078,7 +1143,7 @@ function renderMomentum(){
     {label:'이전 10회',data:zones.map(z=>z.prev),backgroundColor:'rgba(112,161,255,.2)',borderColor:'#70A1FF',borderWidth:2,pointBackgroundColor:'#70A1FF'}
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8899AA',font:{size:10}}},tooltip:chartTooltip},scales:{r:{ticks:{color:'#556677',font:{size:9},backdropColor:'transparent'},grid:{color:'#1E2D45'},pointLabels:{color:'#8899AA',font:{size:11}}}}}});
 
-  document.getElementById('momBody').innerHTML=zones.map(z=>`<tr><td class="fw700">${z.name}</td><td class="text-right">${z.recent}회</td><td class="text-right">${z.prev}회</td><td class="text-right ${z.change>0?'text-green':'text-red'}">${z.change>0?'+':''}${z.change}%</td></tr>`).join('');
+  document.getElementById('momBody').innerHTML=zones.map(z=>`<tr><td class="fw700">${z.name}</td><td class="text-right">${z.recent}회</td><td class="text-right">${z.prev}회</td><td class="text-right ${z.change > 0?'text-green':'text-red'}">${z.change > 0?'+':''}${z.change}%</td></tr>`).join('');
 }
 
 function renderRangeInd(){
@@ -1148,17 +1213,17 @@ function renderRangeInd(){
 function calcSignalScores(){
   const scores=[];
   const draws=getDrawNums();
-  if(draws.length<50) return Array.from({length:N},(_,i)=>({num:i+1,score:50}));
+  if(draws.length < 50) return Array.from({length:N},(_,i)=>({num:i+1,score:50}));
 
-  for(let n=1;n<=N;n++){
+  for(let n=1; n<=N; n++){
     let score=0, totalW=0;
     
     // 1. LMA
     const s=getNumTimeSeries(n,10), l=getNumTimeSeries(n,50);
-    if(s.length>0&&l.length>0){
+    if(s.length > 0 && l.length > 0){
       const off=s.length-l.length;
       const sa=s.slice(off);
-      if(sa.length>0&&l.length>0){
+      if(sa.length > 0 && l.length > 0){
         const diff=sa[sa.length-1]-l[l.length-1];
         const lmaScore=50+diff*500;
         score+=Math.max(0,Math.min(100,lmaScore))*WEIGHTS.lma;
@@ -1178,7 +1243,7 @@ function calcSignalScores(){
       const lastSlice=ts.slice(-20);
       const m=mean(lastSlice),sd=stddev(lastSlice);
       const last=ts[ts.length-1];
-      const bbScore=sd>0?50-((last-m)/(2*sd))*50:50;
+      const bbScore=sd > 0?50-((last-m)/(2*sd))*50:50;
       score+=Math.max(0,Math.min(100,bbScore))*WEIGHTS.bb;
       totalW+=WEIGHTS.bb;
     }
@@ -1213,11 +1278,11 @@ function calcSignalScores(){
     const recent10=draws.slice(-10),prev10=draws.slice(-20,-10);
     const rc=recent10.filter(d=>d.includes(n)).length;
     const pc=prev10.filter(d=>d.includes(n)).length;
-    const momScore=pc>0?Math.min(100,50+((rc-pc)/pc)*100):rc>0?70:50;
+    const momScore=pc > 0?Math.min(100,50+((rc-pc)/pc)*100):rc > 0?70:50;
     score+=momScore*WEIGHTS.mom;
     totalW+=WEIGHTS.mom;
 
-    scores.push({num:n, score:totalW>0?+(score/totalW).toFixed(1):50});
+    scores.push({num:n, score:totalW > 0?+(score/totalW).toFixed(1):50});
   }
   return scores.sort((a,b)=>b.score-a.score);
 }
@@ -1235,7 +1300,7 @@ function renderSignalHeatmap(){
   document.getElementById('signalHeatmap').innerHTML=byNum.map(s=>{
     const pct=(s.score-min)/range;
     const r=Math.round(255*pct), g=Math.round(100+155*(1-pct)), b_=Math.round(60*(1-pct));
-    return `<div class="hm-cell" style="background:rgba(${r},${g},${b_},.7);color:${pct>.5?'#000':'#fff'}" title="${s.num}번: ${s.score}점">${s.num}</div>`;
+    return `<div class="hm-cell" style="background:rgba(${r},${g},${b_},.7);color:${pct > .5?'#000':'#fff'}" title="${s.num}번: ${s.score}점">${s.num}</div>`;
   }).join('');
 }
 
