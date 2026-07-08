@@ -1,21 +1,12 @@
-첨부해주신 사진을 보니 브라우저 우측 콘솔 창에 **`Uncaught SyntaxError: Invalid or unexpected token`** 이라는 빨간색 에러가 발생한 것이 확인됩니다.
-
-이 에러는 제가 직전에 드린 코드의 맨 마지막 부분인 `analyzeMyNumbers` 함수 내부에서, HTML을 그려주는 문자열(Template Literal) 기호인 백틱(```)과 달러(`$`) 기호에 제가 불필요한 이스케이프 문자(`\`)를 잘못 붙여넣어서 자바스크립트 문법이 깨졌기 때문입니다. 문법 에러가 나면서 스크립트 실행이 중단되어 로딩 화면에서 넘어가지 못한 것입니다.
-
-불편을 드려 죄송합니다! 오류를 일으켰던 이스케이프 문자(`\`)들을 모두 깔끔하게 제거하여 정상 작동하도록 수정한 **전체 코드**를 다시 전달해 드립니다.
-
-기존 코드를 모두 지우고 아래 코드로 덮어쓰기 하시면 로딩 화면을 무사히 통과하고 정상적으로 작동할 것입니다.
-
-```html
 <!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LOTTO MATH LAB v2.5</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="[https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js](https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js)"></script>
+<script src="[https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js](https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js)"></script>
+<script src="[https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js](https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js)"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -681,11 +672,11 @@ const strategies=[{id:'random',name:'완전 랜덤',desc:'순수 난수'},{id:'b
 let selStrat='balanced';
 function renderStrategies(){document.getElementById('strategyList').innerHTML=strategies.map(s=>`<button class="strategy-btn${s.id===selStrat?' active':''}" onclick="selStrat='${s.id}';renderStrategies()"><div><div class="name">${s.name}</div><div class="desc">${s.desc}</div></div>${s.id===selStrat?'<span class="text-gold">✓</span>':''}</button>`).join('')}
 
-function randomPick(){const p=Array.from({length:N},(_,i)=>i+1),r=[];for(let i=0;i<PICK;i++){const x=Math.floor(Math.random()*p.length);r.push(p.splice(x,1)[0])}return r.sort((a,b)=>a-b)}
+function randomPick(){const p=Array.from({length:N},(_,i)=>i+1),r=[];for(let i=0;i<PICK;i++){const x="Math.floor(Math.random()*p.length);r.push(p.splice(x,1)[0])}return">a-b)}
 function balancedPick(){const z=[[1,9],[10,19],[20,29],[30,39],[40,45]],pk=[2,1,1,1,1];for(let i=pk.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pk[i],pk[j]]=[pk[j],pk[i]]}const r=[];z.forEach((zone,i)=>{const pool=Array.from({length:zone[1]-zone[0]+1},(_,k)=>zone[0]+k);for(let j=0;j<pk[i]&&pool.length;j++){r.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0])}});while(r.length<6){const n=Math.floor(Math.random()*45)+1;if(!r.includes(n))r.push(n)}return r.sort((a,b)=>a-b)}
 function antiPopPick(){const pop=[7,3,11,13,17,21,1,5];const hi=Array.from({length:N},(_,i)=>i+1).filter(n=>n>=32);const lo=Array.from({length:N},(_,i)=>i+1).filter(n=>n<32&&!pop.includes(n));const r=[];for(let i=0;i<3&&hi.length;i++)r.push(hi.splice(Math.floor(Math.random()*hi.length),1)[0]);for(let i=0;i<3&&lo.length;i++)r.push(lo.splice(Math.floor(Math.random()*lo.length),1)[0]);return r.sort((a,b)=>a-b)}
-function poissonPick(){const freq=getFreq(),exp=(DRAWS.length*PICK)/N;const w=[];for(let i=1;i<=N;i++)w.push({n:i,w:Math.max(.1,exp-freq[i]+5)});const tw=w.reduce((s,x)=>s+x.w,0);const r=[],u=new Set();while(r.length<PICK){let rr=Math.random()*tw;for(const x of w){if(u.has(x.n))continue;rr-=x.w;if(rr<=0){r.push(x.n);u.add(x.n);break}}}return r.sort((a,b)=>a-b)}
-function gapPick(){const recent=getDrawNums().slice(-15),rn=new Set(recent.flat());const nr=Array.from({length:N},(_,i)=>i+1).filter(n=>!rn.has(n));const pool=nr.length>=3?[...nr]:Array.from({length:N},(_,i)=>i+1);const r=[];while(r.length<Math.min(3,pool.length)){const n=pool.splice(Math.floor(Math.random()*pool.length),1)[0];if(!r.includes(n))r.push(n)}while(r.length<PICK){const n=Math.floor(Math.random()*45)+1;if(!r.includes(n))r.push(n)}return r.sort((a,b)=>a-b)}
+function poissonPick(){const freq=getFreq(),exp=(DRAWS.length*PICK)/N;const w=[];for(let i=1;i<=N;i++)w.push({n:i,w:Math.max(.1,exp-freq[i]+5)});const tw=w.reduce((s,x)=>s+x.w,0);const r=[],u=new Set();while(r.length<PICK){let of rr="Math.random()*tw;for(const" w){if(u.has(x.n))continue;rr-="x.w;if(rr<=0){r.push(x.n);u.add(x.n);break}}}return" x>a-b)}
+function gapPick(){const recent=getDrawNums().slice(-15),rn=new Set(recent.flat());const nr=Array.from({length:N},(_,i)=>i+1).filter(n=>!rn.has(n));const pool=nr.length>=3?[...nr]:Array.from({length:N},(_,i)=>i+1);const r=[];while(r.length<Math.min(3,pool.length)){const n="Math.floor(Math.random()*45)+1;if(!r.includes(n))r.push(n)}return">a-b)}
 
 const genFns={random:randomPick,balanced:balancedPick,antiPop:antiPopPick,poisson:poissonPick,gap:gapPick};
 const stratNames={random:'완전 랜덤',balanced:'균형 분포',antiPop:'인기번호 회피',poisson:'포아송 보정',gap:'갭 분석'};
