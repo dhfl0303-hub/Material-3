@@ -29,7 +29,6 @@
             border-top: 5px solid #4f46e5; 
         }
 
-        /* 타이포그래피 */
         h2 { margin-top: 0; color: #0f172a; font-size: 1.6rem; font-weight: 800; margin-bottom: 1.5rem; letter-spacing: -0.5px; }
         h3 { 
             color: #334155; 
@@ -41,7 +40,6 @@
             border-bottom: 2px solid #f1f5f9; 
         }
         
-        /* 폼 레이아웃 및 화사한 입력창 */
         .grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
         .form-group { display: flex; flex-direction: column; }
         label { font-weight: 600; font-size: 0.85rem; margin-bottom: 8px; color: #64748b; }
@@ -61,94 +59,25 @@
             box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); 
         }
         
-        /* 읽기 전용 폼 구분 */
-        input[readonly] { 
-            background-color: #f1f5f9; 
-            color: #475569; 
-            cursor: not-allowed; 
-            border: 1px solid #e2e8f0; 
-            font-weight: 600; 
-        }
+        input[readonly] { background-color: #f1f5f9; color: #475569; cursor: not-allowed; border: 1px solid #e2e8f0; font-weight: 600; }
 
-        /* 복합 입력창 (품목제조보고번호, 소비기한, 중량) */
-        .input-group { 
-            display: flex; align-items: stretch; 
-            background-color: #ffffff;
-            border: 1px solid #cbd5e1; 
-            border-radius: 8px; 
-            overflow: hidden;
-            transition: all 0.2s ease;
-        }
-        .input-group:focus-within {
-            border-color: #4f46e5;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
-        }
-        .input-group span { 
-            display: flex;
-            align-items: center;
-            padding: 0 16px; 
-            background-color: #f8fafc;
-            color: #475569; 
-            font-size: 0.9rem; 
-            font-weight: 600;
-            white-space: nowrap;
-        }
-        .input-group input { 
-            flex: 1; 
-            border: none; 
-            border-radius: 0; 
-            background: transparent;
-            padding: 12px 16px;
-            font-size: 1rem;
-            color: #4f46e5; 
-            font-weight: 700;
-            box-shadow: none; 
-        }
+        .input-group { display: flex; align-items: stretch; background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; transition: all 0.2s ease; }
+        .input-group:focus-within { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); }
+        .input-group span { display: flex; align-items: center; padding: 0 16px; background-color: #f8fafc; color: #475569; font-size: 0.9rem; font-weight: 600; white-space: nowrap; }
+        .input-group input { flex: 1; border: none; border-radius: 0; background: transparent; padding: 12px 16px; font-size: 1rem; color: #4f46e5; font-weight: 700; box-shadow: none; }
         .input-group input:focus { box-shadow: none; }
 
-        /* 숫자 화살표 제거 */
         input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         input[type="number"] { -moz-appearance: textfield; }
 
-        /* 파일 업로드 영역 */
-        .file-upload-area {
-            background-color: #f8fafc; 
-            padding: 24px; 
-            border: 1px dashed #cbd5e1; 
-            border-radius: 12px;
-        }
-        input[type="file"]::file-selector-button { 
-            padding: 8px 16px; 
-            border-radius: 6px; 
-            border: 1px solid #cbd5e1; 
-            background-color: #ffffff; 
-            color: #475569;
-            font-weight: 600;
-            cursor: pointer; 
-            transition: background-color 0.2s;
-            margin-right: 12px;
-        }
+        .file-upload-area { background-color: #f8fafc; padding: 24px; border: 1px dashed #cbd5e1; border-radius: 12px; }
+        input[type="file"]::file-selector-button { padding: 8px 16px; border-radius: 6px; border: 1px solid #cbd5e1; background-color: #ffffff; color: #475569; font-weight: 600; cursor: pointer; transition: background-color 0.2s; margin-right: 12px; }
         input[type="file"]::file-selector-button:hover { background-color: #e2e8f0; }
 
-        /* 산뜻한 테이블 디자인 */
-        .table-card { 
-            border: 1px solid #e2e8f0; 
-            border-radius: 12px; 
-            overflow: hidden; 
-            margin-bottom: 20px; 
-            background-color: #ffffff;
-        }
+        .table-card { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 20px; background-color: #ffffff; }
         table { width: 100%; border-collapse: collapse; min-width: 820px; }
         
-        thead th { 
-            background-color: #f8fafc; 
-            color: #334155; 
-            padding: 14px 10px; 
-            font-size: 0.85rem; 
-            font-weight: 700; 
-            text-align: center; 
-            border-bottom: 2px solid #e2e8f0;
-        }
+        thead th { background-color: #f8fafc; color: #334155; padding: 14px 10px; font-size: 0.85rem; font-weight: 700; text-align: center; border-bottom: 2px solid #e2e8f0; }
         th.sortable { cursor: pointer; transition: background-color 0.2s; }
         th.sortable:hover { background-color: #f1f5f9; color: #4f46e5; }
         .sort-arrow { margin-left: 6px; font-size: 11px; color: #4f46e5; }
@@ -156,101 +85,50 @@
         tbody tr { border-bottom: 1px solid #f1f5f9; transition: background-color 0.15s; }
         tbody tr:hover { background-color: #f8fafc; }
         tbody tr:last-child { border-bottom: none; }
-        
         tbody td { padding: 8px; text-align: center; vertical-align: middle; color: #334155; font-size: 0.95rem;}
         
-        tbody td input { 
-            width: 100%; 
-            padding: 10px; 
-            border: 1px solid transparent; 
-            border-radius: 6px; 
-            font-size: 0.95rem; 
-            text-align: center; 
-            box-sizing: border-box;
-            background-color: transparent;
-            transition: all 0.2s;
-        }
+        tbody td input { width: 100%; padding: 10px; border: 1px solid transparent; border-radius: 6px; font-size: 0.95rem; text-align: center; box-sizing: border-box; background-color: transparent; transition: all 0.2s; }
         tbody td input:hover { background-color: #f8fafc; border-color: #e2e8f0; }
-        tbody td input:focus { 
-            outline: none; 
-            background-color: #ffffff;
-            border-color: #4f46e5;
-            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
-        }
+        tbody td input:focus { outline: none; background-color: #ffffff; border-color: #4f46e5; box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1); }
         
         .ratio-cell { font-weight: 700; color: #4f46e5; font-size: 0.95rem; }
         .no-cell { font-weight: 600; color: #94a3b8; font-size: 0.85rem; }
         .btn-del-row { background: none; border: none; color: #ef4444; font-size: 1.2rem; font-weight: bold; cursor: pointer; border-radius: 6px; padding: 4px 8px; transition: all 0.2s; }
         .btn-del-row:hover { background-color: #fee2e2; }
 
-        /* 합계(Footer) 전용 디자인 */
-        .total-row {
-            background-color: #f1f5f9;
-            border-top: 2px solid #cbd5e1;
-            font-weight: 800;
-        }
-        .total-row td {
-            padding: 16px 10px;
-            font-size: 1.05rem;
-        }
-        .total-amount {
-            color: #4f46e5; 
-        }
-        .total-ratio {
-            color: #10b981; 
-        }
+        .total-row { background-color: #f1f5f9; border-top: 2px solid #cbd5e1; font-weight: 800; }
+        .total-row td { padding: 16px 10px; font-size: 1.05rem; }
+        .total-amount { color: #4f46e5; }
+        .total-ratio { color: #10b981; }
 
-        /* 산뜻한 버튼 디자인 */
-        .btn-add { 
-            background-color: #e0e7ff; 
-            color: #4338ca; 
-            padding: 10px 20px; 
-            border: none; 
-            border-radius: 8px; 
-            font-size: 0.9rem; 
-            font-weight: 700; 
-            cursor: pointer; 
-            margin-top: 15px;
-            transition: all 0.2s;
-        }
+        .btn-add { background-color: #e0e7ff; color: #4338ca; padding: 10px 20px; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 700; cursor: pointer; margin-top: 15px; transition: all 0.2s; }
         .btn-add:hover { background-color: #c7d2fe; }
         
-        button[type="submit"] { 
-            width: 100%; 
-            padding: 18px; 
-            background-color: #4f46e5; 
-            color: white; 
-            border: none; 
-            border-radius: 10px; 
-            font-size: 1.1rem; 
-            font-weight: 700; 
-            cursor: pointer; 
-            margin-top: 30px;
-            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3);
-            transition: all 0.2s;
-        }
+        button[type="submit"] { width: 100%; padding: 18px; background-color: #4f46e5; color: white; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: 700; cursor: pointer; margin-top: 30px; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3); transition: all 0.2s; }
         button[type="submit"]:hover { background-color: #4338ca; transform: translateY(-1px); box-shadow: 0 6px 8px -1px rgba(79, 70, 229, 0.4); }
         button[type="submit"]:active { transform: translateY(0); }
         button[type="submit"]:disabled { background-color: #94a3b8; cursor: not-allowed; box-shadow: none; transform: none;}
         
-        /* 리스트 전용 스타일 */
+        /* 버튼 그룹 (수정 취소 등) */
+        .btn-group-submit { display: flex; gap: 15px; margin-top: 30px; }
+        .btn-cancel { flex: 1; padding: 18px; background-color: #f1f5f9; color: #475569; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: all 0.2s; display: none; }
+        .btn-cancel:hover { background-color: #e2e8f0; color: #1e293b; }
+
         .list-table th { background-color: #f8fafc; color: #334155; }
         .list-table td { padding: 16px 12px; }
-        .file-link { 
-            display: inline-flex; align-items: center; justify-content: center;
-            padding: 6px 12px; 
-            background-color: #f1f5f9; 
-            color: #4f46e5; 
-            text-decoration: none; 
-            border-radius: 6px; 
-            font-size: 0.85rem; 
-            font-weight: 600;
-            margin: 3px; 
-            border: 1px solid #e2e8f0;
-            transition: all 0.2s;
-        }
+        .file-link { display: inline-flex; align-items: center; justify-content: center; padding: 6px 12px; background-color: #f1f5f9; color: #4f46e5; text-decoration: none; border-radius: 6px; font-size: 0.85rem; font-weight: 600; margin: 3px; border: 1px solid #e2e8f0; transition: all 0.2s; }
         .file-link:hover { background-color: #e2e8f0; color: #3730a3; }
         .empty-msg { text-align: center; padding: 50px; color: #94a3b8; font-weight: 600; font-size: 1rem; }
+        
+        /* 테이블 안의 버튼들 */
+        .action-btn { background: none; border: none; font-size: 0.85rem; font-weight: 700; cursor: pointer; padding: 6px 10px; border-radius: 6px; transition: all 0.2s; }
+        .edit-btn { color: #2563eb; background-color: #eff6ff; margin-right: 5px; }
+        .edit-btn:hover { background-color: #dbeafe; color: #1d4ed8; }
+        .delete-btn { color: #dc2626; background-color: #fef2f2; }
+        .delete-btn:hover { background-color: #fee2e2; color: #b91c1c; }
+
+        /* 수정 모드 알림 띠 */
+        #editModeBanner { display: none; background-color: #fef9c3; color: #92400e; padding: 15px; border-radius: 8px; border: 1px solid #fde047; font-weight: 700; margin-bottom: 20px; text-align: center; }
     </style>
 </head>
 <body>
@@ -264,24 +142,28 @@
                 <table class="list-table">
                     <thead>
                         <tr>
-                            <th style="width: 120px;">등록일</th>
+                            <th style="width: 100px;">등록일</th>
                             <th>제품명</th>
                             <th>품목제조보고번호</th>
                             <th>출시예정일</th>
                             <th>보관조건</th>
                             <th>첨부파일</th>
+                            <th style="width: 120px;">관리</th>
                         </tr>
                     </thead>
                     <tbody id="productListBody">
-                        <tr><td colspan="6" class="empty-msg">데이터를 불러오는 중입니다...</td></tr>
+                        <tr><td colspan="7" class="empty-msg">데이터를 불러오는 중입니다...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- 하단: 신제품 등록 폼 -->
-        <div class="card">
-            <h2>✨ 실무용 신제품 현황 등록</h2>
+        <!-- 하단: 신제품 등록/수정 폼 -->
+        <div class="card" id="formSection">
+            <h2 id="formTitle">✨ 실무용 신제품 현황 등록</h2>
+            
+            <div id="editModeBanner">⚠️ 현재 기존 데이터를 수정 중입니다. 수정이 끝나면 저장 버튼을 눌러주세요.</div>
+
             <form id="product-form">
                 
                 <h3>1. 제품 기본 정보</h3>
@@ -355,30 +237,43 @@
                           <td colspan="2"></td>
                         </tr>
                       </tfoot>
-
                     </table>
                 </div>
                 <button type="button" class="btn-add" onclick="addRow()">+ 재료 행 추가하기</button>
 
                 <h3>3. 필수 품질 서류 첨부 (PDF 전용)</h3>
                 <div class="grid-layout file-upload-area">
-                    <div class="form-group"><label>제조공정도</label><input type="file" id="processFile" accept=".pdf"></div>
-                    <div class="form-group"><label>영양성분성적서</label><input type="file" id="nutritionFile" accept=".pdf"></div>
-                    <div class="form-group"><label>품목제조보고서</label><input type="file" id="reportFile" accept=".pdf"></div>
+                    <!-- 수정됨: 새로운 파일을 안 올리면 기존 파일이 유지됩니다 -->
+                    <div class="form-group">
+                        <label>제조공정도 <span style="color:#ef4444; font-weight:normal; font-size:0.8rem;">(10MB 이하)</span></label>
+                        <input type="file" id="processFile" accept=".pdf">
+                    </div>
+                    <div class="form-group">
+                        <label>영양성분성적서 <span style="color:#ef4444; font-weight:normal; font-size:0.8rem;">(10MB 이하)</span></label>
+                        <input type="file" id="nutritionFile" accept=".pdf">
+                    </div>
+                    <div class="form-group">
+                        <label>품목제조보고서 <span style="color:#ef4444; font-weight:normal; font-size:0.8rem;">(10MB 이하)</span></label>
+                        <input type="file" id="reportFile" accept=".pdf">
+                    </div>
                 </div>
 
-                <button type="submit" id="submitBtn">모든 데이터 저장하기</button>
+                <div class="btn-group-submit">
+                    <button type="button" class="btn-cancel" id="cancelEditBtn">수정 취소하기</button>
+                    <button type="submit" id="submitBtn">모든 데이터 저장하기</button>
+                </div>
             </form>
         </div>
     </div>
 
-    <!-- Firebase 통신 및 자바스크립트 -->
+    <!-- Firebase 통신 자바스크립트 -->
     <script type="module">
+        // ★ 수정됨: serverTimestamp, doc, updateDoc, deleteDoc, deleteObject 등 핵심 기능 임포트 추가 ★
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-        // 본인의 Firebase 설정값으로 교체
+        // TODO: bbang-ssaem-prod 프로젝트의 설정값으로 반드시 교체하세요!
         const firebaseConfig = {
             apiKey: "YOUR_API_KEY",
             authDomain: "YOUR_AUTH_DOMAIN",
@@ -392,31 +287,30 @@
         const db = getFirestore(app);
         const storage = getStorage(app);
 
+        // ★ 수정됨: 수정 모드인지 판단하기 위한 변수 및 메모리 데이터 공간 생성 ★
+        let currentEditId = null; 
+        let allProductsData = {}; // 데이터를 로드할 때 여기에 보관하여 수정 시 꺼내 씁니다.
+
         let sortState = 0; 
         let originalOrder = [];
         let rowCounter = 0; 
 
-        // ★ 새로 추가됨: 엔터 키를 눌렀을 때 아래 행으로 포커스를 옮겨주는 함수 ★
+        // 엔터 키 네비게이션
         function setupKeyNav(tr) {
             const inputs = Array.from(tr.querySelectorAll('input'));
             inputs.forEach((input, colIdx) => {
                 input.addEventListener('keydown', (e) => {
-                    // 엔터 키가 감지되었을 때
                     if (e.key === 'Enter') {
-                        e.preventDefault(); // 기본 폼 저장(Submit) 동작을 완벽히 차단합니다.
-                        
+                        e.preventDefault(); 
                         const tbody = document.getElementById('tableBody');
                         const rows = Array.from(tbody.querySelectorAll('tr'));
-                        const rowIdx = rows.indexOf(tr); // 현재 어느 줄에 있는지 파악합니다.
-
-                        // 만약 현재 위치가 표의 맨 마지막 줄이라면?
+                        const rowIdx = rows.indexOf(tr); 
                         if (rowIdx === rows.length - 1) {
-                            window.addRow(); // 새 빈 줄을 뿅 하고 추가해 줍니다.
+                            window.addRow(); 
                             const newRow = tbody.lastElementChild;
                             const newInputs = newRow.querySelectorAll('input');
-                            if (newInputs[colIdx]) newInputs[colIdx].focus(); // 추가된 줄의 똑같은 열로 커서를 이동합니다.
+                            if (newInputs[colIdx]) newInputs[colIdx].focus(); 
                         } else {
-                            // 마지막 줄이 아니라면 단순히 바로 아랫줄의 똑같은 열로 커서를 넘겨줍니다.
                             const nextRow = rows[rowIdx + 1];
                             const nextInputs = nextRow.querySelectorAll('input');
                             if (nextInputs[colIdx]) nextInputs[colIdx].focus();
@@ -426,27 +320,25 @@
             });
         }
 
-        window.addRow = function() {
+        window.addRow = function(data = {}) {
             rowCounter++; 
             const tbody = document.getElementById('tableBody');
             const tr = document.createElement('tr');
             tr.dataset.rowId = String(rowCounter); 
 
+            // 데이터가 있으면(수정 모드) 채워넣고, 없으면 빈칸으로 생성합니다.
             tr.innerHTML = `
               <td class="no-cell">${tbody.children.length + 1}</td>
-              <td><input type="text" class="food-type"></td>
-              <td><input type="text" class="material-name"></td>
-              <td><input type="text" class="material-desc"></td>
-              <td><input type="number" class="amount-input" step="any" oninput="calcRatio()"></td>
-              <td class="ratio-cell"></td>
-              <td><input type="text" class="allergen-info"></td>
+              <td><input type="text" class="food-type" value="${data.foodType || ''}"></td>
+              <td><input type="text" class="material-name" value="${data.materialName || ''}"></td>
+              <td><input type="text" class="material-desc" value="${data.description || ''}"></td>
+              <td><input type="number" class="amount-input" step="any" value="${data.amount || ''}" oninput="calcRatio()"></td>
+              <td class="ratio-cell">${data.ratio || ''}</td>
+              <td><input type="text" class="allergen-info" value="${data.allergen || ''}"></td>
               <td><button type="button" class="btn-del-row" onclick="deleteRow(this)" title="행 삭제">✕</button></td>
             `;
             tbody.appendChild(tr);
-            
-            // ★ 수정됨: 새롭게 줄이 생길 때마다 방금 만든 엔터 키 네비게이션 기능(setupKeyNav)을 덧붙여 줍니다 ★
             setupKeyNav(tr);
-            
             window.calcRatio();
         };
 
@@ -459,16 +351,11 @@
         window.calcRatio = function() {
             const rows = document.querySelectorAll('#tableBody tr');
             let total = 0;
-            
-            rows.forEach(tr => { 
-                total += parseFloat(tr.querySelector('.amount-input').value) || 0; 
-            });
-            
+            rows.forEach(tr => { total += parseFloat(tr.querySelector('.amount-input').value) || 0; });
             rows.forEach(tr => {
                 const val = parseFloat(tr.querySelector('.amount-input').value) || 0;
                 tr.querySelector('.ratio-cell').textContent = (total > 0 && val > 0) ? ((val / total) * 100).toFixed(2) : '';
             });
-
             document.getElementById('totalAmount').textContent = total > 0 ? total.toFixed(3) : '0.000';
             document.getElementById('totalRatio').textContent = total > 0 ? '100.00' : '0.00';
         };
@@ -495,19 +382,18 @@
                 }
             } else {
                 if (sortState === 1) originalOrder = rows.map(r => r.dataset.rowId);
-                
                 rows.sort((a, b) => {
                     const va = parseFloat(a.querySelector('.amount-input').value) || 0;
                     const vb = parseFloat(b.querySelector('.amount-input').value) || 0;
                     return sortState === 1 ? vb - va : va - vb;
                 });
-                
                 arrow.textContent = sortState === 1 ? ' ▼' : ' ▲';
                 rows.forEach(tr => tbody.appendChild(tr));
             }
             reNumberRows(); 
         };
 
+        // 데이터 불러오기 (Read)
         async function loadProducts() {
             const tbody = document.getElementById('productListBody');
             try {
@@ -515,19 +401,21 @@
                 const querySnapshot = await getDocs(q);
                 
                 tbody.innerHTML = ''; 
+                allProductsData = {}; // 로드할 때 메모리 객체 초기화
 
                 if (querySnapshot.empty) {
-                    tbody.innerHTML = `<tr><td colspan="6" class="empty-msg">등록된 제품이 없습니다.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="7" class="empty-msg">등록된 제품이 없습니다.</td></tr>`;
                     return;
                 }
 
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
+                    allProductsData[doc.id] = data; // 고유 ID를 키값으로 메모리에 저장
+
+                    // serverTimestamp는 로컬에서 방금 저장했을 때 일시적으로 null일 수 있으므로 방어 코드 작성
                     let dateStr = "";
-                    if (data.createdAt) {
-                        const date = data.createdAt.toDate();
-                        dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-                    }
+                    const dateObj = data.createdAt ? data.createdAt.toDate() : new Date();
+                    dateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth()+1).padStart(2,'0')}-${String(dateObj.getDate()).padStart(2,'0')}`;
 
                     let fileLinks = "";
                     if(data.processFileUrl) fileLinks += `<a href="${data.processFileUrl}" target="_blank" class="file-link">공정도</a>`;
@@ -535,6 +423,7 @@
                     if(data.reportFileUrl) fileLinks += `<a href="${data.reportFileUrl}" target="_blank" class="file-link">품목제조보고</a>`;
 
                     const tr = document.createElement('tr');
+                    // ★ 수정됨: 맨 끝에 '관리' 열 버튼(수정, 삭제)을 추가했습니다. ★
                     tr.innerHTML = `
                         <td>${dateStr}</td>
                         <td style="font-weight: 700; color: #4f46e5;">${data.productName}</td>
@@ -542,15 +431,125 @@
                         <td>${data.releaseDate || '-'}</td>
                         <td><span style="background-color:#f1f5f9; padding:4px 8px; border-radius:4px; font-size:0.85rem; color:#64748b; font-weight:600; border: 1px solid #e2e8f0;">${data.storageCondition || '-'}</span></td>
                         <td>${fileLinks || '-'}</td>
+                        <td>
+                            <button class="action-btn edit-btn" onclick="triggerEdit('${doc.id}')">수정</button>
+                            <button class="action-btn delete-btn" onclick="triggerDelete('${doc.id}')">삭제</button>
+                        </td>
                     `;
                     tbody.appendChild(tr);
                 });
             } catch (error) {
                 console.error("데이터 불러오기 에러:", error);
-                tbody.innerHTML = `<tr><td colspan="6" class="empty-msg" style="color:red;">데이터를 불러오는데 실패했습니다.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="empty-msg" style="color:red;">데이터를 불러오는데 실패했습니다.</td></tr>`;
             }
         }
 
+        // --- ★ 신규 기능: 문서 수정 (Edit) ★ ---
+        window.triggerEdit = function(id) {
+            const data = allProductsData[id];
+            if(!data) return;
+
+            currentEditId = id; // 현재 수정 중인 문서 ID 기억하기
+            
+            // 1. 기본 정보 폼 채우기
+            document.getElementById('productName').value = data.productName || '';
+            document.getElementById('companyName').value = data.companyName || '';
+            document.getElementById('vendor').value = data.vendor || '';
+            
+            // 품목제조보고번호 분리 (20210395253- 제외하고 뒤 3자리만)
+            if(data.reportNumber && data.reportNumber.includes('-')) {
+                document.getElementById('reportNumberSuffix').value = data.reportNumber.split('-')[1];
+            } else {
+                document.getElementById('reportNumberSuffix').value = '';
+            }
+
+            document.getElementById('packSpec').value = data.packSpec || '';
+            document.getElementById('individualPack').value = data.individualPack || '';
+            document.getElementById('boxSpec').value = data.boxSpec || '';
+            document.getElementById('weight').value = data.weight || '';
+            
+            // 소비기한 분리 (제조일로부터 '숫자' 개월까지)
+            if(data.expireDate) {
+                const month = data.expireDate.replace(/[^0-9]/g, '');
+                document.getElementById('expireMonth').value = month;
+            } else {
+                document.getElementById('expireMonth').value = '';
+            }
+
+            document.getElementById('moq').value = data.moq || '';
+            document.getElementById('leadTime').value = data.leadTime || '';
+            document.getElementById('releaseDate').value = data.releaseDate || '';
+            
+            // 2. 배합비 테이블 비우고 다시 채우기
+            document.getElementById('tableBody').innerHTML = '';
+            rowCounter = 0;
+            if(data.mixRatio && data.mixRatio.length > 0) {
+                data.mixRatio.forEach(item => window.addRow(item));
+            }
+            // 10줄을 맞추기 위해 빈 줄 추가
+            const currentRows = document.querySelectorAll('#tableBody tr').length;
+            for(let i = currentRows; i < 10; i++) window.addRow();
+
+            // 3. UI 변경 (수정 모드 알림 및 버튼 텍스트 변경)
+            document.getElementById('formTitle').innerText = `✏️ 신제품 현황 수정`;
+            document.getElementById('editModeBanner').style.display = 'block';
+            document.getElementById('submitBtn').innerText = '수정된 내용으로 저장하기';
+            document.getElementById('submitBtn').style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)'; // 수정 시엔 초록 버튼
+            document.getElementById('cancelEditBtn').style.display = 'block';
+
+            // 화면을 폼 쪽으로 스크롤
+            document.getElementById('formSection').scrollIntoView({ behavior: 'smooth' });
+        };
+
+        // --- ★ 신규 기능: 수정 취소 ★ ---
+        document.getElementById('cancelEditBtn').addEventListener('click', () => {
+            currentEditId = null;
+            document.getElementById('product-form').reset();
+            document.getElementById('tableBody').innerHTML = '';
+            for(let i = 0; i < 10; i++) window.addRow();
+            
+            document.getElementById('formTitle').innerText = `✨ 실무용 신제품 현황 등록`;
+            document.getElementById('editModeBanner').style.display = 'none';
+            document.getElementById('submitBtn').innerText = '모든 데이터 저장하기';
+            document.getElementById('submitBtn').style.background = ''; // 기존 파란색 복구
+            document.getElementById('cancelEditBtn').style.display = 'none';
+        });
+
+        // --- ★ 신규 기능: 문서 삭제 (Delete) ★ ---
+        window.triggerDelete = async function(id) {
+            if(!confirm("정말로 이 신제품 데이터를 삭제하시겠습니까?\n삭제된 데이터와 파일은 복구할 수 없습니다.")) return;
+
+            try {
+                const data = allProductsData[id];
+                // 1. Storage에 저장된 파일이 있다면 파일부터 삭제합니다.
+                const deleteFileIfExist = async (path) => {
+                    if(path) {
+                        try { await deleteObject(ref(storage, path)); } 
+                        catch (e) { console.log("파일 삭제 패스:", e); }
+                    }
+                };
+                await deleteFileIfExist(data.processFilePath);
+                await deleteFileIfExist(data.nutritionFilePath);
+                await deleteFileIfExist(data.reportFilePath);
+
+                // 2. Firestore 문서 삭제
+                await deleteDoc(doc(db, "products", id));
+                
+                alert("삭제가 완료되었습니다.");
+                await loadProducts(); // 리스트 새로고침
+
+                // 혹시 방금 지운 문서를 수정 중이었다면 수정 모드도 해제합니다.
+                if(currentEditId === id) {
+                    document.getElementById('cancelEditBtn').click();
+                }
+
+            } catch (error) {
+                console.error("삭제 에러:", error);
+                alert("삭제 중 오류가 발생했습니다.");
+            }
+        };
+
+        // 초기화
         window.addEventListener('DOMContentLoaded', () => {
             for (let i = 0; i < 10; i++) window.addRow();
             loadProducts();
@@ -559,18 +558,11 @@
             releaseDateInput.addEventListener('input', function(e) {
                 let val = e.target.value.replace(/\D/g, ''); 
                 let formatted = '';
-
                 if (val.length > 4) {
                     formatted += val.substring(0, 4) + '.'; 
-                    if (val.length > 6) {
-                        formatted += val.substring(4, 6) + '.' + val.substring(6, 8); 
-                    } else {
-                        formatted += val.substring(4); 
-                    }
-                } else {
-                    formatted = val; 
-                }
-                
+                    if (val.length > 6) formatted += val.substring(4, 6) + '.' + val.substring(6, 8); 
+                    else formatted += val.substring(4); 
+                } else { formatted = val; }
                 e.target.value = formatted;
             });
 
@@ -580,24 +572,35 @@
             });
         });
 
+        // 폼 제출 (저장 및 수정 처리)
         document.getElementById('product-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
-            submitBtn.innerText = "데이터 안전하게 저장 중...";
+            submitBtn.innerText = "처리 중...";
 
             try {
+                // ★ 수정됨: 파일 10MB 용량 제한 및 Storage 삭제를 대비한 Path까지 저장하는 로직 ★
                 const uploadFile = async (fileInputId, folderName) => {
                     const file = document.getElementById(fileInputId).files[0];
-                    if (!file) return null;
-                    const storageRef = ref(storage, `${folderName}/${Date.now()}_${file.name}`);
+                    if (!file) return null; // 파일 선택 안 함
+
+                    // 용량 제한 검사 (10MB = 10 * 1024 * 1024 bytes)
+                    if (file.size > 10 * 1024 * 1024) {
+                        alert(`'${file.name}' 파일의 용량이 10MB를 초과하여 업로드할 수 없습니다.`);
+                        throw new Error("File too large"); // 업로드 중단
+                    }
+
+                    const filePath = `${folderName}/${Date.now()}_${file.name}`;
+                    const storageRef = ref(storage, filePath);
                     await uploadBytes(storageRef, file);
-                    return await getDownloadURL(storageRef);
+                    const url = await getDownloadURL(storageRef);
+                    return { url: url, path: filePath }; // 나중에 삭제하기 위해 경로(path)도 같이 반환
                 };
 
-                const processFileUrl = await uploadFile('processFile', 'process_files');
-                const nutritionFileUrl = await uploadFile('nutritionFile', 'nutrition_files');
-                const reportFileUrl = await uploadFile('reportFile', 'report_files'); 
+                const processFileResult = await uploadFile('processFile', 'process_files');
+                const nutritionFileResult = await uploadFile('nutritionFile', 'nutrition_files');
+                const reportFileResult = await uploadFile('reportFile', 'report_files'); 
 
                 const mixRatioData = [];
                 document.querySelectorAll('#tableBody tr').forEach((tr) => {
@@ -620,6 +623,7 @@
                 const reportSuffixVal = document.getElementById('reportNumberSuffix').value;
                 const finalReportNumber = reportSuffixVal ? `20210395253-${reportSuffixVal}` : '';
 
+                // 저장할 기본 데이터 구성
                 const productData = {
                     productName: document.getElementById('productName').value,
                     companyName: document.getElementById('companyName').value,
@@ -634,35 +638,53 @@
                     leadTime: document.getElementById('leadTime').value,
                     releaseDate: document.getElementById('releaseDate').value,
                     storageCondition: document.getElementById('storageCondition').value,
-                    mixRatio: mixRatioData, 
-                    processFileUrl: processFileUrl,
-                    nutritionFileUrl: nutritionFileUrl,
-                    reportFileUrl: reportFileUrl, 
-                    createdAt: new Date()
+                    mixRatio: mixRatioData,
+                    updatedAt: serverTimestamp() // ★ 수정됨: 수정일자용 서버 시간 기록
                 };
 
-                await addDoc(collection(db, "products"), productData);
+                // 파일 객체가 존재하면(새로 올렸으면) URL과 Path 정보를 덮어씁니다.
+                if(processFileResult) {
+                    productData.processFileUrl = processFileResult.url;
+                    productData.processFilePath = processFileResult.path;
+                }
+                if(nutritionFileResult) {
+                    productData.nutritionFileUrl = nutritionFileResult.url;
+                    productData.nutritionFilePath = nutritionFileResult.path;
+                }
+                if(reportFileResult) {
+                    productData.reportFileUrl = reportFileResult.url;
+                    productData.reportFilePath = reportFileResult.path;
+                }
+
+                // --- ★ 신규 기능: 분기 처리 (새로 저장 vs 기존 데이터 덮어쓰기) ★ ---
+                if (currentEditId) {
+                    // 수정 모드: updateDoc 사용 (기존 파일 URL은 새 파일이 없으면 덮어쓰지 않고 유지됩니다)
+                    await updateDoc(doc(db, "products", currentEditId), productData);
+                    alert("성공적으로 수정되었습니다!");
+                    document.getElementById('cancelEditBtn').click(); // 폼 초기화 및 일반 모드로 복구
+                } else {
+                    // 신규 저장 모드: addDoc 사용
+                    productData.createdAt = serverTimestamp(); // ★ 수정됨: 최초 생성 시 서버 시간 기록
+                    await addDoc(collection(db, "products"), productData);
+                    alert("성공적으로 저장되었습니다!");
+                    document.getElementById('product-form').reset();
+                    document.getElementById('tableBody').innerHTML = '';
+                    sortState = 0; document.getElementById('sortArrow').textContent = '';
+                    document.getElementById('totalAmount').textContent = '0.000'; document.getElementById('totalRatio').textContent = '0.00';
+                    for (let i = 0; i < 10; i++) window.addRow();
+                }
                 
-                document.getElementById('product-form').reset();
-                document.getElementById('tableBody').innerHTML = '';
-                
-                sortState = 0;
-                document.getElementById('sortArrow').textContent = '';
-                
-                document.getElementById('totalAmount').textContent = '0.000';
-                document.getElementById('totalRatio').textContent = '0.00';
-                
-                for (let i = 0; i < 10; i++) window.addRow();
                 await loadProducts(); 
-                
                 window.scrollTo({ top: 0, behavior: 'smooth' });
 
             } catch (error) {
                 console.error("저장 에러: ", error);
-                alert("저장에 실패했습니다. 콘솔 창을 확인해주세요.");
+                if(error.message !== "File too large") {
+                    alert("처리에 실패했습니다. 콘솔 창을 확인해주세요.");
+                }
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.innerText = "모든 데이터 저장하기";
+                submitBtn.innerText = currentEditId ? "수정된 내용으로 저장하기" : "모든 데이터 저장하기";
             }
         });
     </script>
