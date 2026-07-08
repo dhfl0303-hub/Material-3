@@ -169,7 +169,7 @@ p{margin-bottom:6px;line-height:1.6}
   <div id="sub-freq">
     <div class="card"><div class="card-title">📊 번호별 출현 빈도 (총 <span id="totalDraws"></span>회차)</div>
       <div class="chart-wrapper" style="height: 200px;"><canvas id="freqChart"></canvas></div>
-      <div class="flex-center gap12 mt8" style="justify-content:center;font-size:10px;color:var(--textDim)"><span><span class="text-red">●</span> 기대값 초과</span><span><span class="text-cyan">●</span> 기대값 미만</span><span class="text-gold">--- 기대값 (<span id="expectedVal"></span>회)</span></div>
+      <div class="flex-center gap12 mt8" style="justify-content:center;font-size:10px;color:var(--textDim)"><span><span class="text-red">●</span> 기대값 초과</span><span><span class="text-cyan">●</span> 기대값 초과 미만</span><span class="text-gold">--- 기대값 (<span id="expectedVal"></span>회)</span></div>
     </div>
     <div class="card"><div class="card-title">🔬 카이제곱(χ²) 검정</div><div class="grid2"><div class="stat"><div class="stat-val" id="chiStat"></div><div class="stat-label">χ² 통계량</div></div><div class="stat"><div class="stat-val" id="chiCritical"></div><div class="stat-label">임계값 (α=0.05)</div></div></div><div id="chiResult" class="info-box mt8"></div></div>
     <div class="card"><div class="card-title">🔥 핫/콜드 번호</div><div class="grid2"><div><div class="text-red fw700 mb6" style="font-size:11px">HOT (다빈출)</div><div id="hotNums"></div></div><div><div class="text-cyan fw700 mb6" style="font-size:11px">COLD (저빈출)</div><div id="coldNums"></div></div></div></div>
