@@ -147,7 +147,7 @@ p{margin-bottom:6px;line-height:1.6}
 <!-- 탭2: 생성 -->
 <div id="tab-generate" class="hidden">
   <div class="card"><div class="card-title">🧮 번호 생성 전략</div><div id="strategyList"></div></div>
-  <div class="card"><div class="flex-between flex-wrap gap8 mb8"><div class="flex-center gap6"><span style="font-size:12px;font-weight:600">세트: </span><div class="toggle-group" id="genCount"><button class="tgl" data-val="1" onclick="setToggle('genCount',1)">1</button><button class="tgl" data-val="3" onclick="setToggle('genCount',3)">3</button><button class="tgl active" data-val="5" onclick="setToggle('genCount',5)">5</button><button class="tgl" data-val="10" onclick="setToggle('genCount',10)">10</button></div></div><button class="btn btn-primary" onclick="generateNumbers()">🎲 번호 생성</button></div></div>
+  <div class="card"><div class="flex-between flex-wrap gap8 mb8"><div class="flex-center gap6 flex-wrap"><span style="font-size:12px;font-weight:600">조: </span><div class="toggle-group multi" id="genJoGroup"><button class="tgl" data-val="all" onclick="toggleAll('genJoGroup')">전체</button><button class="tgl active" data-val="1" onclick="toggleMulti('genJoGroup',1)">1</button><button class="tgl" data-val="2" onclick="toggleMulti('genJoGroup',2)">2</button><button class="tgl" data-val="3" onclick="toggleMulti('genJoGroup',3)">3</button><button class="tgl" data-val="4" onclick="toggleMulti('genJoGroup',4)">4</button><button class="tgl" data-val="5" onclick="toggleMulti('genJoGroup',5)">5</button></div><span style="font-size:12px;font-weight:600;margin-left:8px">세트: </span><div class="toggle-group" id="genCount"><button class="tgl" data-val="1" onclick="setToggle('genCount',1)">1</button><button class="tgl" data-val="3" onclick="setToggle('genCount',3)">3</button><button class="tgl active" data-val="5" onclick="setToggle('genCount',5)">5</button><button class="tgl" data-val="10" onclick="setToggle('genCount',10)">10</button></div></div><button class="btn btn-primary" onclick="generateNumbers()">🎲 번호 생성</button></div></div>
   <div id="genResults" class="hidden"><div class="card"><div class="card-title" id="genResultTitle"></div><div id="genResultBody"></div></div></div>
   <div class="card"><div class="card-title">📘 전략별 수학 원리</div><div style="font-size:11px;color:var(--textDim);line-height:1.6">
     <p><strong class="text-main">균형 분포</strong> — 각 자릿수에서 0~9가 균등하게 나오도록 가중치 배분</p>
@@ -162,8 +162,8 @@ p{margin-bottom:6px;line-height:1.6}
 <div id="tab-simulate" class="hidden">
   <div class="card"><div class="card-title">✅ 내 번호 과거 검증 (백테스트)</div>
     <div class="text-dim mb8" style="font-size:11px">내 번호를 역대 당첨번호와 대조하여 등수별 당첨 횟수를 검증합니다</div>
-    <div class="flex-center gap4 mb8">
-      <div class="toggle-group" id="btJoGroup"><button class="tgl active" data-val="1" onclick="setToggle('btJoGroup',1)">1조</button><button class="tgl" data-val="2" onclick="setToggle('btJoGroup',2)">2조</button><button class="tgl" data-val="3" onclick="setToggle('btJoGroup',3)">3조</button><button class="tgl" data-val="4" onclick="setToggle('btJoGroup',4)">4조</button><button class="tgl" data-val="5" onclick="setToggle('btJoGroup',5)">5조</button></div>
+    <div class="flex-center gap4 mb8 flex-wrap">
+      <div class="toggle-group multi" id="btJoGroup"><button class="tgl" data-val="all" onclick="toggleAll('btJoGroup')">전체</button><button class="tgl active" data-val="1" onclick="toggleMulti('btJoGroup',1)">1조</button><button class="tgl" data-val="2" onclick="toggleMulti('btJoGroup',2)">2조</button><button class="tgl" data-val="3" onclick="toggleMulti('btJoGroup',3)">3조</button><button class="tgl" data-val="4" onclick="toggleMulti('btJoGroup',4)">4조</button><button class="tgl" data-val="5" onclick="toggleMulti('btJoGroup',5)">5조</button></div>
       <input type="text" id="btDigits" placeholder="6자리" maxlength="6" style="width:80px">
       <button class="btn btn-primary" onclick="runBacktest()">✅ 검증</button>
     </div>
@@ -225,7 +225,7 @@ p{margin-bottom:6px;line-height:1.6}
 <!-- 탭5: 분석 -->
 <div id="tab-analyze" class="hidden">
   <div class="card"><div class="card-title">🔍 내 번호 분석</div>
-    <div class="flex-center gap4 mb8 flex-wrap"><div class="toggle-group" id="myJoGroup"><button class="tgl active" data-val="1" onclick="setToggle('myJoGroup',1)">1조</button><button class="tgl" data-val="2" onclick="setToggle('myJoGroup',2)">2조</button><button class="tgl" data-val="3" onclick="setToggle('myJoGroup',3)">3조</button><button class="tgl" data-val="4" onclick="setToggle('myJoGroup',4)">4조</button><button class="tgl" data-val="5" onclick="setToggle('myJoGroup',5)">5조</button></div>
+    <div class="flex-center gap4 mb8 flex-wrap"><div class="toggle-group multi" id="myJoGroup"><button class="tgl" data-val="all" onclick="toggleAll('myJoGroup')">전체</button><button class="tgl active" data-val="1" onclick="toggleMulti('myJoGroup',1)">1조</button><button class="tgl" data-val="2" onclick="toggleMulti('myJoGroup',2)">2조</button><button class="tgl" data-val="3" onclick="toggleMulti('myJoGroup',3)">3조</button><button class="tgl" data-val="4" onclick="toggleMulti('myJoGroup',4)">4조</button><button class="tgl" data-val="5" onclick="toggleMulti('myJoGroup',5)">5조</button></div>
     <input type="text" id="myDigits" placeholder="6자리" maxlength="6" style="width:80px">
     <button class="btn btn-primary" onclick="analyzeMyNum()">🔍 분석</button></div>
   </div>
@@ -380,10 +380,21 @@ function genGap(){const jo=Math.floor(Math.random()*5)+1;const recent=DRAWS.slic
 function genMarkov(){const jo=Math.floor(Math.random()*5)+1;if(DRAWS.length===0)return genRandom();const last=DRAWS[DRAWS.length-1];const digits=[];for(let p=0;p<6;p++){const tm=getTransitionMatrix(p);const cur=last.digits[p];const row=tm[cur];const tw=row.reduce((a,b)=>a+b,0);let r=Math.random()*tw;for(let i=0;i<10;i++){r-=row[i];if(r<=0){digits.push(i);break}}}return{jo,digits}}
 const genFns={random:genRandom,balanced:genBalanced,poisson:genPoisson,norepeat:genNoRepeat,gap:genGap,markov:genMarkov};
 function generateNumbers(){
-  const count=getToggle('genCount'),fn=genFns[selStrat],results=[];
-  for(let i=0;i<count;i++){const r=fn();const sum=r.digits.reduce((a,b)=>a+b,0);const od=r.digits.filter(x=>x%2===1).length;results.push({...r,sum,oe:`${od}:${6-od}`})}
+  const jos=getMultiToggle('genJoGroup');const count=getToggle('genCount'),fn=genFns[selStrat],results=[];
+  if(jos.length===0){alert('조를 1개 이상 선택해주세요');return}
+  for(let i=0;i<count;i++){
+    const r=fn();
+    const jo=jos[Math.floor(Math.random()*jos.length)];
+    r.jo=jo;
+    const sum=r.digits.reduce((a,b)=>a+b,0);const od=r.digits.filter(x=>x%2===1).length;
+    if(jos.length>1){
+      jos.forEach(j=>{results.push({jo:j,digits:[...r.digits],sum,oe:`${od}:${6-od}`})});
+    } else {
+      results.push({...r,sum,oe:`${od}:${6-od}`});
+    }
+  }
   document.getElementById('genResults').classList.remove('hidden');
-  document.getElementById('genResultTitle').textContent=`🎯 생성 결과 (${strategies.find(s=>s.id===selStrat).name})`;
+  document.getElementById('genResultTitle').textContent=`🎯 생성 결과 (${strategies.find(s=>s.id===selStrat).name}) — ${jos.length>1?jos.length+'조×'+count+'세트 = '+results.length+'장':count+'세트'}`;
   document.getElementById('genResultBody').innerHTML=results.map((r,i)=>`<div class="result-row"><div class="flex-center gap4"><span style="font-size:10px;color:var(--textDim);width:20px">#${i+1}</span><span class="jo-box" style="width:24px;height:24px;font-size:11px">${r.jo}</span>${r.digits.map(d=>`<span class="digit-box">${d}</span>`).join('')}</div><div class="result-meta"><span>합:${r.sum}</span><span>홀짝:${r.oe}</span></div></div>`).join('');
 }
 
@@ -395,6 +406,23 @@ function setToggle(groupId,val){
 function getToggle(groupId){
   const active=document.querySelector('#'+groupId+' .tgl.active');
   return active?+active.dataset.val:0;
+}
+function toggleMulti(groupId,val){
+  const btn=document.querySelector('#'+groupId+' .tgl[data-val="'+val+'"]');
+  btn.classList.toggle('active');
+  // 전체 버튼 상태 동기화
+  const allBtn=document.querySelector('#'+groupId+' .tgl[data-val="all"]');
+  if(allBtn){const numBtns=document.querySelectorAll('#'+groupId+' .tgl:not([data-val="all"])');const activeCount=document.querySelectorAll('#'+groupId+' .tgl.active:not([data-val="all"])').length;allBtn.classList.toggle('active',activeCount===numBtns.length)}
+}
+function toggleAll(groupId){
+  const allBtn=document.querySelector('#'+groupId+' .tgl[data-val="all"]');
+  const numBtns=document.querySelectorAll('#'+groupId+' .tgl:not([data-val="all"])');
+  const allActive=allBtn.classList.contains('active');
+  if(allActive){numBtns.forEach(b=>b.classList.remove('active'));allBtn.classList.remove('active')}
+  else{numBtns.forEach(b=>b.classList.add('active'));allBtn.classList.add('active')}
+}
+function getMultiToggle(groupId){
+  return Array.from(document.querySelectorAll('#'+groupId+' .tgl.active:not([data-val="all"])')).map(b=>+b.dataset.val);
 }
 
 // ═══ 검증 (백테스트) ═══
@@ -412,24 +440,29 @@ function matchRank(myJo,myDig,wJo,wDig,bDig){
   return{rank:'miss',prize:0};
 }
 function runBacktest(){
-  const jo=getToggle('btJoGroup');const raw=document.getElementById('btDigits').value;
+  const jos=getMultiToggle('btJoGroup');const raw=document.getElementById('btDigits').value;
+  if(jos.length===0){alert('조를 1개 이상 선택해주세요');return}
   if(raw.length!==6||!/^\d{6}$/.test(raw)){alert('6자리 숫자를 입력해주세요');return}
-  const digits=raw.split('').map(Number);
+  const digits=raw.split('').map(Number);const joCnt=jos.length;
   const md={1:0,2:0,3:0,4:0,5:0,6:0,7:0,bonus:0,miss:0};let totalPrize=0;const ph=[];
   DRAWS.forEach((d,i)=>{
-    const r=matchRank(jo,digits,d.jo,d.digits,d.bonus_digits);
-    md[r.rank]++;totalPrize+=r.prize;
-    ph.push({round:d.round,profit:totalPrize-(i+1)*1000});
+    let bestRank='miss',bestPrize=0;
+    jos.forEach(jo=>{
+      const r=matchRank(jo,digits,d.jo,d.digits,d.bonus_digits);
+      if(r.prize>bestPrize){bestRank=r.rank;bestPrize=r.prize}
+    });
+    md[bestRank]++;totalPrize+=bestPrize;
+    ph.push({round:d.round,profit:totalPrize-(i+1)*1000*joCnt});
   });
-  const n=DRAWS.length,spent=n*1000,hits=n-md.miss;
+  const n=DRAWS.length,spent=n*1000*joCnt,hits=n-md.miss;
   document.getElementById('btResults').classList.remove('hidden');
   document.getElementById('btTotal').textContent=n+'회차';
   document.getElementById('btHits').textContent=hits+'회';
-  document.getElementById('btInvest').textContent=(spent/10000).toLocaleString()+'만원';
+  document.getElementById('btInvest').textContent=(spent/10000).toLocaleString()+'만원 ('+joCnt+'조×'+n+'회)';
   const pe=document.getElementById('btPrize');pe.textContent=totalPrize>=10000?(totalPrize/10000).toLocaleString()+'만원':totalPrize.toLocaleString()+'원';pe.style.color=totalPrize>spent?'var(--main)':'var(--red)';
   const roi=((totalPrize-spent)/spent*100).toFixed(1);
   const vd=document.getElementById('btVerdict');vd.className='info-box mt8 '+(roi<0?'info-red':'info-green');
-  vd.textContent=roi<0?`📉 ${n}회차 동안 ${Math.abs(roi)}% 손실 (${(spent-totalPrize).toLocaleString()}원)`:`📈 ${roi}% 수익!`;
+  vd.textContent=roi<0?`📉 ${joCnt}조 × ${n}회차 = ${(spent/1000).toLocaleString()}장, ${Math.abs(roi)}% 손실`:`📈 ${roi}% 수익!`;
   const condMap={1:'조+6자리',2:'조+끝5자리',3:'조+끝4자리',4:'조+끝3자리',5:'조+끝2자리',6:'조+끝1자리',7:'끝1자리',bonus:'각조+6자리'};
   const prizeMap={1:'월700만×20년',2:'월100만×10년',3:'100만원',4:'10만원',5:'5만원',6:'5천원',7:'1천원',bonus:'월100만×10년'};
   document.getElementById('btBody').innerHTML=[1,2,3,4,5,6,7,'bonus'].map(r=>{const c=md[r]||0;return`<tr><td class="${r<=2?'fw700 text-main':'fw700'}">${r==='bonus'?'보너스':r+'등'}</td><td>${condMap[r]}</td><td class="text-right">${c}회</td><td class="text-right">${r==='bonus'||r<=2?(c>0?prizeMap[r]:'—'):c>0?(c*(r===3?1000000:r===4?100000:r===5?50000:r===6?5000:1000)).toLocaleString()+'원':'—'}</td></tr>`}).join('');
@@ -580,11 +613,13 @@ function renderIndSub(){const fn={lma:renderLMA,rsi:renderRSI,bb:renderBB,macd:r
 
 // ═══ 분석 탭 ═══
 function analyzeMyNum(){
-  const jo=getToggle('myJoGroup');const raw=document.getElementById('myDigits').value;
+  const jos=getMultiToggle('myJoGroup');const raw=document.getElementById('myDigits').value;
+  if(jos.length===0){alert('조를 1개 이상 선택해주세요');return}
   if(raw.length!==6||!/^\d{6}$/.test(raw)){alert('6자리 숫자를 입력해주세요');return}
   const digits=raw.split('').map(Number);const scores=calcSignal();
   let html='<div class="card"><div class="card-title">📊 분석 결과</div>';
-  html+=`<div class="flex-center gap4 mb8"><span class="jo-box">${jo}</span>${digits.map(d=>`<span class="digit-box">${d}</span>`).join('')}</div>`;
+  html+=`<div class="flex-center gap4 mb8 flex-wrap">${jos.map(j=>`<span class="jo-box" style="width:24px;height:24px;font-size:11px">${j}</span>`).join('')}${digits.map(d=>`<span class="digit-box">${d}</span>`).join('')}</div>`;
+  html+=`<div class="info-neutral mb8" style="font-size:11px">선택 조: ${jos.map(j=>j+'조').join(', ')} (${jos.length}장/회)</div>`;
   html+='<table><thead><tr><th>자릿수</th><th>숫자</th><th class="text-right">출현</th><th class="text-right">RSI</th><th class="text-right">시그널</th></tr></thead><tbody>';
   let totalScore=0;
   for(let p=0;p<6;p++){
