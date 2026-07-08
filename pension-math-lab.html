@@ -74,6 +74,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .hidden{display:none}
 .mono{font-family:'Courier New',monospace;font-size:11px}
 .footer{text-align:center;padding:16px 0 8px;font-size:10px;color:var(--textMuted)}
+.toggle-group{display:flex;gap:2px;flex-wrap:wrap}.tgl{padding:4px 8px;border:1px solid var(--border);border-radius:5px;background:var(--bg);color:var(--textDim);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap}.tgl.active{background:var(--main);color:var(--bg);border-color:var(--main)}
 p{margin-bottom:6px;line-height:1.6}
 .loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(11,17,32,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999}
 .loading-overlay h2{color:var(--main);font-size:20px;margin-bottom:16px}
@@ -97,7 +98,7 @@ p{margin-bottom:6px;line-height:1.6}
 <div class="tabs">
   <button class="tab active" onclick="switchTab('stats')">📊 통계</button>
   <button class="tab" onclick="switchTab('generate')">🎲 생성</button>
-  <button class="tab" onclick="switchTab('simulate')">🧪 시뮬</button>
+  <button class="tab" onclick="switchTab('simulate')">✅ 검증</button>
   <button class="tab" onclick="switchTab('indicator')">📉 보조지표</button>
   <button class="tab" onclick="switchTab('analyze')">🔍 분석</button>
 </div>
@@ -112,7 +113,7 @@ p{margin-bottom:6px;line-height:1.6}
   </div>
   <div id="sub-dfreq">
     <div class="card"><div class="card-title">📊 자릿수별 숫자 출현 빈도 (총 <span id="totalDraws"></span>회차)</div>
-      <div class="mb8"><span style="font-size:11px;font-weight:600">자릿수: </span><select id="freqDigitSel" onchange="renderDigitFreq()"><option value="0">십만</option><option value="1">만</option><option value="2">천</option><option value="3">백</option><option value="4">십</option><option value="5">일</option></select></div>
+      <div class="mb8"><span style="font-size:11px;font-weight:600">자릿수: </span><div class="toggle-group" id="freqDigitSel" style="display:inline-flex"><button class="tgl active" data-val="0" onclick="setToggle('freqDigitSel',0);renderDigitFreq()">①</button><button class="tgl" data-val="1" onclick="setToggle('freqDigitSel',1);renderDigitFreq()">②</button><button class="tgl" data-val="2" onclick="setToggle('freqDigitSel',2);renderDigitFreq()">③</button><button class="tgl" data-val="3" onclick="setToggle('freqDigitSel',3);renderDigitFreq()">④</button><button class="tgl" data-val="4" onclick="setToggle('freqDigitSel',4);renderDigitFreq()">⑤</button><button class="tgl" data-val="5" onclick="setToggle('freqDigitSel',5);renderDigitFreq()">⑥</button></div></div>
       <div class="cw" style="height:200px"><canvas id="freqChart"></canvas></div>
       <div class="flex-center gap12 mt8" style="justify-content:center;font-size:10px;color:var(--textDim)"><span><span class="text-red">●</span> 기대값 초과</span><span><span class="text-cyan">●</span> 기대값 미만</span><span class="text-main">--- 기대값</span></div>
     </div>
@@ -132,7 +133,7 @@ p{margin-bottom:6px;line-height:1.6}
   <div id="sub-bayes" class="hidden">
     <div class="card"><div class="card-title">🧠 마르코프 체인 전이확률</div>
       <div class="text-dim mb8" style="font-size:11px">특정 자릿수에서 이번 회차에 X가 나왔을 때 → 다음 회차에 Y가 나올 확률</div>
-      <div class="mb8"><span style="font-size:11px;font-weight:600">자릿수: </span><select id="markovDigitSel" onchange="renderMarkov()"><option value="0">십만</option><option value="1">만</option><option value="2">천</option><option value="3">백</option><option value="4">십</option><option value="5">일</option></select></div>
+      <div class="mb8"><span style="font-size:11px;font-weight:600">자릿수: </span><div class="toggle-group" id="markovDigitSel" style="display:inline-flex"><button class="tgl active" data-val="0" onclick="setToggle('markovDigitSel',0);renderMarkov()">①</button><button class="tgl" data-val="1" onclick="setToggle('markovDigitSel',1);renderMarkov()">②</button><button class="tgl" data-val="2" onclick="setToggle('markovDigitSel',2);renderMarkov()">③</button><button class="tgl" data-val="3" onclick="setToggle('markovDigitSel',3);renderMarkov()">④</button><button class="tgl" data-val="4" onclick="setToggle('markovDigitSel',4);renderMarkov()">⑤</button><button class="tgl" data-val="5" onclick="setToggle('markovDigitSel',5);renderMarkov()">⑥</button></div></div>
       <div id="markovTable"></div>
       <div class="info-neutral">💡 행: 현재 숫자 → 열: 다음 회차 숫자. 색이 진할수록 전이 확률이 높음</div>
     </div>
@@ -146,7 +147,7 @@ p{margin-bottom:6px;line-height:1.6}
 <!-- 탭2: 생성 -->
 <div id="tab-generate" class="hidden">
   <div class="card"><div class="card-title">🧮 번호 생성 전략</div><div id="strategyList"></div></div>
-  <div class="card"><div class="flex-between flex-wrap gap8 mb8"><div><span style="font-size:12px;font-weight:600">세트: </span><select id="genCount"><option value="1">1</option><option value="3">3</option><option value="5" selected>5</option><option value="10">10</option></select></div><button class="btn btn-primary" onclick="generateNumbers()">🎲 번호 생성</button></div></div>
+  <div class="card"><div class="flex-between flex-wrap gap8 mb8"><div class="flex-center gap6"><span style="font-size:12px;font-weight:600">세트: </span><div class="toggle-group" id="genCount"><button class="tgl" data-val="1" onclick="setToggle('genCount',1)">1</button><button class="tgl" data-val="3" onclick="setToggle('genCount',3)">3</button><button class="tgl active" data-val="5" onclick="setToggle('genCount',5)">5</button><button class="tgl" data-val="10" onclick="setToggle('genCount',10)">10</button></div></div><button class="btn btn-primary" onclick="generateNumbers()">🎲 번호 생성</button></div></div>
   <div id="genResults" class="hidden"><div class="card"><div class="card-title" id="genResultTitle"></div><div id="genResultBody"></div></div></div>
   <div class="card"><div class="card-title">📘 전략별 수학 원리</div><div style="font-size:11px;color:var(--textDim);line-height:1.6">
     <p><strong class="text-main">균형 분포</strong> — 각 자릿수에서 0~9가 균등하게 나오도록 가중치 배분</p>
@@ -157,16 +158,29 @@ p{margin-bottom:6px;line-height:1.6}
   </div></div>
 </div>
 
-<!-- 탭3: 시뮬 -->
+<!-- 탭3: 검증 (백테스트) -->
 <div id="tab-simulate" class="hidden">
-  <div class="card"><div class="card-title">🎰 몬테카를로 시뮬레이션</div>
-    <div class="text-dim mb8" style="font-size:11px">N회 추첨을 가상 실행하여 수익률 계산 (연금은 현재가치로 환산)</div>
-    <div class="flex-between flex-wrap gap8"><div class="flex-center gap8"><div><div class="text-dim" style="font-size:10px;margin-bottom:3px">추첨 횟수</div><select id="simCount"><option value="1000">1,000</option><option value="5000">5,000</option><option value="10000" selected>10,000</option><option value="50000">50,000</option></select></div><div><div class="text-dim" style="font-size:10px;margin-bottom:3px">회당 구매</div><select id="simTickets"><option value="1">1장</option><option value="5" selected>5장</option><option value="10">10장</option></select></div></div><button class="btn btn-primary" id="simBtn" onclick="runSim()">▶ 실행</button></div>
+  <div class="card"><div class="card-title">✅ 내 번호 과거 검증 (백테스트)</div>
+    <div class="text-dim mb8" style="font-size:11px">내 번호를 역대 당첨번호와 대조하여 등수별 당첨 횟수를 검증합니다</div>
+    <div class="flex-center gap4 mb8">
+      <div class="toggle-group" id="btJoGroup"><button class="tgl active" data-val="1" onclick="setToggle('btJoGroup',1)">1조</button><button class="tgl" data-val="2" onclick="setToggle('btJoGroup',2)">2조</button><button class="tgl" data-val="3" onclick="setToggle('btJoGroup',3)">3조</button><button class="tgl" data-val="4" onclick="setToggle('btJoGroup',4)">4조</button><button class="tgl" data-val="5" onclick="setToggle('btJoGroup',5)">5조</button></div>
+      <input type="text" id="btDigits" placeholder="6자리" maxlength="6" style="width:80px">
+      <button class="btn btn-primary" onclick="runBacktest()">✅ 검증</button>
+    </div>
   </div>
-  <div id="simResults" class="hidden">
-    <div class="card"><div class="card-title">📊 결과</div><div class="grid2 mb8"><div class="stat"><div class="stat-val" id="simSpent"></div><div class="stat-label">총 투자액</div></div><div class="stat"><div class="stat-val" id="simWon"></div><div class="stat-label">총 당첨금</div></div><div class="stat"><div class="stat-val" id="simROI"></div><div class="stat-label">수익률</div></div><div class="stat"><div class="stat-val" id="simEV"></div><div class="stat-label">장당 기대값</div></div></div><div id="simVerdict" class="info-box"></div></div>
-    <div class="card"><div class="card-title">📈 누적 손익</div><div class="cw" style="height:180px"><canvas id="profitChart"></canvas></div></div>
-    <div class="card"><div class="card-title">🎯 등수별 분포</div><table><thead><tr><th>등수</th><th class="text-right">횟수</th><th class="text-right">비율</th><th class="text-right">이론</th></tr></thead><tbody id="matchBody"></tbody></table></div>
+  <div id="btResults" class="hidden">
+    <div class="card"><div class="card-title">📊 검증 결과</div>
+      <div class="grid2 mb8"><div class="stat"><div class="stat-val" id="btTotal"></div><div class="stat-label">검증 회차</div></div><div class="stat"><div class="stat-val" id="btHits"></div><div class="stat-label">당첨 횟수</div></div></div>
+      <table><thead><tr><th>등수</th><th>조건</th><th class="text-right">횟수</th><th class="text-right">당첨금 합계</th></tr></thead><tbody id="btBody"></tbody></table>
+      <div class="grid2 mt8"><div class="stat"><div class="stat-val" id="btInvest"></div><div class="stat-label">총 투자액</div></div><div class="stat"><div class="stat-val" id="btPrize"></div><div class="stat-label">총 당첨금</div></div></div>
+      <div id="btVerdict" class="info-box mt8"></div>
+    </div>
+    <div class="card"><div class="card-title">📈 누적 손익 추이</div><div class="cw" style="height:180px"><canvas id="btProfitChart"></canvas></div></div>
+  </div>
+  <div class="card"><div class="card-title">🔄 전략별 비교 백테스트</div>
+    <div class="text-dim mb8" style="font-size:11px">6개 전략으로 매 회차 번호를 생성했다면? (각 100회 시뮬 평균)</div>
+    <button class="btn btn-primary" style="width:100%" id="stratBtBtn" onclick="runStrategyBacktest()">▶ 전략 비교 실행</button>
+    <div id="stratBtResults" class="hidden mt8"></div>
   </div>
   <div class="card"><div class="card-title">📋 당첨 확률 이론값</div><table><thead><tr><th>등수</th><th>조건</th><th class="text-right">당첨금</th><th class="text-right">확률</th></tr></thead><tbody>
     <tr><td class="fw700 text-main">1등</td><td>조+6자리 일치</td><td class="text-right">월700만×20년</td><td class="text-right text-dim">1/5,000,000</td></tr>
@@ -198,21 +212,21 @@ p{margin-bottom:6px;line-height:1.6}
     <button class="sub-tab" onclick="switchInd('entropy')">엔트로피</button>
     <button class="sub-tab" onclick="switchInd('autocorr')">자기상관</button>
   </div>
-  <div id="ind-lma"><div class="card"><div class="card-title">📈 DMA (이동평균)</div><div class="mb8"><select id="lmaDig" onchange="renderLMA()"><option value="0">십만</option><option value="1">만</option><option value="2">천</option><option value="3">백</option><option value="4">십</option><option value="5">일</option></select> <select id="lmaNum" onchange="renderLMA()"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option></select></div><div class="cw" style="height:200px"><canvas id="lmaChart"></canvas></div><div class="grid2 mt8"><div class="card" style="margin:0;padding:8px"><div class="text-main fw700 mb6" style="font-size:11px">🔺 골든크로스</div><div id="goldenList" style="font-size:10px"></div></div><div class="card" style="margin:0;padding:8px"><div class="text-red fw700 mb6" style="font-size:11px">🔻 데드크로스</div><div id="deadList" style="font-size:10px"></div></div></div></div></div>
-  <div id="ind-rsi" class="hidden"><div class="card"><div class="card-title">📊 RSI</div><div class="mb8"><select id="rsiDig" onchange="renderRSI()"><option value="0">십만</option><option value="1">만</option><option value="2">천</option><option value="3">백</option><option value="4">십</option><option value="5">일</option></select> <select id="rsiPeriod" onchange="renderRSI()"><option value="14">14회</option><option value="20" selected>20회</option><option value="30">30회</option></select></div><div class="cw" style="height:200px"><canvas id="rsiChart"></canvas></div><div class="grid2 mt8"><div class="card" style="margin:0;padding:8px"><div class="text-red fw700 mb6" style="font-size:11px">🔴 과열 (>70)</div><div id="rsiHot" style="font-size:10px"></div></div><div class="card" style="margin:0;padding:8px"><div class="text-cyan fw700 mb6" style="font-size:11px">🔵 침체 (<30)</div><div id="rsiCold" style="font-size:10px"></div></div></div></div></div>
-  <div id="ind-bb" class="hidden"><div class="card"><div class="card-title">📉 볼린저밴드</div><div class="mb8"><select id="bbDig" onchange="renderBB()"><option value="0">십만</option><option value="1">만</option><option value="2">천</option><option value="3">백</option><option value="4">십</option><option value="5">일</option></select> <select id="bbNum" onchange="renderBB()"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option></select></div><div class="cw" style="height:200px"><canvas id="bbChart"></canvas></div></div></div>
-  <div id="ind-macd" class="hidden"><div class="card"><div class="card-title">📊 MACD</div><div class="mb8"><select id="macdDig" onchange="renderMACD()"><option value="0">십만</option><option value="1">만</option><option value="2">천</option><option value="3">백</option><option value="4">십</option><option value="5">일</option></select> <select id="macdNum" onchange="renderMACD()"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option></select></div><div class="cw" style="height:220px"><canvas id="macdChart"></canvas></div></div></div>
+  <div id="ind-lma"><div class="card"><div class="card-title">📈 DMA (이동평균)</div><div class="mb8"><div class="toggle-group mb6" id="lmaDig"><button class="tgl active" data-val="0" onclick="setToggle('lmaDig',0);renderLMA()">①</button><button class="tgl" data-val="1" onclick="setToggle('lmaDig',1);renderLMA()">②</button><button class="tgl" data-val="2" onclick="setToggle('lmaDig',2);renderLMA()">③</button><button class="tgl" data-val="3" onclick="setToggle('lmaDig',3);renderLMA()">④</button><button class="tgl" data-val="4" onclick="setToggle('lmaDig',4);renderLMA()">⑤</button><button class="tgl" data-val="5" onclick="setToggle('lmaDig',5);renderLMA()">⑥</button></div><div class="toggle-group" id="lmaNum"><button class="tgl active" data-val="0" onclick="setToggle('lmaNum',0);renderLMA()">0</button><button class="tgl" data-val="1" onclick="setToggle('lmaNum',1);renderLMA()">1</button><button class="tgl" data-val="2" onclick="setToggle('lmaNum',2);renderLMA()">2</button><button class="tgl" data-val="3" onclick="setToggle('lmaNum',3);renderLMA()">3</button><button class="tgl" data-val="4" onclick="setToggle('lmaNum',4);renderLMA()">4</button><button class="tgl" data-val="5" onclick="setToggle('lmaNum',5);renderLMA()">5</button><button class="tgl" data-val="6" onclick="setToggle('lmaNum',6);renderLMA()">6</button><button class="tgl" data-val="7" onclick="setToggle('lmaNum',7);renderLMA()">7</button><button class="tgl" data-val="8" onclick="setToggle('lmaNum',8);renderLMA()">8</button><button class="tgl" data-val="9" onclick="setToggle('lmaNum',9);renderLMA()">9</button></div></div><div class="cw" style="height:200px"><canvas id="lmaChart"></canvas></div><div class="grid2 mt8"><div class="card" style="margin:0;padding:8px"><div class="text-main fw700 mb6" style="font-size:11px">🔺 골든크로스</div><div id="goldenList" style="font-size:10px"></div></div><div class="card" style="margin:0;padding:8px"><div class="text-red fw700 mb6" style="font-size:11px">🔻 데드크로스</div><div id="deadList" style="font-size:10px"></div></div></div></div></div>
+  <div id="ind-rsi" class="hidden"><div class="card"><div class="card-title">📊 RSI</div><div class="mb8"><div class="toggle-group mb6" id="rsiDig"><button class="tgl active" data-val="0" onclick="setToggle('rsiDig',0);renderRSI()">①</button><button class="tgl" data-val="1" onclick="setToggle('rsiDig',1);renderRSI()">②</button><button class="tgl" data-val="2" onclick="setToggle('rsiDig',2);renderRSI()">③</button><button class="tgl" data-val="3" onclick="setToggle('rsiDig',3);renderRSI()">④</button><button class="tgl" data-val="4" onclick="setToggle('rsiDig',4);renderRSI()">⑤</button><button class="tgl" data-val="5" onclick="setToggle('rsiDig',5);renderRSI()">⑥</button></div><div class="toggle-group" id="rsiPeriod"><button class="tgl" data-val="14" onclick="setToggle('rsiPeriod',14);renderRSI()">14회</button><button class="tgl active" data-val="20" onclick="setToggle('rsiPeriod',20);renderRSI()">20회</button><button class="tgl" data-val="30" onclick="setToggle('rsiPeriod',30);renderRSI()">30회</button></div></div><div class="cw" style="height:200px"><canvas id="rsiChart"></canvas></div><div class="grid2 mt8"><div class="card" style="margin:0;padding:8px"><div class="text-red fw700 mb6" style="font-size:11px">🔴 과열 (>70)</div><div id="rsiHot" style="font-size:10px"></div></div><div class="card" style="margin:0;padding:8px"><div class="text-cyan fw700 mb6" style="font-size:11px">🔵 침체 (<30)</div><div id="rsiCold" style="font-size:10px"></div></div></div></div></div>
+  <div id="ind-bb" class="hidden"><div class="card"><div class="card-title">📉 볼린저밴드</div><div class="mb8"><div class="toggle-group mb6" id="bbDig"><button class="tgl active" data-val="0" onclick="setToggle('bbDig',0);renderBB()">①</button><button class="tgl" data-val="1" onclick="setToggle('bbDig',1);renderBB()">②</button><button class="tgl" data-val="2" onclick="setToggle('bbDig',2);renderBB()">③</button><button class="tgl" data-val="3" onclick="setToggle('bbDig',3);renderBB()">④</button><button class="tgl" data-val="4" onclick="setToggle('bbDig',4);renderBB()">⑤</button><button class="tgl" data-val="5" onclick="setToggle('bbDig',5);renderBB()">⑥</button></div><div class="toggle-group" id="bbNum"><button class="tgl active" data-val="0" onclick="setToggle('bbNum',0);renderBB()">0</button><button class="tgl" data-val="1" onclick="setToggle('bbNum',1);renderBB()">1</button><button class="tgl" data-val="2" onclick="setToggle('bbNum',2);renderBB()">2</button><button class="tgl" data-val="3" onclick="setToggle('bbNum',3);renderBB()">3</button><button class="tgl" data-val="4" onclick="setToggle('bbNum',4);renderBB()">4</button><button class="tgl" data-val="5" onclick="setToggle('bbNum',5);renderBB()">5</button><button class="tgl" data-val="6" onclick="setToggle('bbNum',6);renderBB()">6</button><button class="tgl" data-val="7" onclick="setToggle('bbNum',7);renderBB()">7</button><button class="tgl" data-val="8" onclick="setToggle('bbNum',8);renderBB()">8</button><button class="tgl" data-val="9" onclick="setToggle('bbNum',9);renderBB()">9</button></div></div><div class="cw" style="height:200px"><canvas id="bbChart"></canvas></div></div></div>
+  <div id="ind-macd" class="hidden"><div class="card"><div class="card-title">📊 MACD</div><div class="mb8"><div class="toggle-group mb6" id="macdDig"><button class="tgl active" data-val="0" onclick="setToggle('macdDig',0);renderMACD()">①</button><button class="tgl" data-val="1" onclick="setToggle('macdDig',1);renderMACD()">②</button><button class="tgl" data-val="2" onclick="setToggle('macdDig',2);renderMACD()">③</button><button class="tgl" data-val="3" onclick="setToggle('macdDig',3);renderMACD()">④</button><button class="tgl" data-val="4" onclick="setToggle('macdDig',4);renderMACD()">⑤</button><button class="tgl" data-val="5" onclick="setToggle('macdDig',5);renderMACD()">⑥</button></div><div class="toggle-group" id="macdNum"><button class="tgl active" data-val="0" onclick="setToggle('macdNum',0);renderMACD()">0</button><button class="tgl" data-val="1" onclick="setToggle('macdNum',1);renderMACD()">1</button><button class="tgl" data-val="2" onclick="setToggle('macdNum',2);renderMACD()">2</button><button class="tgl" data-val="3" onclick="setToggle('macdNum',3);renderMACD()">3</button><button class="tgl" data-val="4" onclick="setToggle('macdNum',4);renderMACD()">4</button><button class="tgl" data-val="5" onclick="setToggle('macdNum',5);renderMACD()">5</button><button class="tgl" data-val="6" onclick="setToggle('macdNum',6);renderMACD()">6</button><button class="tgl" data-val="7" onclick="setToggle('macdNum',7);renderMACD()">7</button><button class="tgl" data-val="8" onclick="setToggle('macdNum',8);renderMACD()">8</button><button class="tgl" data-val="9" onclick="setToggle('macdNum',9);renderMACD()">9</button></div></div><div class="cw" style="height:220px"><canvas id="macdChart"></canvas></div></div></div>
   <div id="ind-mom" class="hidden"><div class="card"><div class="card-title">🎯 조 모멘텀</div><div class="cw" style="height:260px"><canvas id="momChart"></canvas></div><table class="mt8"><thead><tr><th>조</th><th class="text-right">최근10회</th><th class="text-right">이전10회</th><th class="text-right">변화율</th></tr></thead><tbody id="momBody"></tbody></table></div></div>
   <div id="ind-entropy" class="hidden"><div class="card"><div class="card-title">🌀 엔트로피 지표</div><div class="text-dim mb8" style="font-size:11px">각 자릿수 숫자 분포의 균등도. 최대 엔트로피(log₂10≈3.32)에 가까울수록 균등</div><div class="cw" style="height:200px"><canvas id="entropyChart"></canvas></div><div id="entropyDetail" class="mt8"></div></div></div>
-  <div id="ind-autocorr" class="hidden"><div class="card"><div class="card-title">🔄 자기상관 분석</div><div class="text-dim mb8" style="font-size:11px">특정 숫자가 N회차 간격으로 반복 출현하는 패턴 (lag 1~20)</div><div class="mb8"><select id="acDig" onchange="renderAutocorr()"><option value="0">십만</option><option value="1">만</option><option value="2">천</option><option value="3">백</option><option value="4">십</option><option value="5">일</option></select> <select id="acNum" onchange="renderAutocorr()"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option></select></div><div class="cw" style="height:200px"><canvas id="acChart"></canvas></div><div class="info-neutral">💡 양의 자기상관 = 해당 간격으로 반복 경향. 95% 신뢰구간(점선) 밖이면 통계적으로 유의미</div></div></div>
+  <div id="ind-autocorr" class="hidden"><div class="card"><div class="card-title">🔄 자기상관 분석</div><div class="text-dim mb8" style="font-size:11px">특정 숫자가 N회차 간격으로 반복 출현하는 패턴 (lag 1~20)</div><div class="mb8"><div class="toggle-group mb6" id="acDig"><button class="tgl active" data-val="0" onclick="setToggle('acDig',0);renderAutocorr()">①</button><button class="tgl" data-val="1" onclick="setToggle('acDig',1);renderAutocorr()">②</button><button class="tgl" data-val="2" onclick="setToggle('acDig',2);renderAutocorr()">③</button><button class="tgl" data-val="3" onclick="setToggle('acDig',3);renderAutocorr()">④</button><button class="tgl" data-val="4" onclick="setToggle('acDig',4);renderAutocorr()">⑤</button><button class="tgl" data-val="5" onclick="setToggle('acDig',5);renderAutocorr()">⑥</button></div><div class="toggle-group" id="acNum"><button class="tgl active" data-val="0" onclick="setToggle('acNum',0);renderAutocorr()">0</button><button class="tgl" data-val="1" onclick="setToggle('acNum',1);renderAutocorr()">1</button><button class="tgl" data-val="2" onclick="setToggle('acNum',2);renderAutocorr()">2</button><button class="tgl" data-val="3" onclick="setToggle('acNum',3);renderAutocorr()">3</button><button class="tgl" data-val="4" onclick="setToggle('acNum',4);renderAutocorr()">4</button><button class="tgl" data-val="5" onclick="setToggle('acNum',5);renderAutocorr()">5</button><button class="tgl" data-val="6" onclick="setToggle('acNum',6);renderAutocorr()">6</button><button class="tgl" data-val="7" onclick="setToggle('acNum',7);renderAutocorr()">7</button><button class="tgl" data-val="8" onclick="setToggle('acNum',8);renderAutocorr()">8</button><button class="tgl" data-val="9" onclick="setToggle('acNum',9);renderAutocorr()">9</button></div></div><div class="cw" style="height:200px"><canvas id="acChart"></canvas></div><div class="info-neutral">💡 양의 자기상관 = 해당 간격으로 반복 경향. 95% 신뢰구간(점선) 밖이면 통계적으로 유의미</div></div></div>
   <div class="info-box info-neutral mt8" style="font-size:10px;text-align:center">⚠️ 독립시행 게임에 종속시행 분석 기법을 적용한 실험적 도구입니다.</div>
 </div>
 
 <!-- 탭5: 분석 -->
 <div id="tab-analyze" class="hidden">
   <div class="card"><div class="card-title">🔍 내 번호 분석</div>
-    <div class="flex-center gap4 mb8"><select id="myJo"><option value="1">1조</option><option value="2">2조</option><option value="3">3조</option><option value="4">4조</option><option value="5">5조</option></select>
-    <input type="text" id="myDigits" placeholder="6자리 (예: 123456)" maxlength="6" style="width:120px">
+    <div class="flex-center gap4 mb8 flex-wrap"><div class="toggle-group" id="myJoGroup"><button class="tgl active" data-val="1" onclick="setToggle('myJoGroup',1)">1조</button><button class="tgl" data-val="2" onclick="setToggle('myJoGroup',2)">2조</button><button class="tgl" data-val="3" onclick="setToggle('myJoGroup',3)">3조</button><button class="tgl" data-val="4" onclick="setToggle('myJoGroup',4)">4조</button><button class="tgl" data-val="5" onclick="setToggle('myJoGroup',5)">5조</button></div>
+    <input type="text" id="myDigits" placeholder="6자리" maxlength="6" style="width:80px">
     <button class="btn btn-primary" onclick="analyzeMyNum()">🔍 분석</button></div>
   </div>
   <div id="analyzeResult" class="hidden"></div>
@@ -229,7 +243,7 @@ p{margin-bottom:6px;line-height:1.6}
 <script>
 const firebaseConfig={apiKey:"AIzaSyCLUNqnDrXLMkZHyxWfbM1Zfbimdk3AKWw",authDomain:"ma-db-d0c98.firebaseapp.com",projectId:"ma-db-d0c98",storageBucket:"ma-db-d0c98.firebasestorage.app",messagingSenderId:"497220756438",appId:"1:497220756438:web:72610748c39c6e29eb3a77"};
 let db=null,DRAWS=[];
-const DNAMES=['십만','만','천','백','십','일'];
+const DNAMES=['①','②','③','④','⑤','⑥'];
 const CI={};const ctt={backgroundColor:'#111B2E',borderColor:'#1E2D45',borderWidth:1,titleColor:'#E8ECF1',bodyColor:'#E8ECF1'};const gc='#1E2D4530';
 function dc(id){if(CI[id]){CI[id].destroy();delete CI[id]}}
 function mean(a){return a.reduce((s,v)=>s+v,0)/a.length}
@@ -291,7 +305,7 @@ function renderStats(){
   if(curSub==='dfreq')renderDigitFreq();else if(curSub==='jodist')renderJoDist();else if(curSub==='pattern')renderPattern();else renderMarkov()
 }
 function renderDigitFreq(){
-  const pos=+document.getElementById('freqDigitSel').value,f=getDigitFreq(pos),n=DRAWS.length,exp=n/10;
+  const pos=getToggle('freqDigitSel'),f=getDigitFreq(pos),n=DRAWS.length,exp=n/10;
   dc('freqChart');
   CI.freqChart=new Chart(document.getElementById('freqChart'),{type:'bar',data:{labels:[0,1,2,3,4,5,6,7,8,9],datasets:[{type:'bar',data:f,backgroundColor:f.map(v=>v>exp?'#FF4757':v<exp-1?'#70A1FF':'#556677'),borderRadius:3,barPercentage:.7},{type:'line',data:Array(10).fill(exp),borderColor:'#2ED573',borderWidth:2,borderDash:[5,5],pointRadius:0,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:ctt},scales:{x:{ticks:{color:'#556677',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#556677',font:{size:9}},grid:{color:gc}}}}});
   let chi2=0;f.forEach(v=>chi2+=(v-exp)**2/exp);const crit=16.92,isR=chi2<crit;
@@ -330,7 +344,7 @@ function getTransitionMatrix(pos){
   return p;
 }
 function renderMarkov(){
-  const pos=+document.getElementById('markovDigitSel').value,p=getTransitionMatrix(pos);
+  const pos=getToggle('markovDigitSel'),p=getTransitionMatrix(pos);
   let html='<table style="font-size:9px"><thead><tr><th style="width:30px">→</th>';
   for(let i=0;i<10;i++)html+=`<th class="text-center" style="width:30px">${i}</th>`;
   html+='</tr></thead><tbody>';
@@ -366,54 +380,83 @@ function genGap(){const jo=Math.floor(Math.random()*5)+1;const recent=DRAWS.slic
 function genMarkov(){const jo=Math.floor(Math.random()*5)+1;if(DRAWS.length===0)return genRandom();const last=DRAWS[DRAWS.length-1];const digits=[];for(let p=0;p<6;p++){const tm=getTransitionMatrix(p);const cur=last.digits[p];const row=tm[cur];const tw=row.reduce((a,b)=>a+b,0);let r=Math.random()*tw;for(let i=0;i<10;i++){r-=row[i];if(r<=0){digits.push(i);break}}}return{jo,digits}}
 const genFns={random:genRandom,balanced:genBalanced,poisson:genPoisson,norepeat:genNoRepeat,gap:genGap,markov:genMarkov};
 function generateNumbers(){
-  const count=+document.getElementById('genCount').value,fn=genFns[selStrat],results=[];
+  const count=getToggle('genCount'),fn=genFns[selStrat],results=[];
   for(let i=0;i<count;i++){const r=fn();const sum=r.digits.reduce((a,b)=>a+b,0);const od=r.digits.filter(x=>x%2===1).length;results.push({...r,sum,oe:`${od}:${6-od}`})}
   document.getElementById('genResults').classList.remove('hidden');
   document.getElementById('genResultTitle').textContent=`🎯 생성 결과 (${strategies.find(s=>s.id===selStrat).name})`;
   document.getElementById('genResultBody').innerHTML=results.map((r,i)=>`<div class="result-row"><div class="flex-center gap4"><span style="font-size:10px;color:var(--textDim);width:20px">#${i+1}</span><span class="jo-box" style="width:24px;height:24px;font-size:11px">${r.jo}</span>${r.digits.map(d=>`<span class="digit-box">${d}</span>`).join('')}</div><div class="result-meta"><span>합:${r.sum}</span><span>홀짝:${r.oe}</span></div></div>`).join('');
 }
 
-// ═══ 시뮬레이션 ═══
-function runSim(){
-  const sc=+document.getElementById('simCount').value,tpd=+document.getElementById('simTickets').value;
-  const btn=document.getElementById('simBtn');btn.disabled=true;btn.textContent='⏳';
+// ═══ 토글 버튼 시스템 ═══
+function setToggle(groupId,val){
+  const btns=document.querySelectorAll('#'+groupId+' .tgl');
+  btns.forEach(b=>b.classList.toggle('active',+b.dataset.val===val||b.dataset.val===String(val)));
+}
+function getToggle(groupId){
+  const active=document.querySelector('#'+groupId+' .tgl.active');
+  return active?+active.dataset.val:0;
+}
+
+// ═══ 검증 (백테스트) ═══
+function matchRank(myJo,myDig,wJo,wDig,bDig){
+  const joMatch=myJo===wJo;let tail=0;for(let i=5;i>=0;i--){if(myDig[i]===wDig[i])tail++;else break}
+  if(joMatch&&tail===6)return{rank:1,prize:1680000000};
+  if(joMatch&&tail===5)return{rank:2,prize:120000000};
+  if(joMatch&&tail===4)return{rank:3,prize:1000000};
+  if(joMatch&&tail===3)return{rank:4,prize:100000};
+  if(joMatch&&tail===2)return{rank:5,prize:50000};
+  if(joMatch&&tail===1)return{rank:6,prize:5000};
+  if(myDig[5]===wDig[5])return{rank:7,prize:1000};
+  // 보너스
+  if(bDig){let bt=0;for(let i=5;i>=0;i--){if(myDig[i]===bDig[i])bt++;else break}if(bt===6)return{rank:'bonus',prize:120000000}}
+  return{rank:'miss',prize:0};
+}
+function runBacktest(){
+  const jo=getToggle('btJoGroup');const raw=document.getElementById('btDigits').value;
+  if(raw.length!==6||!/^\d{6}$/.test(raw)){alert('6자리 숫자를 입력해주세요');return}
+  const digits=raw.split('').map(Number);
+  const md={1:0,2:0,3:0,4:0,5:0,6:0,7:0,bonus:0,miss:0};let totalPrize=0;const ph=[];
+  DRAWS.forEach((d,i)=>{
+    const r=matchRank(jo,digits,d.jo,d.digits,d.bonus_digits);
+    md[r.rank]++;totalPrize+=r.prize;
+    ph.push({round:d.round,profit:totalPrize-(i+1)*1000});
+  });
+  const n=DRAWS.length,spent=n*1000,hits=n-md.miss;
+  document.getElementById('btResults').classList.remove('hidden');
+  document.getElementById('btTotal').textContent=n+'회차';
+  document.getElementById('btHits').textContent=hits+'회';
+  document.getElementById('btInvest').textContent=(spent/10000).toLocaleString()+'만원';
+  const pe=document.getElementById('btPrize');pe.textContent=totalPrize>=10000?(totalPrize/10000).toLocaleString()+'만원':totalPrize.toLocaleString()+'원';pe.style.color=totalPrize>spent?'var(--main)':'var(--red)';
+  const roi=((totalPrize-spent)/spent*100).toFixed(1);
+  const vd=document.getElementById('btVerdict');vd.className='info-box mt8 '+(roi<0?'info-red':'info-green');
+  vd.textContent=roi<0?`📉 ${n}회차 동안 ${Math.abs(roi)}% 손실 (${(spent-totalPrize).toLocaleString()}원)`:`📈 ${roi}% 수익!`;
+  const condMap={1:'조+6자리',2:'조+끝5자리',3:'조+끝4자리',4:'조+끝3자리',5:'조+끝2자리',6:'조+끝1자리',7:'끝1자리',bonus:'각조+6자리'};
+  const prizeMap={1:'월700만×20년',2:'월100만×10년',3:'100만원',4:'10만원',5:'5만원',6:'5천원',7:'1천원',bonus:'월100만×10년'};
+  document.getElementById('btBody').innerHTML=[1,2,3,4,5,6,7,'bonus'].map(r=>{const c=md[r]||0;return`<tr><td class="${r<=2?'fw700 text-main':'fw700'}">${r==='bonus'?'보너스':r+'등'}</td><td>${condMap[r]}</td><td class="text-right">${c}회</td><td class="text-right">${r==='bonus'||r<=2?(c>0?prizeMap[r]:'—'):c>0?(c*(r===3?1000000:r===4?100000:r===5?50000:r===6?5000:1000)).toLocaleString()+'원':'—'}</td></tr>`}).join('');
+  dc('btProfitChart');CI.btProfitChart=new Chart(document.getElementById('btProfitChart'),{type:'line',data:{labels:ph.map(p=>p.round+'회'),datasets:[{data:ph.map(p=>p.profit),borderColor:'#2ED573',borderWidth:1.5,pointRadius:0,fill:false,tension:.1},{type:'line',data:Array(ph.length).fill(0),borderColor:'#8899AA',borderWidth:1,borderDash:[4,4],pointRadius:0,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...ctt,callbacks:{label:c=>c.parsed.y.toLocaleString()+'원'}}},scales:{x:{ticks:{color:'#556677',font:{size:8},maxTicksLimit:8},grid:{display:false}},y:{ticks:{color:'#556677',font:{size:8},callback:v=>v>=10000?(v/10000).toFixed(0)+'만':v},grid:{color:gc}}}}});
+}
+function runStrategyBacktest(){
+  const btn=document.getElementById('stratBtBtn');btn.disabled=true;btn.textContent='⏳ 분석 중...';
   setTimeout(()=>{
-    let spent=0,won=0;const md={1:0,2:0,3:0,4:0,5:0,6:0,7:0,bonus:0,miss:0};const ph=[];const si=Math.max(1,Math.floor(sc/100));
-    for(let d=0;d<sc;d++){
-      const wJo=Math.floor(Math.random()*5)+1,wDig=Array.from({length:6},()=>Math.floor(Math.random()*10));
-      const bDig=Array.from({length:6},()=>Math.floor(Math.random()*10));
-      for(let t=0;t<tpd;t++){
-        spent+=1000;const mJo=Math.floor(Math.random()*5)+1,mDig=Array.from({length:6},()=>Math.floor(Math.random()*10));
-        // 등수 판정
-        const joMatch=mJo===wJo;let tailMatch=0;for(let i=5;i>=0;i--){if(mDig[i]===wDig[i])tailMatch++;else break}
-        let prize=0,rank='miss';
-        if(joMatch&&tailMatch===6){prize=1680000000;rank=1}
-        else if(joMatch&&tailMatch===5){prize=120000000;rank=2}
-        else if(joMatch&&tailMatch===4){prize=1000000;rank=3}
-        else if(joMatch&&tailMatch===3){prize=100000;rank=4}
-        else if(joMatch&&tailMatch===2){prize=50000;rank=5}
-        else if(tailMatch>=1&&mDig[5]===wDig[5]){
-          if(joMatch&&tailMatch===1){prize=5000;rank=6}
-          else if(tailMatch>=1){prize=1000;rank=7}
-        }
-        // 보너스 체크
-        if(rank==='miss'){let bTail=0;for(let i=5;i>=0;i--){if(mDig[i]===bDig[i])bTail++;else break}if(bTail===6){prize=120000000;rank='bonus'}}
-        md[rank]=(md[rank]||0)+1;won+=prize;
+    const runs=50;const results={};
+    Object.keys(genFns).forEach(sid=>{
+      let totalHits=0,totalPrize=0;
+      for(let r=0;r<runs;r++){
+        let prize=0,hits=0;
+        DRAWS.forEach(d=>{
+          const num=genFns[sid]();const m=matchRank(num.jo,num.digits,d.jo,d.digits,d.bonus_digits);
+          if(m.rank!=='miss'){hits++;prize+=m.prize}
+        });
+        totalHits+=hits;totalPrize+=prize;
       }
-      if(d%si===0||d===sc-1)ph.push({d:d+1,p:won-spent});
-    }
-    const tt=sc*tpd,roi=(((won-spent)/spent)*100).toFixed(2),ev=(won/tt).toFixed(0);
-    document.getElementById('simResults').classList.remove('hidden');
-    document.getElementById('simSpent').textContent=(spent/10000).toLocaleString()+'만';
-    const we=document.getElementById('simWon');we.textContent=(won/10000).toLocaleString()+'만';we.style.color=won>spent?'var(--main)':'var(--red)';
-    const re=document.getElementById('simROI');re.textContent=roi+'%';re.style.color=roi>0?'var(--main)':'var(--red)';
-    document.getElementById('simEV').textContent=Number(ev).toLocaleString()+'원';
-    const vd=document.getElementById('simVerdict');vd.className='info-box '+(roi<0?'info-red':'info-green');vd.textContent=roi<0?`📉 ${tt.toLocaleString()}장 기준, ${Math.abs(roi)}% 손실`:`📈 이례적 수익!`;
-    dc('profitChart');CI.profitChart=new Chart(document.getElementById('profitChart'),{type:'line',data:{labels:ph.map(p=>p.d),datasets:[{data:ph.map(p=>p.p),borderColor:'#2ED573',borderWidth:2,pointRadius:0,fill:false,tension:.1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...ctt,callbacks:{label:c=>(c.parsed.y/10000).toLocaleString()+'만원'}}},scales:{x:{ticks:{color:'#556677',font:{size:8},maxTicksLimit:8},grid:{display:false}},y:{ticks:{color:'#556677',font:{size:8},callback:v=>(v/10000).toFixed(0)+'만'},grid:{color:gc}}}}});
-    const thMap={1:'0.00002%',2:'0.0002%',3:'0.002%',4:'0.02%',5:'0.2%',6:'2%',7:'10%',bonus:'0.0001%',miss:'~87.8%'};
-    document.getElementById('matchBody').innerHTML=[1,2,3,4,5,6,7,'bonus','miss'].map(r=>{const c=md[r]||0;return`<tr${r<=3?' style="background:rgba(46,213,115,.03)"':''}><td class="${r<=3?'fw700 text-main':''}">${r==='bonus'?'보너스':r==='miss'?'미당첨':r+'등'}</td><td class="text-right">${c.toLocaleString()}</td><td class="text-right">${((c/tt)*100).toFixed(4)}%</td><td class="text-right text-dim">${thMap[r]||''}</td></tr>`}).join('');
-    btn.disabled=false;btn.textContent='▶ 실행';
-  },50);
+      const avgHits=totalHits/runs,avgPrize=totalPrize/runs,avgSpent=DRAWS.length*1000;
+      results[sid]={name:strategies.find(s=>s.id===sid).name,hits:avgHits.toFixed(1),prize:avgPrize,roi:+((avgPrize-avgSpent)/avgSpent*100).toFixed(1)};
+    });
+    const sorted=Object.values(results).sort((a,b)=>b.roi-a.roi);
+    document.getElementById('stratBtResults').classList.remove('hidden');
+    document.getElementById('stratBtResults').innerHTML='<table><thead><tr><th>전략</th><th class="text-right">평균 당첨</th><th class="text-right">평균 수익</th><th class="text-right">ROI</th></tr></thead><tbody>'+sorted.map((r,i)=>`<tr${i===0?' style="background:rgba(46,213,115,.05)"':''}><td class="fw700${i===0?' text-main':''}">${r.name}</td><td class="text-right">${r.hits}회</td><td class="text-right">${(r.prize/10000).toLocaleString()}만</td><td class="text-right ${r.roi>-45?'text-main':'text-red'}">${r.roi}%</td></tr>`).join('')+'</tbody></table><div class="info-neutral mt8">💡 각 전략으로 매 회차 번호를 생성하여 역대 당첨번호와 대조 (${runs}회 평균)</div>';
+    btn.disabled=false;btn.textContent='▶ 전략 비교 실행';
+  },100);
 }
 
 // ═══ 보조지표 ═══
@@ -426,7 +469,7 @@ function getTimeSeries(pos,num,win){const s=[];for(let i=win-1;i<DRAWS.length;i+
 function calcRSI(pos,num,period){const d=DRAWS;if(d.length<period+1)return 50;const ch=[];for(let i=1;i<d.length;i++){const p=d[i-1].digits[pos]===num?1:0;const c=d[i].digits[pos]===num?1:0;ch.push(c-p)}const r=ch.slice(-period);let g=0,l=0;r.forEach(c=>{if(c>0)g+=c;else l+=Math.abs(c)});const ag=g/period,al=l/period;if(al===0)return 100;return +(100-100/(1+ag/al)).toFixed(1)}
 
 function renderLMA(){
-  const pos=+document.getElementById('lmaDig').value,num=+document.getElementById('lmaNum').value;
+  const pos=getToggle('lmaDig'),num=getToggle('lmaNum');
   const s10=getTimeSeries(pos,num,10),s50=getTimeSeries(pos,num,50);if(s50.length<2)return;
   const off=s10.length-s50.length;const sa=s10.slice(off);const labels=Array.from({length:s50.length},(_,i)=>'');
   dc('lmaChart');CI.lmaChart=new Chart(document.getElementById('lmaChart'),{type:'line',data:{labels,datasets:[{label:'단기(10)',data:sa,borderColor:'#FF4757',borderWidth:2,pointRadius:0,tension:.3,fill:false},{label:'장기(50)',data:s50,borderColor:'#70A1FF',borderWidth:2,pointRadius:0,tension:.3,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8899AA',font:{size:9}}},tooltip:ctt},scales:{x:{display:false},y:{ticks:{color:'#556677',font:{size:9}},grid:{color:gc}}}}});
@@ -436,21 +479,21 @@ function renderLMA(){
   document.getElementById('deadList').innerHTML=dc2.length?dc2.join(', '):'<span class="text-dim">없음</span>';
 }
 function renderRSI(){
-  const pos=+document.getElementById('rsiDig').value,period=+document.getElementById('rsiPeriod').value;
+  const pos=getToggle('rsiDig'),period=getToggle('rsiPeriod');
   const data=Array.from({length:10},(_,i)=>({num:i,rsi:calcRSI(pos,i,period)}));
   dc('rsiChart');CI.rsiChart=new Chart(document.getElementById('rsiChart'),{type:'bar',data:{labels:data.map(d=>d.num),datasets:[{data:data.map(d=>d.rsi),backgroundColor:data.map(d=>d.rsi>70?'#FF4757':d.rsi<30?'#70A1FF':'#556677'),borderRadius:3,barPercentage:.7}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:ctt},scales:{x:{ticks:{color:'#556677'},grid:{display:false}},y:{min:0,max:100,ticks:{color:'#556677',font:{size:9}},grid:{color:gc}}}}});
   document.getElementById('rsiHot').innerHTML=data.filter(d=>d.rsi>70).map(d=>`${d.num}(${d.rsi})`).join(', ')||'없음';
   document.getElementById('rsiCold').innerHTML=data.filter(d=>d.rsi<30).map(d=>`${d.num}(${d.rsi})`).join(', ')||'없음';
 }
 function renderBB(){
-  const pos=+document.getElementById('bbDig').value,num=+document.getElementById('bbNum').value;
+  const pos=getToggle('bbDig'),num=getToggle('bbNum');
   const ts=getTimeSeries(pos,num,10);if(ts.length<20)return;const win=20;
   const ma=[],up=[],lo=[];for(let i=win-1;i<ts.length;i++){const sl=ts.slice(i-win+1,i+1);const m=mean(sl),s=stddev(sl);ma.push(m);up.push(m+2*s);lo.push(m-2*s)}
   const actual=ts.slice(ts.length-ma.length);const labels=Array.from({length:ma.length},()=>'');
   dc('bbChart');CI.bbChart=new Chart(document.getElementById('bbChart'),{type:'line',data:{labels,datasets:[{label:'상단',data:up,borderColor:'#FF475744',borderWidth:1,pointRadius:0,fill:false,borderDash:[3,3]},{label:'MA',data:ma,borderColor:'#2ED573',borderWidth:2,pointRadius:0,fill:false},{label:'하단',data:lo,borderColor:'#70A1FF44',borderWidth:1,pointRadius:0,fill:false,borderDash:[3,3]},{label:'실제',data:actual,borderColor:'#F0C040',borderWidth:1.5,pointRadius:0,fill:false,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8899AA',font:{size:9}}},tooltip:ctt},scales:{x:{display:false},y:{ticks:{color:'#556677',font:{size:9}},grid:{color:gc}}}}});
 }
 function renderMACD(){
-  const pos=+document.getElementById('macdDig').value,num=+document.getElementById('macdNum').value;
+  const pos=getToggle('macdDig'),num=getToggle('macdNum');
   const raw=DRAWS.map(d=>d.digits[pos]===num?1:0);if(raw.length<30)return;
   const e12=calcEMA(raw,12),e26=calcEMA(raw,26);const ml=e12.map((v,i)=>v-e26[i]);const sig=calcEMA(ml,9);const hist=ml.map((v,i)=>v-sig[i]);
   const len=Math.min(100,ml.length);const m=ml.slice(-len),s=sig.slice(-len),h=hist.slice(-len);const labels=Array.from({length:len},()=>'');
@@ -474,7 +517,7 @@ function renderEntropy(){
   document.getElementById('entropyDetail').innerHTML=eData.map(d=>`<div class="flex-between" style="font-size:11px;padding:3px 0"><span>${d.name}</span><span style="color:${d.pct>95?'var(--main)':d.pct>90?'var(--gold)':'var(--red)'}">${d.entropy} (${d.pct}%)</span></div>`).join('');
 }
 function renderAutocorr(){
-  const pos=+document.getElementById('acDig').value,num=+document.getElementById('acNum').value;
+  const pos=getToggle('acDig'),num=getToggle('acNum');
   const series=DRAWS.map(d=>d.digits[pos]===num?1:0);const n=series.length,m=mean(series);
   const maxLag=20;const acVals=[];const ci=1.96/Math.sqrt(n);
   for(let lag=1;lag<=maxLag;lag++){
@@ -537,7 +580,7 @@ function renderIndSub(){const fn={lma:renderLMA,rsi:renderRSI,bb:renderBB,macd:r
 
 // ═══ 분석 탭 ═══
 function analyzeMyNum(){
-  const jo=+document.getElementById('myJo').value;const raw=document.getElementById('myDigits').value;
+  const jo=getToggle('myJoGroup');const raw=document.getElementById('myDigits').value;
   if(raw.length!==6||!/^\d{6}$/.test(raw)){alert('6자리 숫자를 입력해주세요');return}
   const digits=raw.split('').map(Number);const scores=calcSignal();
   let html='<div class="card"><div class="card-title">📊 분석 결과</div>';
