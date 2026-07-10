@@ -131,6 +131,12 @@ p{margin-bottom:6px;line-height:1.6}
     <div class="card"><div class="card-title">📊 고저 비율 (0~4 vs 5~9)</div><table><thead><tr><th>저:고</th><th class="text-right">출현</th><th class="text-right">비율</th></tr></thead><tbody id="hlBody"></tbody></table></div>
   </div>
   <div id="sub-bayes" class="hidden">
+    <div class="card"><div class="card-title">🧠 베이즈 사후확률</div>
+      <div class="text-dim mb8" style="font-size:11px">기본 확률(1/10)을 최근 출현 데이터로 갱신한 사후확률. 높을수록 다음 회차 출현 기대가 높습니다</div>
+      <div class="mb8"><span style="font-size:11px;font-weight:600">분석 구간: </span><div class="toggle-group" id="bayesPeriod" style="display:inline-flex"><button class="tgl" data-val="10" onclick="setToggle('bayesPeriod',10);renderBayesPost()">최근 10회</button><button class="tgl active" data-val="20" onclick="setToggle('bayesPeriod',20);renderBayesPost()">최근 20회</button><button class="tgl" data-val="50" onclick="setToggle('bayesPeriod',50);renderBayesPost()">최근 50회</button></div></div>
+      <div id="bayesResult"></div>
+      <div class="info-neutral">💡 각 자릿수별 사후확률 TOP 3. P(출현|최근데이터) = 우도×사전확률 / 전체확률</div>
+    </div>
     <div class="card"><div class="card-title">🧠 마르코프 체인 전이확률</div>
       <div class="text-dim mb8" style="font-size:11px">특정 자릿수에서 이번 회차에 X가 나왔을 때 → 다음 회차에 Y가 나올 확률</div>
       <div class="mb8"><span style="font-size:11px;font-weight:600">자릿수: </span><div class="toggle-group" id="markovDigitSel" style="display:inline-flex"><button class="tgl active" data-val="0" onclick="setToggle('markovDigitSel',0);renderMarkov()">①</button><button class="tgl" data-val="1" onclick="setToggle('markovDigitSel',1);renderMarkov()">②</button><button class="tgl" data-val="2" onclick="setToggle('markovDigitSel',2);renderMarkov()">③</button><button class="tgl" data-val="3" onclick="setToggle('markovDigitSel',3);renderMarkov()">④</button><button class="tgl" data-val="4" onclick="setToggle('markovDigitSel',4);renderMarkov()">⑤</button><button class="tgl" data-val="5" onclick="setToggle('markovDigitSel',5);renderMarkov()">⑥</button></div></div>
@@ -160,6 +166,12 @@ p{margin-bottom:6px;line-height:1.6}
 
 <!-- 탭3: 검증 (백테스트) -->
 <div id="tab-simulate" class="hidden">
+  <div class="sub-tabs">
+    <button class="sub-tab active" onclick="switchSim('backtest')">백테스트</button>
+    <button class="sub-tab" onclick="switchSim('history')">당첨 히스토리</button>
+  </div>
+
+  <div id="sim-backtest">
   <div class="card"><div class="card-title">✅ 내 번호 과거 검증 (백테스트)</div>
     <div class="text-dim mb8" style="font-size:11px">내 번호를 역대 당첨번호와 대조하여 등수별 당첨 횟수를 검증합니다</div>
     <div class="flex-center gap4 mb8 flex-wrap">
@@ -192,6 +204,26 @@ p{margin-bottom:6px;line-height:1.6}
     <tr><td class="fw700">7등</td><td>끝1자리</td><td class="text-right">1천원</td><td class="text-right text-dim">1/10</td></tr>
     <tr><td class="fw700 text-gold">보너스</td><td>각조+6자리</td><td class="text-right">월100만×10년</td><td class="text-right text-dim">1/1,000,000</td></tr>
   </tbody></table></div>
+  </div>
+
+  <div id="sim-history" class="hidden">
+    <div class="card"><div class="card-title">📋 당첨 히스토리</div>
+      <div class="text-dim mb8" style="font-size:11px">역대 당첨번호를 회차 구간별로 조회합니다</div>
+      <div class="flex-center gap8 mb8" style="flex-wrap:wrap">
+        <div><span class="text-dim" style="font-size:10px">시작</span><input type="number" id="histStart" min="1" style="width:70px;margin-left:4px"></div>
+        <div><span class="text-dim" style="font-size:10px">끝</span><input type="number" id="histEnd" style="width:70px;margin-left:4px"></div>
+        <button class="btn btn-primary btn-sm" onclick="renderHistory()">조회</button>
+      </div>
+      <div class="flex-center gap4" style="flex-wrap:wrap">
+        <button class="btn btn-sec btn-sm" onclick="quickHistory(10)">최근 10회</button>
+        <button class="btn btn-sec btn-sm" onclick="quickHistory(30)">최근 30회</button>
+        <button class="btn btn-sec btn-sm" onclick="quickHistory(50)">최근 50회</button>
+        <button class="btn btn-sec btn-sm" onclick="quickHistory(0)">전체</button>
+      </div>
+    </div>
+    <div id="histSummary"></div>
+    <div id="histResults"></div>
+  </div>
 </div>
 
 <!-- 탭4: 보조지표 -->
@@ -336,7 +368,7 @@ function addDraw(){
   // Firestore에도 저장 시도
   if(db){try{db.collection('pension_draws').doc(String(round)).set(newDraw);db.collection('pension_meta').doc('info').set({lastDraw:DRAWS[DRAWS.length-1].round},{merge:true})}catch(e){}}
   // UI 갱신
-  updateStatusBar();if(curTab==='stats')renderStats();if(curTab==='indicator')renderIndTab();
+  updateStatusBar();if(curTab==='stats')renderStats();if(curTab==='indicator')renderIndTab();if(curTab==='simulate'&&document.getElementById('histResults').innerHTML)renderHistory();
   document.getElementById('addDigits').value='';document.getElementById('addBonus').value='';
   document.getElementById('addRound').value=DRAWS[DRAWS.length-1].round+1;
   renderManualList();
@@ -353,7 +385,7 @@ function removeManualDraw(round){
   DRAWS=DRAWS.filter(d=>d.round!==round);DRAWS.sort((a,b)=>a.round-b.round);
   try{localStorage.setItem('pension_draws',JSON.stringify(DRAWS))}catch(e){}
   if(db){try{db.collection('pension_draws').doc(String(round)).delete()}catch(e){}}
-  updateStatusBar();if(curTab==='stats')renderStats();if(curTab==='indicator')renderIndTab();
+  updateStatusBar();if(curTab==='stats')renderStats();if(curTab==='indicator')renderIndTab();if(curTab==='simulate'&&document.getElementById('histResults').innerHTML)renderHistory();
   renderManualList();
 }
 function clearManualDraws(){
@@ -362,7 +394,7 @@ function clearManualDraws(){
   manual.forEach(d=>{DRAWS=DRAWS.filter(x=>x.round!==d.round);if(db){try{db.collection('pension_draws').doc(String(d.round)).delete()}catch(e){}}});
   saveManualDraws([]);DRAWS.sort((a,b)=>a.round-b.round);
   try{localStorage.setItem('pension_draws',JSON.stringify(DRAWS))}catch(e){}
-  updateStatusBar();if(curTab==='stats')renderStats();if(curTab==='indicator')renderIndTab();
+  updateStatusBar();if(curTab==='stats')renderStats();if(curTab==='indicator')renderIndTab();if(curTab==='simulate'&&document.getElementById('histResults').innerHTML)renderHistory();
   renderManualList();
 }
 
@@ -371,12 +403,13 @@ let curTab='stats',curSub='dfreq',curInd='lma';
 function switchTab(id){const tabs=['stats','generate','simulate','indicator','analyze'];document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',tabs[i]===id));tabs.forEach(t=>document.getElementById('tab-'+t).classList.toggle('hidden',t!==id));curTab=id;if(id==='stats')renderStats();if(id==='indicator')renderIndTab()}
 function switchSub(id){const subs=['dfreq','jodist','pattern','bayes'];document.querySelectorAll('#tab-stats .sub-tab').forEach((t,i)=>t.classList.toggle('active',subs[i]===id));subs.forEach(s=>document.getElementById('sub-'+s).classList.toggle('hidden',s!==id));curSub=id;renderStats()}
 function switchInd(id){const inds=['lma','rsi','bb','macd','mom'];document.querySelectorAll('#tab-indicator .sub-tab').forEach((t,i)=>t.classList.toggle('active',inds[i]===id));inds.forEach(s=>document.getElementById('ind-'+s).classList.toggle('hidden',s!==id));curInd=id;renderIndSub()}
+function switchSim(id){const subs=['backtest','history'];document.querySelectorAll('#tab-simulate .sub-tab').forEach((t,i)=>t.classList.toggle('active',subs[i]===id));subs.forEach(s=>document.getElementById('sim-'+s).classList.toggle('hidden',s!==id));if(id==='history'&&!document.getElementById('histResults').innerHTML)quickHistory(10)}
 
 // ═══ 통계 ═══
 function getDigitFreq(pos){const f=Array(10).fill(0);DRAWS.forEach(d=>f[d.digits[pos]]++);return f}
 function renderStats(){
   const n=DRAWS.length;document.getElementById('totalDraws').textContent=n;
-  if(curSub==='dfreq')renderDigitFreq();else if(curSub==='jodist')renderJoDist();else if(curSub==='pattern')renderPattern();else renderMarkov()
+  if(curSub==='dfreq')renderDigitFreq();else if(curSub==='jodist')renderJoDist();else if(curSub==='pattern')renderPattern();else{renderBayesPost();renderMarkov()}
 }
 function renderDigitFreq(){
   const pos=getToggle('freqDigitSel'),f=getDigitFreq(pos),n=DRAWS.length,exp=n/10;
@@ -434,6 +467,63 @@ function renderMarkov(){
     }
     document.getElementById('markovPrediction').innerHTML=pred;
   }
+}
+
+// ═══ 베이즈 사후확률 ═══
+function renderBayesPost(){
+  const period=getToggle('bayesPeriod')||20;
+  const recent=DRAWS.slice(-period);const actualN=recent.length;
+  if(actualN===0)return;
+  const prior=1/10;
+  let html='<table style="font-size:10px"><thead><tr><th>자릿수</th><th class="text-center" colspan="3">사후확률 TOP 3</th><th class="text-center">최저</th></tr></thead><tbody>';
+  for(let p=0;p<6;p++){
+    const results=[];
+    for(let n=0;n<10;n++){
+      const appeared=recent.filter(d=>d.digits[p]===n).length;
+      const likelihood=appeared/actualN;
+      const post=(likelihood*prior)/((likelihood*prior)+((1-likelihood)*(1-prior)));
+      results.push({num:n,post:isNaN(post)?prior:post,appeared});
+    }
+    results.sort((a,b)=>b.post-a.post);
+    const top3=results.slice(0,3),bot=results[results.length-1];
+    html+=`<tr><td class="fw700">${DNAMES[p]}</td>`;
+    top3.forEach(r=>{html+=`<td class="text-center"><span class="digit-box" style="width:22px;height:22px;font-size:10px">${r.num}</span><br><span class="text-main" style="font-size:9px">${(r.post*100).toFixed(1)}%</span><br><span class="text-dim" style="font-size:8px">${r.appeared}/${actualN}회</span></td>`});
+    html+=`<td class="text-center"><span class="digit-box" style="width:22px;height:22px;font-size:10px;background:var(--border);color:var(--textDim)">${bot.num}</span><br><span class="text-cyan" style="font-size:9px">${(bot.post*100).toFixed(1)}%</span></td></tr>`;
+  }
+  html+='</tbody></table>';
+  document.getElementById('bayesResult').innerHTML=html;
+}
+
+// ═══ 당첨 히스토리 ═══
+function quickHistory(n){
+  if(DRAWS.length===0)return;
+  const last=DRAWS[DRAWS.length-1].round;
+  const start=n===0?DRAWS[0].round:Math.max(DRAWS[0].round,last-n+1);
+  document.getElementById('histStart').value=start;
+  document.getElementById('histEnd').value=last;
+  renderHistory();
+}
+function renderHistory(){
+  const start=+document.getElementById('histStart').value||DRAWS[0].round;
+  const end=+document.getElementById('histEnd').value||DRAWS[DRAWS.length-1].round;
+  const filtered=DRAWS.filter(d=>d.round>=start&&d.round<=end).sort((a,b)=>b.round-a.round);
+  if(filtered.length===0){document.getElementById('histResults').innerHTML='<div class="card"><div class="text-dim text-center" style="padding:16px">해당 구간에 데이터가 없습니다</div></div>';document.getElementById('histSummary').innerHTML='';return}
+  // 구간 요약: 조 분포 + 평균합계
+  const jf=Array(6).fill(0);filtered.forEach(d=>jf[d.jo]++);
+  const sums=filtered.map(d=>d.digits.reduce((a,b)=>a+b,0));
+  let sumHtml=`<div class="card"><div class="card-title">📊 구간 요약 (${start}~${end}회, ${filtered.length}회차)</div>`;
+  sumHtml+=`<div class="grid2 mb8"><div class="stat"><div class="stat-val">${mean(sums).toFixed(1)}</div><div class="stat-label">평균 합계</div></div><div class="stat"><div class="stat-val">${[1,2,3,4,5].reduce((best,j)=>jf[j]>jf[best]?j:best,1)}조</div><div class="stat-label">최다 출현 조 (${Math.max(jf[1],jf[2],jf[3],jf[4],jf[5])}회)</div></div></div>`;
+  sumHtml+=`<div class="flex-center gap6" style="justify-content:center;font-size:10px;color:var(--textDim)">${[1,2,3,4,5].map(j=>`<span><span class="jo-box" style="width:20px;height:20px;font-size:10px">${j}</span> ${jf[j]}회</span>`).join('')}</div></div>`;
+  document.getElementById('histSummary').innerHTML=sumHtml;
+  // 히스토리 테이블
+  const manual=getManualDraws();const manualRounds=new Set(manual.map(d=>d.round));
+  let html='<div class="card"><table style="font-size:10px"><thead><tr><th>회차</th><th class="text-center">조</th><th class="text-center">당첨번호</th><th class="text-right">합계</th><th class="text-right">홀:짝</th></tr></thead><tbody>';
+  filtered.forEach(d=>{
+    const sum=d.digits.reduce((a,b)=>a+b,0);const od=d.digits.filter(x=>x%2===1).length;
+    html+=`<tr><td class="fw700">${d.round}${manualRounds.has(d.round)?'<span class="text-gold" title="수동 추가" style="font-size:8px"> ✎</span>':''}</td><td class="text-center"><span class="jo-box" style="width:20px;height:20px;font-size:10px">${d.jo}</span></td><td class="text-center">${d.digits.map(n=>`<span class="digit-box" style="width:20px;height:20px;font-size:10px">${n}</span>`).join('')}</td><td class="text-right">${sum}</td><td class="text-right text-dim">${od}:${6-od}</td></tr>`;
+  });
+  html+='</tbody></table></div>';
+  document.getElementById('histResults').innerHTML=html;
 }
 
 // ═══ 번호생성 ═══
