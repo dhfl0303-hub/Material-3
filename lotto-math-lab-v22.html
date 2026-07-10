@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LOTTO MATH LAB v3.0</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
-<script src="https://unpkg.com/firebase@9.22.0/firebase-app-compat.js"></script>
-<script src="https://unpkg.com/firebase@9.22.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -173,6 +173,14 @@ p{margin-bottom:6px;line-height:1.6}
   <div id="sub-pattern" class="hidden">
     <div class="card"><div class="card-title">⚖️ 홀짝 비율 분포</div><table><thead><tr><th>홀:짝</th><th class="text-right">출현</th><th class="text-right">비율</th></tr></thead><tbody id="oddEvenBody"></tbody></table><div class="info-neutral">💡 통계적으로 3:3, 4:2, 2:4 비율이 전체의 약 75% 차지</div></div>
     <div class="card"><div class="card-title">🔗 연속번호 출현</div><div class="grid2"><div class="stat"><div class="stat-val" id="consecPct"></div><div class="stat-label">연속번호 포함 비율</div></div><div class="stat"><div class="stat-val" id="consecCount"></div><div class="stat-label">해당 회차 수</div></div></div><div class="info-neutral">💡 실제 로또에서 연속번호가 포함되는 비율은 약 60~65%로 매우 흔함</div></div>
+    <div class="card"><div class="card-title">♻️ 이월수 분석</div>
+      <div class="text-dim mb8" style="font-size:11px">직전 회차 당첨번호가 다음 회차에 다시 출현(이월)하는 패턴 분석</div>
+      <div class="grid2 mb8"><div class="stat"><div class="stat-val" id="carryPct"></div><div class="stat-label">이월수 포함 비율</div></div><div class="stat"><div class="stat-val" id="carryAvg"></div><div class="stat-label">회차당 평균 이월 개수</div></div></div>
+      <div class="text-gold fw700 mb6" style="font-size:11px">🎫 직전 회차 번호 (다음 회차 이월 후보)</div>
+      <div id="carryCandidates" class="flex-center gap4 mb8" style="flex-wrap:wrap"></div>
+      <div id="carryDetail"></div>
+      <div class="info-neutral">💡 이론상 각 번호의 이월 확률은 6/45 ≈ 13.3%. 회차당 기대 이월 개수는 0.8개</div>
+    </div>
     <div class="card">
       <div class="card-title">📊 베이즈 번호 신뢰도</div>
       <div class="text-dim mb8" style="font-size:11px">기본 확률(6/45)을 최근 출현 데이터로 갱신한 사후확률입니다. 높을수록 다음 회차 출현 기대가 높습니다.</div>
@@ -192,7 +200,7 @@ p{margin-bottom:6px;line-height:1.6}
 
   <div class="card">
     <div class="card-title">🎯 축소조합 (Wheeling System)</div>
-    <div class="text-dim mb8" style="font-size:11px">유망 번호 8~12개를 선택하면, 5개 일치(3등) 시 최소 1장 당첨이 보장되는 최적 조합 세트를 생성합니다.</div>
+    <div class="text-dim mb8" style="font-size:11px">유망 번호 8~12개를 선택하면, 그중 3개가 당첨번호에 포함될 경우 최소 1장은 3개 일치(5등)가 보장되는 최소 조합 세트를 생성합니다.</div>
     <div class="mb8">
       <span style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">유망 번호 선택 (8~12개):</span>
       <div id="wheelNumSelector" style="display:flex;flex-wrap:wrap;gap:4px"></div>
@@ -389,6 +397,15 @@ const N = 45, PICK = 6, COMBOS = 8145060;
 let indSelected = { bb: 1, macd: 1, super: 1 };
 
 async function initApp(){
+  // 10초 강제 해제 안전장치
+  const forceTimeout=setTimeout(()=>{
+    document.getElementById('loadingOverlay').classList.add('hidden');
+    document.getElementById('mainApp').classList.remove('hidden');
+    if(DRAWS.length>0){updateStatusBar();renderStatsTab();renderStrategies();initIndicatorSelects();initWheelSelector()}
+  },10000);
+  const FS_TIMEOUT=3000;
+  const withTimeout=(p)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),FS_TIMEOUT))]);
+
   try {
     updateLoading('lotto-data.json 로드 중...', 10);
     const res = await fetch('lotto-data.json');
@@ -400,20 +417,20 @@ async function initApp(){
       firebase.initializeApp(firebaseConfig);
       db = firebase.firestore();
       if(DRAWS.length > 0){
-        const metaSnap = await db.collection('meta').doc('info').get();
+        const metaSnap = await withTimeout(db.collection('meta').doc('info').get());
         if(metaSnap.exists){
           const lastInDB = metaSnap.data().lastDraw;
           const lastInJSON = DRAWS[DRAWS.length-1].round;
           if(lastInDB > lastInJSON){
             updateLoading('Firestore에서 최신 데이터 추가 로드...', 80);
-            const snapshot = await db.collection('draws').where(firebase.firestore.FieldPath.documentId(), '>', String(lastInJSON)).get();
+            const snapshot = await withTimeout(db.collection('draws').where(firebase.firestore.FieldPath.documentId(), '>', String(lastInJSON)).get());
             snapshot.forEach(doc => { const d = doc.data(); DRAWS.push({ round:+doc.id, nums:[d.no1,d.no2,d.no3,d.no4,d.no5,d.no6], bonus:d.bonus, date:d.date }); });
             DRAWS.sort((a,b) => a.round - b.round);
           }
         }
-      } else { await loadFromFirestore(); }
+      } else { await withTimeout(loadFromFirestore()); }
     }
-  } catch(e){ console.log('Firestore 연결 실패:', e.message); }
+  } catch(e){ console.log('Firestore 연결 실패/타임아웃:', e.message); }
 
   if(DRAWS.length === 0){
     const cached = localStorage.getItem('lotto_draws');
@@ -431,6 +448,7 @@ async function initApp(){
   }
   loadManualDraws();
   try { localStorage.setItem('lotto_draws', JSON.stringify(DRAWS.filter(d=>!d._manual))); } catch(e){}
+  clearTimeout(forceTimeout);
   updateLoading(DRAWS.length + '회차 로드 완료!', 100);
   document.getElementById('loadingOverlay').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
@@ -558,7 +576,34 @@ function renderPatternSub(freq,expected,total){
   let wc=0;getDrawNums().forEach(d=>{const s=[...d].sort((a,b)=>a-b);for(let i=0;i<s.length-1;i++){if(s[i+1]-s[i]===1){wc++;break}}});
   document.getElementById('consecPct').textContent=((wc/total)*100).toFixed(1)+'%';
   document.getElementById('consecCount').textContent=wc+'/'+total;
+  renderCarryOver();
   renderBayes();
+}
+
+/* ===== 이월수 분석 ===== */
+function renderCarryOver(){
+  const draws=getDrawNums();if(draws.length<2)return;
+  let carryRounds=0,totalCarry=0;
+  for(let i=1;i<draws.length;i++){
+    const prev=new Set(draws[i-1]);
+    const carried=draws[i].filter(n=>prev.has(n)).length;
+    if(carried>0)carryRounds++;
+    totalCarry+=carried;
+  }
+  const n=draws.length-1;
+  document.getElementById('carryPct').textContent=((carryRounds/n)*100).toFixed(1)+'%';
+  document.getElementById('carryAvg').textContent=(totalCarry/n).toFixed(2)+'개';
+  // 직전 회차 번호별 개인 이월 성적
+  const lastNums=draws[draws.length-1];
+  const stats=lastNums.map(num=>{
+    let appeared=0,carried=0;
+    for(let i=0;i<draws.length-1;i++){
+      if(draws[i].includes(num)){appeared++;if(draws[i+1].includes(num))carried++}
+    }
+    return{num,rate:appeared>0?+((carried/appeared)*100).toFixed(1):0,carried,appeared};
+  });
+  document.getElementById('carryCandidates').innerHTML=lastNums.map(n=>renderBall(n)).join('');
+  document.getElementById('carryDetail').innerHTML='<table style="font-size:10px"><thead><tr><th>번호</th><th class="text-right">과거 출현</th><th class="text-right">이월 성공</th><th class="text-right">개인 이월률</th></tr></thead><tbody>'+stats.sort((a,b)=>b.rate-a.rate).map(s=>'<tr><td>'+renderBall(s.num,true)+'</td><td class="text-right">'+s.appeared+'회</td><td class="text-right">'+s.carried+'회</td><td class="text-right '+(s.rate>13.3?'text-gold fw700':'text-dim')+'">'+s.rate+'%</td></tr>').join('')+'</tbody></table>';
 }
 
 /* ===== 베이즈 신뢰도 ===== */
@@ -766,8 +811,11 @@ function renderHistory(){
   const filtered = DRAWS.filter(d=>d.round>=start&&d.round<=end);
   if(filtered.length===0){ document.getElementById('histResults').innerHTML='<div class="card"><div class="text-dim text-center">해당 구간에 데이터가 없습니다.</div></div>'; return; }
 
+  const RENDER_LIMIT=60; // OMR 카드 과다 렌더 시 브라우저 멈춤 방지
+  const toRender=filtered.slice().reverse().slice(0,RENDER_LIMIT);
   let html = '';
-  filtered.slice().reverse().forEach(d=>{
+  if(filtered.length>RENDER_LIMIT) html+='<div class="info-box info-neutral mb8" style="font-size:10px">⚡ 성능 보호: '+filtered.length+'회차 중 최신 '+RENDER_LIMIT+'회차만 상세 표시합니다. 구간 요약은 전체 기준입니다.</div>';
+  toRender.forEach(d=>{
     html += '<div class="card" style="margin-bottom:8px">';
     html += '<div class="flex-between mb6"><span class="fw700 text-gold">'+d.round+'회</span><span class="text-dim" style="font-size:11px">'+(d.date||'')+'</span></div>';
     html += '<div class="flex-center gap4 mb8" style="justify-content:center;flex-wrap:wrap">'+d.nums.map(n=>renderBall(n)).join('');
@@ -824,7 +872,14 @@ function addManualDraw(){
   DRAWS.push(newDraw);
   DRAWS.sort((a,b)=>a.round-b.round);
   saveManualDraws();
+  // Firestore에도 저장 (기기 간 동기화)
+  if(db){try{
+    const n=newDraw.nums;
+    db.collection('draws').doc(String(round)).set({no1:n[0],no2:n[1],no3:n[2],no4:n[3],no5:n[4],no6:n[5],bonus:newDraw.bonus,date:newDraw.date});
+    db.collection('meta').doc('info').set({lastDraw:DRAWS[DRAWS.length-1].round},{merge:true});
+  }catch(e){console.log('Firestore 저장 실패:',e.message)}}
   updateStatusBar();
+  refreshCurrentTab();
   renderManualList();
   [1,2,3,4,5,6].forEach(i=>document.getElementById('addN'+i).value='');
   document.getElementById('addBonus').value='';
@@ -851,10 +906,18 @@ function loadManualDraws(){
   }catch(e){}
 }
 function deleteManualDraw(round){
+  if(!confirm(round+'회차를 삭제할까요?'))return;
   DRAWS = DRAWS.filter(d=>d.round!==round);
   saveManualDraws();
+  if(db){try{db.collection('draws').doc(String(round)).delete()}catch(e){}}
   updateStatusBar();
+  refreshCurrentTab();
   renderManualList();
+}
+function refreshCurrentTab(){
+  if(curTab==='stats')renderStatsTab();
+  else if(curTab==='indicator')renderIndicatorTab();
+  else if(curTab==='history'&&curHistSub==='draws'&&document.getElementById('histResults').innerHTML)renderHistory();
 }
 function renderManualList(){
   const manual = DRAWS.filter(d=>d._manual);
