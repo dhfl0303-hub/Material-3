@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>레버리지 청산가 계산기</title>
+<style>
+  :root{
+    --bg:#0a0a0a;
+    --panel:#141414;
+    --panel2:#1c1c1c;
+    --border:#2a2a2a;
+    --text:#e8e8e8;
+    --sub:#8a8a8a;
+    --long:#00c076;
+    --short:#f6465d;
+    --accent:#f0b90b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Malgun Gothic",sans-serif;
+    padding:16px;
+    padding-bottom:60px;
+  }
+  .wrap{max-width:520px;margin:0 auto;position:relative;}
+
+  .header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-bottom:18px;
+  }
+  .title{font-size:20px;font-weight:700;}
+  .subtitle{font-size:12px;color:var(--sub);margin-top:2px;}
+  .version-badge{
+    font-size:10px;
+    color:var(--sub);
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:4px 8px;
+    white-space:nowrap;
+    text-align:right;
+    line-height:1.5;
+  }
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .card-title{
+    font-size:13px;
+    font-weight:600;
+    color:var(--sub);
+    margin-bottom:12px;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+  }
+
+  .row{display:flex;gap:10px;margin-bottom:10px;}
+  .row:last-child{margin-bottom:0;}
+  .field{flex:1;min-width:0;}
+  .field label{
+    display:block;
+    font-size:12px;
+    color:var(--sub);
+    margin-bottom:5px;
+  }
+  input[type=number], input[type=text]{
+    width:100%;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    color:var(--text);
+    font-size:16px;
+    padding:10px 10px;
+    border-radius:8px;
+    outline:none;
+  }
+  input:focus{border-color:var(--accent);}
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{
+    -webkit-appearance:none;
+    margin:0;
+  }
+  input[type=number]{
+    -moz-appearance:textfield;
+  }
+
+  .toggle{
+    display:flex;
+    border-radius:8px;
+    overflow:hidden;
+    border:1px solid var(--border);
+  }
+  .toggle button{
+    flex:1;
+    padding:10px;
+    background:var(--panel2);
+    color:var(--sub);
+    border:none;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .toggle button.active-long{background:rgba(0,192,118,0.15);color:var(--long);}
+  .toggle button.active-short{background:rgba(246,70,93,0.15);color:var(--short);}
+
+  .result-line{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding:9px 0;
+    border-bottom:1px solid var(--border);
+  }
+  .result-line:last-child{border-bottom:none;}
+  .result-label{font-size:13px;color:var(--sub);}
+  .result-value{font-size:15px;font-weight:700;}
+  .result-value.big{font-size:19px;}
+  .val-long{color:var(--long);}
+  .val-short{color:var(--short);}
+  .val-accent{color:var(--accent);}
+
+  .hint{font-size:11px;color:var(--sub);margin-top:8px;line-height:1.5;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{
+    text-align:right;
+    color:var(--sub);
+    font-weight:600;
+    font-size:11px;
+    padding:6px 4px;
+    border-bottom:1px solid var(--border);
+  }
+  th:first-child, td:first-child{text-align:left;}
+  td{
+    text-align:right;
+    padding:7px 4px;
+    border-bottom:1px solid #1f1f1f;
+  }
+  tr.entry-row td{background:rgba(240,185,11,0.08);}
+  tr.liq-row td{background:rgba(246,70,93,0.10);}
+
+  .btn{
+    width:100%;
+    padding:12px;
+    border-radius:8px;
+    border:none;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .btn-save{background:var(--accent);color:#1a1400;margin-top:4px;}
+  .btn-save:active{opacity:0.85;}
+  .btn-clear{background:transparent;color:var(--sub);border:1px solid var(--border);font-size:12px;padding:8px;margin-top:8px;}
+
+  .history-item{
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:10px 12px;
+    margin-bottom:8px;
+    font-size:12px;
+  }
+  .history-top{display:flex;justify-content:space-between;margin-bottom:6px;}
+  .history-dir{font-weight:700;}
+  .history-pnl{font-weight:700;}
+  .history-detail{color:var(--sub);font-size:11px;line-height:1.6;}
+  .history-del{
+    background:none;border:none;color:var(--sub);
+    font-size:11px;text-decoration:underline;cursor:pointer;padding:0;margin-top:6px;
+  }
+  .empty{color:var(--sub);font-size:12px;text-align:center;padding:14px 0;}
+
+  .note{
+    font-size:11px;
+    color:var(--sub);
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:10px 12px;
+    line-height:1.6;
+  }
+
+  .accordion-summary{
+    cursor:pointer;
+    list-style:none;
+    padding:16px;
+    margin-bottom:0;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    user-select:none;
+  }
+  .accordion-summary::-webkit-details-marker{display:none;}
+  .accordion-summary::after{
+    content:'▾';
+    font-size:12px;
+    color:var(--sub);
+    transition:transform 0.2s ease;
+  }
+  details[open] .accordion-summary::after{
+    transform:rotate(180deg);
+  }
+  .accordion-body{
+    padding:0 16px 16px 16px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div>
+      <div class="title">레버리지 청산가 계산기</div>
+      <div class="subtitle">BTCUSDT 무기한 선물 기준</div>
+    </div>
+    <div class="version-badge">v2.0<br>2026-07-22</div>
+  </div>
+
+  <!-- 입력 -->
+  <div class="card">
+    <div class="card-title">포지션 입력</div>
+
+    <div class="row">
+      <div class="field" style="flex:1">
+        <label>방향</label>
+        <div class="toggle">
+          <button id="btnLong" onclick="setDirection('long')">Long</button>
+          <button id="btnShort" onclick="setDirection('short')">Short</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>진입가 (USDT)</label>
+        <input type="number" id="entryPrice" value="65780" step="0.1" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>예상가 (USDT)</label>
+        <input type="number" id="priceInput" value="" step="0.1" placeholder="예상 가격 입력" oninput="calc()">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>배율 (x)</label>
+        <input type="number" id="leverage" value="10" step="1" oninput="calc()">
+      </div>
+      <div class="field">
+        <label>증거금 (원화)</label>
+        <input type="number" id="margin" value="138000" step="1000" oninput="calc()">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>유지증거금율 (%)</label>
+        <input type="number" id="mmRate" value="0.5" step="0.01" oninput="calc()">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>원/달러 환율</label>
+        <input type="number" id="fxRate" value="1380" step="1" oninput="calc()">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>편도 수수료율 (%)</label>
+        <input type="number" id="feeRate" value="0.055" step="0.001" oninput="calc()">
+      </div>
+    </div>
+
+    <div class="hint">유지증거금율 기본값 0.5%는 바이빗 50배 구간 실측치(진입 65,780 / 청산 64,758.70) 기준 근사값입니다. 실제 청산가는 거래소 주문창의 예상 청산가를 반드시 다시 확인하세요.</div>
+  </div>
+
+  <!-- 결과 -->
+  <div class="card">
+    <div class="card-title">계산 결과</div>
+    <div class="result-line">
+      <span class="result-label">증거금</span>
+      <span class="result-value" id="outMarginKRW">-</span>
+    </div>
+    <div class="result-line">
+      <span class="result-label">포지션 가치</span>
+      <span class="result-value" id="outPosValue">-</span>
+    </div>
+    <div class="result-line">
+      <span class="result-label">평단가 (손익분기)</span>
+      <span class="result-value" id="outBreakeven">-</span>
+    </div>
+    <div class="result-line">
+      <span class="result-label">예상가 변동률</span>
+      <span class="result-value" id="outPctResult">-</span>
+    </div>
+    <div class="result-line">
+      <span class="result-label">예상가 손익률 (증거금 대비)</span>
+      <span class="result-value" id="outPctPnlPct">-</span>
+    </div>
+    <div class="result-line">
+      <span class="result-label">예상가 손익 금액</span>
+      <span class="result-value" id="outPctPnlAmt">-</span>
+    </div>
+    <div class="result-line">
+      <span class="result-label">예상 청산가</span>
+      <span class="result-value big val-accent" id="outLiqPrice">-</span>
+    </div>
+    <div class="result-line">
+      <span class="result-label">청산까지 거리</span>
+      <span class="result-value" id="outLiqDist">-</span>
+    </div>
+  </div>
+
+  <!-- 10% 단위 표 -->
+  <div class="card" style="padding:0;">
+    <details id="tableAccordion">
+      <summary class="card-title accordion-summary">10% 단위 구간표</summary>
+      <div class="accordion-body">
+        <table>
+          <thead>
+            <tr><th>구간</th><th>가격</th><th>손익(USDT)</th><th>손익(원화)</th></tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </details>
+  </div>
+
+  <!-- 저장 -->
+  <div class="card">
+    <div class="card-title">포지션 종료 저장</div>
+    <div class="row">
+      <div class="field">
+        <label>종료가 (청산/청산 아닌 종료 모두 입력 가능)</label>
+        <input type="number" id="exitPrice" step="0.1" placeholder="예: 66500">
+      </div>
+    </div>
+    <button class="btn btn-save" onclick="savePosition()">이 내용으로 저장</button>
+    <div class="hint">이 브라우저(계정)에만 저장됩니다. 저장 후 아래 목록에서 확인·삭제할 수 있습니다.</div>
+  </div>
+
+  <!-- 저장내역 -->
+  <div class="card">
+    <div class="card-title">저장 내역</div>
+    <div id="chartWrap" style="margin-bottom:14px;">
+      <canvas id="historyChart" style="display:block;width:100%;"></canvas>
+      <div class="hint" id="chartLegend" style="margin-top:6px;"></div>
+    </div>
+    <div id="historyList"><div class="empty">불러오는 중...</div></div>
+    <button class="btn btn-clear" onclick="clearHistory()">전체 삭제</button>
+  </div>
+
+  <div class="note">
+    이 계산기는 참고용 산술 도구이며, 실제 거래소 청산가·수수료·펀딩비와 차이가 있을 수 있습니다. 투자 판단과 책임은 본인에게 있습니다.
+  </div>
+
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import {
+    getFirestore, collection, addDoc, getDocs, deleteDoc, doc,
+    query, orderBy, serverTimestamp, writeBatch
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA17v9qmiIJVLOsp7iNwMmtw8iQwnaaaJA",
+    authDomain: "m-db-6fe4e.firebaseapp.com",
+    projectId: "m-db-6fe4e",
+    storageBucket: "m-db-6fe4e.firebasestorage.app",
+    messagingSenderId: "233165673451",
+    appId: "1:233165673451:web:33986bb690dc7c2b46ffae"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const HISTORY_COLLECTION = 'leverage_history';
+
+  const authReady = signInAnonymously(auth).catch(e => {
+    console.error('익명 로그인 실패', e);
+  });
+
+  window.fbLoadHistory = async function(){
+    await authReady;
+    const q = query(collection(db, HISTORY_COLLECTION), orderBy('createdAt', 'asc'));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  };
+
+  window.fbAddHistoryItem = async function(item){
+    await authReady;
+    await addDoc(collection(db, HISTORY_COLLECTION), { ...item, createdAt: serverTimestamp() });
+  };
+
+  window.fbDeleteHistoryItem = async function(id){
+    await authReady;
+    await deleteDoc(doc(db, HISTORY_COLLECTION, id));
+  };
+
+  window.fbClearAllHistory = async function(){
+    await authReady;
+    const snap = await getDocs(collection(db, HISTORY_COLLECTION));
+    const batch = writeBatch(db);
+    snap.docs.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+  };
+
+  window.fbReady = authReady;
+
+  // 익명 로그인이 끝난 뒤, 화면에 정의된 renderHistory()로 저장내역을 불러옵니다.
+  authReady.then(() => {
+    if(typeof window.renderHistory === 'function'){
+      window.renderHistory();
+    }
+  });
+</script>
+
+<script>
+let direction = 'long';
+
+function setDirection(d){
+  direction = d;
+  document.getElementById('btnLong').className = d==='long' ? 'active-long' : '';
+  document.getElementById('btnShort').className = d==='short' ? 'active-short' : '';
+  calc();
+}
+setDirection('long');
+
+function fmt(n, digits=2){
+  if(isNaN(n)) return '-';
+  return n.toLocaleString('ko-KR', {minimumFractionDigits:digits, maximumFractionDigits:digits});
+}
+function fmtSigned(n, digits=2){
+  const s = n>=0 ? '+' : '';
+  return s + fmt(n, digits);
+}
+
+function getInputs(){
+  const entry = parseFloat(document.getElementById('entryPrice').value);
+  const lev = parseFloat(document.getElementById('leverage').value);
+  const marginKRW = parseFloat(document.getElementById('margin').value);
+  const mm = parseFloat(document.getElementById('mmRate').value) / 100;
+  const fx = parseFloat(document.getElementById('fxRate').value);
+  const fee = parseFloat(document.getElementById('feeRate').value) / 100;
+  const margin = marginKRW / fx; // USDT 환산 증거금
+  return {entry, lev, margin, marginKRW, mm, fx, fee};
+}
+
+function calcLiqPrice(entry, lev, mm, dir){
+  // 근사 공식: Long 청산가 = 진입가 * (1 - 1/lev + mm)
+  //           Short 청산가 = 진입가 * (1 + 1/lev - mm)
+  if(dir === 'long'){
+    return entry * (1 - 1/lev + mm);
+  } else {
+    return entry * (1 + 1/lev - mm);
+  }
+}
+
+function calc(){
+  const {entry, lev, margin, marginKRW, mm, fx, fee} = getInputs();
+  if(!entry || !lev || !margin || isNaN(fx)){
+    return;
+  }
+  const posValue = margin * lev;
+
+  document.getElementById('outMarginKRW').textContent = `${fmt(marginKRW,0)} 원 (${fmt(margin)} USDT)`;
+  document.getElementById('outPosValue').textContent = `${fmt(posValue)} USDT ≈ ${fmt(posValue*fx,0)} 원`;
+
+  // 평단가(손익분기): 진입+청산 왕복 수수료를 상쇄하는 가격
+  const breakeven = direction === 'long'
+    ? entry * (1 + 2*fee)
+    : entry * (1 - 2*fee);
+  document.getElementById('outBreakeven').textContent = `${fmt(breakeven)} USDT`;
+
+  const liqPrice = calcLiqPrice(entry, lev, mm, direction);
+  document.getElementById('outLiqPrice').textContent = `${fmt(liqPrice)} USDT`;
+  document.getElementById('outLiqPrice').className = 'result-value big val-accent';
+
+  const dist = (liqPrice - entry) / entry * 100;
+  document.getElementById('outLiqDist').textContent = `${fmtSigned(dist)}%`;
+
+  buildTable(entry, lev, margin, fx);
+  calcFromPrice();
+}
+
+function buildTable(entry, lev, margin, fx){
+  const steps = [10,20,30,40,50,60,70,80,90,100];
+  const dir = direction;
+  let rows = '';
+
+  // 청산 행 먼저 계산 (표시용)
+  const {mm} = getInputs();
+  const liqPrice = calcLiqPrice(entry, lev, mm, dir);
+
+  // 진입 행
+  rows += `<tr class="entry-row"><td>진입 (0%)</td><td>${fmt(entry)}</td><td>0.00</td><td>0</td></tr>`;
+
+  steps.forEach(s=>{
+    const priceMovePct = s / lev; // 가격변동 %
+    let price;
+    let pnlAmt = margin * s / 100;
+    if(dir === 'long'){
+      price = entry * (1 + priceMovePct/100);
+    } else {
+      price = entry * (1 - priceMovePct/100);
+    }
+    rows += `<tr><td>+${s}%</td><td>${fmt(price)}</td><td class="val-long">+${fmt(pnlAmt)}</td><td class="val-long">+${fmt(pnlAmt*fx,0)}</td></tr>`;
+  });
+
+  // 손실 방향
+  for(const s of steps){
+    const priceMovePct = s / lev;
+    let price;
+    let pnlAmt = -margin * s / 100;
+    if(dir === 'long'){
+      price = entry * (1 - priceMovePct/100);
+    } else {
+      price = entry * (1 + priceMovePct/100);
+    }
+    rows += `<tr><td>-${s}%</td><td>${fmt(price)}</td><td class="val-short">${fmt(pnlAmt)}</td><td class="val-short">${fmt(pnlAmt*fx,0)}</td></tr>`;
+  }
+
+  rows += `<tr class="liq-row"><td>예상 청산</td><td>${fmt(liqPrice)}</td><td class="val-short" colspan="2">-100%+ (증거금 소진)</td></tr>`;
+
+  document.getElementById('tableBody').innerHTML = rows;
+}
+
+function calcFromPrice(){
+  const {entry, lev, margin, fx} = getInputs();
+  const priceVal = document.getElementById('priceInput').value;
+  const price = parseFloat(priceVal);
+
+  if(priceVal === '' || isNaN(price)){
+    document.getElementById('outPctResult').textContent = '-';
+    document.getElementById('outPctPnlPct').textContent = '-';
+    document.getElementById('outPctPnlAmt').textContent = '-';
+    return;
+  }
+  if(isNaN(entry) || isNaN(lev) || isNaN(margin)) return;
+
+  const pct = direction === 'long'
+    ? (price - entry) / entry * 100
+    : (entry - price) / entry * 100;
+  const pnlPct = pct * lev;
+  const pnlAmt = margin * pnlPct / 100;
+  const pnlKRW = pnlAmt * fx;
+
+  document.getElementById('outPctResult').textContent = `${fmtSigned(pct)}%`;
+  document.getElementById('outPctPnlPct').textContent = `${fmtSigned(pnlPct)}%`;
+  document.getElementById('outPctPnlPct').className = 'result-value ' + (pnlPct>=0 ? 'val-long':'val-short');
+  document.getElementById('outPctPnlAmt').textContent = `${fmtSigned(pnlAmt)} USDT (${fmtSigned(pnlKRW,0)} 원)`;
+  document.getElementById('outPctPnlAmt').className = 'result-value ' + (pnlAmt>=0 ? 'val-long':'val-short');
+}
+
+// ===== 저장 내역 (Firebase Firestore) =====
+async function loadHistory(){
+  try{
+    return await window.fbLoadHistory();
+  }catch(e){
+    console.error('불러오기 실패', e);
+    return null; // null = 에러, [] = 정상인데 내역 없음
+  }
+}
+
+let lastHistoryList = [];
+
+async function renderHistory(){
+  const list = await loadHistory();
+  const el = document.getElementById('historyList');
+
+  if(list === null){
+    lastHistoryList = [];
+    el.innerHTML = '<div class="empty">저장 내역을 불러오지 못했습니다. 파이어베이스 연결(익명 로그인/Firestore 규칙)을 확인해주세요.</div>';
+    renderChart([]);
+    return;
+  }
+
+  lastHistoryList = list;
+  if(list.length === 0){
+    el.innerHTML = '<div class="empty">저장된 내역이 없습니다.</div>';
+    renderChart(list);
+    return;
+  }
+  let html = '';
+  list.slice().reverse().forEach((item)=>{
+    const dirLabel = item.direction === 'long' ? 'Long' : 'Short';
+    const dirClass = item.direction === 'long' ? 'val-long' : 'val-short';
+    const pnlClass = item.pnlAmt >= 0 ? 'val-long' : 'val-short';
+    html += `
+      <div class="history-item">
+        <div class="history-top">
+          <span class="history-dir ${dirClass}">${dirLabel} ${item.leverage}x</span>
+          <span class="history-pnl ${pnlClass}">${fmtSigned(item.pnlAmt)} USDT (${fmtSigned(item.pnlPct)}%)</span>
+        </div>
+        <div class="history-detail">
+          진입 ${fmt(item.entry)} → 종료 ${fmt(item.exit)} · 증거금 ${fmt(item.margin)} USDT (${fmt(item.marginKRW,0)}원)<br>
+          손익 원화: ${item.pnlKRW!==undefined ? fmtSigned(item.pnlKRW,0)+'원' : '-'}<br>
+          ${item.date}
+        </div>
+        <button class="history-del" onclick="deleteHistory('${item.id}')">삭제</button>
+      </div>
+    `;
+  });
+  el.innerHTML = html;
+  renderChart(list);
+}
+
+function renderChart(list){
+  const canvas = document.getElementById('historyChart');
+  const legend = document.getElementById('chartLegend');
+  const ctx = canvas.getContext('2d');
+
+  if(!list || list.length === 0){
+    canvas.style.display = 'none';
+    legend.textContent = '';
+    return;
+  }
+  canvas.style.display = 'block';
+  legend.textContent = '막대: 거래별 손익(USDT) · 선: 누적 손익(USDT)';
+
+  // loadHistory()가 이미 createdAt 오름차순으로 정렬해서 반환하므로 그대로 사용
+  const asc = list;
+  const pnlArr = asc.map(it => it.pnlAmt);
+  let cum = 0;
+  const cumArr = pnlArr.map(v => (cum += v));
+
+  const dpr = window.devicePixelRatio || 1;
+  const cssWidth = canvas.parentElement.clientWidth;
+  const cssHeight = 220;
+  canvas.width = cssWidth * dpr;
+  canvas.height = cssHeight * dpr;
+  canvas.style.width = cssWidth + 'px';
+  canvas.style.height = cssHeight + 'px';
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0,0,cssWidth,cssHeight);
+
+  const padL = 46, padR = 10, padT = 14, padB = 22;
+  const chartW = cssWidth - padL - padR;
+  const chartH = cssHeight - padT - padB;
+  const n = pnlArr.length;
+
+  const allVals = pnlArr.concat(cumArr).concat([0]);
+  let maxV = Math.max(...allVals);
+  let minV = Math.min(...allVals);
+  if(maxV === minV){ maxV += 1; minV -= 1; }
+  const rangePad = (maxV - minV) * 0.12;
+  maxV += rangePad;
+  minV -= rangePad;
+
+  const yOf = (v) => padT + chartH * (1 - (v - minV) / (maxV - minV));
+  const zeroY = yOf(0);
+
+  ctx.strokeStyle = '#2a2a2a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padL, zeroY);
+  ctx.lineTo(padL + chartW, zeroY);
+  ctx.stroke();
+
+  ctx.fillStyle = '#8a8a8a';
+  ctx.font = '10px -apple-system, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(fmt(maxV,0), padL - 6, padT + 4);
+  ctx.fillText('0', padL - 6, zeroY + 3);
+  ctx.fillText(fmt(minV,0), padL - 6, padT + chartH);
+
+  const slot = chartW / n;
+  const barW = Math.min(slot * 0.5, 26);
+  pnlArr.forEach((v, i) => {
+    const cx = padL + slot * i + slot/2;
+    const y1 = yOf(v);
+    const top = Math.min(y1, zeroY);
+    const h = Math.abs(y1 - zeroY);
+    ctx.fillStyle = v >= 0 ? 'rgba(0,192,118,0.55)' : 'rgba(246,70,93,0.55)';
+    ctx.fillRect(cx - barW/2, top, barW, Math.max(h,1));
+  });
+
+  ctx.strokeStyle = '#f0b90b';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  cumArr.forEach((v, i) => {
+    const cx = padL + slot * i + slot/2;
+    const cy = yOf(v);
+    if(i === 0) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+  });
+  ctx.stroke();
+
+  ctx.fillStyle = '#f0b90b';
+  cumArr.forEach((v, i) => {
+    const cx = padL + slot * i + slot/2;
+    const cy = yOf(v);
+    ctx.beginPath();
+    ctx.arc(cx, cy, 2.5, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  ctx.fillStyle = '#8a8a8a';
+  ctx.textAlign = 'center';
+  const labelStep = n > 12 ? Math.ceil(n/12) : 1;
+  pnlArr.forEach((v, i) => {
+    if(i % labelStep !== 0 && i !== n-1) return;
+    const cx = padL + slot * i + slot/2;
+    ctx.fillText((i+1).toString(), cx, cssHeight - 6);
+  });
+}
+
+let chartResizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(chartResizeTimer);
+  chartResizeTimer = setTimeout(() => renderChart(lastHistoryList), 150);
+});
+
+async function savePosition(){
+  const {entry, lev, margin, marginKRW, fx} = getInputs();
+  const exit = parseFloat(document.getElementById('exitPrice').value);
+  if(!entry || !lev || !margin || isNaN(exit)){
+    alert('진입가, 배율, 증거금, 종료가를 모두 입력해주세요.');
+    return;
+  }
+  const priceMovePct = direction === 'long'
+    ? (exit - entry) / entry * 100
+    : (entry - exit) / entry * 100;
+  const pnlPct = priceMovePct * lev;
+  const pnlAmt = margin * pnlPct / 100;
+  const pnlKRW = pnlAmt * fx;
+
+  try{
+    await window.fbAddHistoryItem({
+      direction, entry, exit, leverage: lev, margin, marginKRW,
+      pnlPct, pnlAmt, pnlKRW,
+      date: new Date().toLocaleString('ko-KR')
+    });
+    await renderHistory();
+  }catch(e){
+    console.error('저장 실패', e);
+    alert('저장에 실패했습니다. 파이어베이스 연결을 확인해주세요.');
+  }
+}
+
+async function deleteHistory(id){
+  try{
+    await window.fbDeleteHistoryItem(id);
+    await renderHistory();
+  }catch(e){
+    console.error('삭제 실패', e);
+    alert('삭제에 실패했습니다.');
+  }
+}
+
+async function clearHistory(){
+  if(!confirm('저장된 내역을 모두 삭제하시겠습니까?')) return;
+  try{
+    await window.fbClearAllHistory();
+    await renderHistory();
+  }catch(e){
+    console.error('전체 삭제 실패', e);
+    alert('전체 삭제에 실패했습니다.');
+  }
+}
+
+// 숫자 입력창에서 마우스 휠로 값이 바뀌는 것 방지 (타이핑으로만 입력)
+document.querySelectorAll('input[type=number]').forEach(el=>{
+  el.addEventListener('wheel', function(e){ this.blur(); }, {passive:true});
+});
+
+// 초기 실행
+calc();
+// renderHistory()는 파이어베이스 모듈 스크립트 쪽에서 준비 완료 후 호출합니다.
+</script>
+</body>
+</html>
