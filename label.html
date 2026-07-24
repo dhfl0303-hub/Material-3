@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>표시사항 작업 관리 시스템</title>
+<link rel="stylesheet" as="style" crossorigin
+  href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --bg:#F4F6F7;
+    --surface:#FFFFFF;
+    --surface-alt:#EEF2F1;
+    --text:#1C2420;
+    --text-muted:#5C6B65;
+    --border:#DCE3E0;
+    --primary:#2F6B57;
+    --primary-dark:#204A3D;
+    --primary-light:#E4EFEA;
+    --amber:#C07A2B;
+    --status-pending:#8A97A6;
+    --status-draft:#3B72C9;
+    --status-submitted:#C07A2B;
+    --status-approved:#2F8F5B;
+    --status-rejected:#C0392B;
+    --radius:10px;
+    --shadow:0 1px 3px rgba(20,30,25,0.08);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app-shell{
+    max-width:640px;
+    margin:0 auto;
+    min-height:100vh;
+    background:var(--bg);
+    display:flex;
+    flex-direction:column;
+  }
+  header.top-bar{
+    position:sticky; top:0; z-index:10;
+    background:var(--primary-dark);
+    color:#fff;
+    padding:14px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+  }
+  header.top-bar .title{
+    font-size:16px;
+    font-weight:700;
+    letter-spacing:-0.2px;
+  }
+  header.top-bar .version-badge{
+    font-size:11px;
+    color:#D7E6DF;
+    background:rgba(255,255,255,0.12);
+    border-radius:999px;
+    padding:3px 9px;
+    white-space:nowrap;
+  }
+  main{flex:1; padding:16px; padding-bottom:40px;}
+  .view{display:none;}
+  .view.active{display:block; animation:fadeIn .15s ease-out;}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:18px;
+    margin-bottom:14px;
+  }
+  .card-title{
+    font-size:15px;
+    font-weight:700;
+    margin:0 0 4px;
+  }
+  .card-sub{
+    font-size:12.5px;
+    color:var(--text-muted);
+    margin:0 0 14px;
+  }
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:100%;
+    padding:13px 16px;
+    border-radius:8px;
+    border:none;
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+    text-align:center;
+    transition:opacity .1s;
+  }
+  .btn:active{opacity:.85;}
+  .btn-primary{background:var(--primary); color:#fff;}
+  .btn-secondary{background:var(--surface-alt); color:var(--primary-dark); border:1px solid var(--border);}
+  .btn-danger{background:#FDECEA; color:var(--status-rejected); border:1px solid #F4C7C1;}
+  .btn-approve{background:var(--status-approved); color:#fff;}
+  .btn-reject{background:var(--status-rejected); color:#fff;}
+  .btn-block-gap{margin-top:10px;}
+  .btn-sm{width:auto; padding:8px 14px; font-size:13px;}
+  .row-gap{display:flex; gap:10px;}
+  .row-gap .btn{flex:1;}
+
+  label{display:block; font-size:13px; font-weight:600; color:var(--text); margin:14px 0 6px;}
+  label:first-child{margin-top:0;}
+  input[type=text], input[type=password], input[type=date], select, textarea{
+    width:100%;
+    padding:11px 12px;
+    border-radius:8px;
+    border:1px solid var(--border);
+    background:#fff;
+    font-size:15px;
+    font-family:inherit;
+    color:var(--text);
+  }
+  input:focus, select:focus, textarea:focus{
+    outline:2px solid var(--primary);
+    outline-offset:1px;
+    border-color:var(--primary);
+  }
+  textarea{min-height:70px; resize:vertical;}
+  .hint{font-size:12px; color:var(--text-muted); margin-top:4px;}
+  fieldset{border:none; padding:0; margin:0;}
+  fieldset legend{
+    font-size:13.5px; font-weight:700; color:var(--primary-dark);
+    padding:0; margin:18px 0 2px;
+    border-top:1px solid var(--border);
+    padding-top:14px;
+    width:100%;
+  }
+  fieldset:first-of-type legend{border-top:none; padding-top:0; margin-top:0;}
+
+  .back-link{
+    display:inline-flex; align-items:center; gap:4px;
+    background:none; border:none; color:var(--primary-dark);
+    font-size:13.5px; font-weight:600; padding:6px 0 12px; cursor:pointer;
+  }
+
+  .item-list{list-style:none; margin:0; padding:0;}
+  .item-row{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:14px;
+    margin-bottom:10px;
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    cursor:pointer;
+  }
+  .item-row:active{background:var(--surface-alt);}
+  .item-row .name{font-size:14.5px; font-weight:600;}
+  .item-row .meta{font-size:11.5px; color:var(--text-muted); margin-top:2px;}
+  .badge{
+    font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:999px; white-space:nowrap; color:#fff;
+  }
+  .badge-대기{background:var(--status-pending);}
+  .badge-작성중{background:var(--status-draft);}
+  .badge-제출됨{background:var(--status-submitted);}
+  .badge-승인{background:var(--status-approved);}
+  .badge-반려{background:var(--status-rejected);}
+
+  .filter-tabs{display:flex; gap:6px; overflow-x:auto; margin-bottom:12px; padding-bottom:2px;}
+  .filter-tab{
+    flex:none; padding:7px 13px; border-radius:999px; border:1px solid var(--border);
+    background:#fff; font-size:12.5px; font-weight:600; color:var(--text-muted); cursor:pointer; white-space:nowrap;
+  }
+  .filter-tab.active{background:var(--primary); border-color:var(--primary); color:#fff;}
+
+  .field-view-row{padding:9px 0; border-bottom:1px solid var(--border); display:flex; gap:10px;}
+  .field-view-row:last-child{border-bottom:none;}
+  .field-view-row .k{width:120px; flex:none; font-size:12.5px; color:var(--text-muted); font-weight:600;}
+  .field-view-row .v{font-size:14px; white-space:pre-wrap; word-break:break-word;}
+
+  .empty-state{
+    text-align:center; padding:36px 16px; color:var(--text-muted); font-size:13.5px;
+  }
+
+  .toast{
+    position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
+    background:#1C2420; color:#fff; padding:11px 18px; border-radius:8px; font-size:13.5px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.2); z-index:100; opacity:0; pointer-events:none; transition:opacity .2s;
+  }
+  .toast.show{opacity:1;}
+
+  .notice{
+    background:#FFF7EC; border:1px solid #F0D6A8; color:#7A5416;
+    border-radius:8px; padding:10px 12px; font-size:12.5px; margin-bottom:14px;
+  }
+  .pin-dots{display:flex; gap:8px; justify-content:center; margin:6px 0 16px;}
+  .pin-dots .dot{width:14px; height:14px; border-radius:50%; border:1.5px solid var(--border); background:#fff;}
+  .pin-dots .dot.filled{background:var(--primary); border-color:var(--primary);}
+
+  .account-row{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:12px 14px; margin-bottom:8px;
+  }
+  .account-row .top{display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;}
+  .account-row .name-wrap{display:flex; align-items:center;}
+  .account-row .name{font-weight:600; font-size:14px;}
+  .pin-tag{font-family:monospace; font-size:12.5px; color:var(--text-muted); background:var(--surface-alt); padding:3px 9px; border-radius:6px;}
+  .status-dot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:7px; flex:none;}
+  .status-dot.on{background:var(--status-approved);}
+  .status-dot.off{background:var(--status-pending);}
+  .account-row .actions{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;}
+  .inline-edit{margin-top:10px; padding-top:10px; border-top:1px dashed var(--border);}
+  .section-divider{border:none; border-top:1px solid var(--border); margin:18px 0;}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <header class="top-bar">
+    <span class="title">표시사항 작업 관리</span>
+    <span class="version-badge">v2.0 · 2026-07-24</span>
+  </header>
+  <main id="main"></main>
+</div>
+<div id="toast" class="toast"></div>
+
+<!-- ============================================================
+  Firebase 설정: 아래 firebaseConfig 값을 본인 Firebase 프로젝트의
+  콘솔(프로젝트 설정 > 일반 > SDK 설정 및 구성)에서 복사해 그대로
+  교체하세요. 값을 넣지 않으면 앱이 동작하지 않습니다.
+============================================================= -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCLUNqnDrXLMkZHyxWfbM1Zfbimdk3AKWw",
+  authDomain: "ma-db-d0c98.firebaseapp.com",
+  projectId: "ma-db-d0c98",
+  storageBucket: "ma-db-d0c98.firebasestorage.app",
+  messagingSenderId: "497220756438",
+  appId: "1:497220756438:web:72610748c39c6e29eb3a77"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const FieldValue = firebase.firestore.FieldValue;
+const Timestamp = firebase.firestore.Timestamp;
+
+/* ============================================================
+   계정은 이제 코드에 고정하지 않고 Firestore의 accounts 컬렉션에서
+   관리합니다. 역할은 worker(작업자, 여러 명) / admin(관리자, 1명) /
+   viewer(기관 조회용, 1명) 세 가지입니다.
+   accounts 문서 구조: { name, pin, role, active, createdAt }
+   앱을 처음 열면 admin 계정이 하나도 없을 경우 최초 관리자 등록
+   화면이 자동으로 뜹니다.
+============================================================= */
+
+const STATUS = ["대기","작성중","제출됨","승인","반려"];
+
+const FIELD_DEFS = [
+  { group: "기본 정보", key: "foodType", label: "식품유형", placeholder: "예: 빵류(가열하지 않고 섭취하는 냉동식품)" },
+  { group: "기본 정보", key: "reportNo", label: "품목보고번호", placeholder: "예: 20210395253-164" },
+  { group: "기본 정보", key: "manufacturer", label: "제조원", placeholder: "예: (주)OOO / 경기도 OO시 OO로 28" },
+  { group: "기본 정보", key: "netWeight", label: "내용량", placeholder: "예: 1.2 kg (3,084 kcal) (100 g x 12개)" },
+  { group: "기본 정보", key: "expiryDate", label: "소비기한", placeholder: "예: 2027년 04월 21일까지" },
+  { group: "원재료", key: "ingredients", label: "원재료명 및 함량", placeholder: "예: 밀가루(밀/미국,캐나다산), 정제수 ...", textarea: true },
+  { group: "포장/보관", key: "packageMaterial", label: "포장재질", placeholder: "예: 폴리프로필렌(내면)" },
+  { group: "포장/보관", key: "storageMethod", label: "보관방법", placeholder: "예: -18℃ 이하 냉동보관" },
+  { group: "영양정보 (1회 제공량 기준)", key: "n_sodium", label: "나트륨", placeholder: "예: 796 mg" },
+  { group: "영양정보 (1회 제공량 기준)", key: "n_carbs", label: "탄수화물", placeholder: "예: 47 g" },
+  { group: "영양정보 (1회 제공량 기준)", key: "n_sugar", label: "당류", placeholder: "예: 1.0 g" },
+  { group: "영양정보 (1회 제공량 기준)", key: "n_fat", label: "지방", placeholder: "예: 3.9 g" },
+  { group: "영양정보 (1회 제공량 기준)", key: "n_transFat", label: "트랜스지방", placeholder: "예: 0 g" },
+  { group: "영양정보 (1회 제공량 기준)", key: "n_satFat", label: "포화지방", placeholder: "예: 3 g" },
+  { group: "영양정보 (1회 제공량 기준)", key: "n_cholesterol", label: "콜레스테롤", placeholder: "예: 0 mg" },
+  { group: "영양정보 (1회 제공량 기준)", key: "n_protein", label: "단백질", placeholder: "예: 9 g" }
+];
+
+/* ---------------- 전역 상태 ---------------- */
+let state = {
+  view: "loading",
+  role: null,            // 'worker' | 'admin' | 'viewer'
+  currentName: null,     // 로그인한 사람의 표시 이름 (이력 기록용)
+  items: [],
+  unsub: null,
+  activeItem: null,
+  activeItemSnapshot: null,
+  filter: "제출됨"
+};
+
+const main = document.getElementById("main");
+
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast._h);
+  toast._h = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+function stopListening(){
+  if (state.unsub) { state.unsub(); state.unsub = null; }
+}
+
+function fmtDate(ts){
+  if (!ts) return "-";
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleString("ko-KR", { year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit" });
+}
+
+function isValidPin(v){ return /^[0-9]{4}$/.test(v); }
+
+async function fetchAccountsByRole(role){
+  const snap = await db.collection("accounts").where("role", "==", role).get();
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+function pinDotWiring(inputEl, dotsWrap){
+  const dots = dotsWrap.querySelectorAll(".dot");
+  inputEl.addEventListener("input", () => {
+    inputEl.value = inputEl.value.replace(/\D/g, "").slice(0,4);
+    dots.forEach((d,i) => d.classList.toggle("filled", i < inputEl.value.length));
+  });
+}
+
+/* ============================================================
+   화면 전환
+============================================================= */
+function goto(view){
+  state.view = view;
+  render();
+}
+
+function render(){
+  stopListening();
+  if (state.view === "loading") return renderLoading();
+  if (state.view === "adminBootstrap") return renderAdminBootstrap();
+  if (state.view === "role") return renderRole();
+  if (state.view === "workerLogin") return renderWorkerLogin();
+  if (state.view === "workerList") return renderWorkerList();
+  if (state.view === "workerForm") return renderWorkerForm();
+  if (state.view === "adminLogin") return renderRoleLogin("admin");
+  if (state.view === "viewerLogin") return renderRoleLogin("viewer");
+  if (state.view === "staffList") return renderStaffList();
+  if (state.view === "staffDetail") return renderStaffDetail();
+  if (state.view === "accountManage") return renderAccountManage();
+  if (state.view === "export") return renderExport();
+}
+
+/* ---- 로딩 ---- */
+function renderLoading(){
+  main.innerHTML = `<div class="empty-state">불러오는 중...</div>`;
+}
+
+/* ---- 최초 관리자 등록 (accounts에 admin이 하나도 없을 때) ---- */
+function renderAdminBootstrap(){
+  main.innerHTML = `
+    <div class="card">
+      <p class="card-title">최초 관리자 등록</p>
+      <p class="card-sub">등록된 관리자 계정이 없습니다. 이 시스템을 관리할 관리자 계정을 먼저 만들어 주세요.</p>
+      <label for="ab-name">관리자 이름</label>
+      <input type="text" id="ab-name" placeholder="예: 홍길동">
+      <label for="ab-pin">PIN 4자리</label>
+      <input type="password" id="ab-pin" inputmode="numeric" maxlength="4" placeholder="숫자 4자리">
+      <label for="ab-pin2">PIN 확인</label>
+      <input type="password" id="ab-pin2" inputmode="numeric" maxlength="4" placeholder="숫자 4자리 재입력">
+      <button class="btn btn-primary btn-block-gap" id="btn-create">관리자 계정 만들기</button>
+    </div>
+  `;
+  document.getElementById("btn-create").onclick = async () => {
+    const name = document.getElementById("ab-name").value.trim();
+    const pin = document.getElementById("ab-pin").value.trim();
+    const pin2 = document.getElementById("ab-pin2").value.trim();
+    if (!name){ toast("이름을 입력해 주세요."); return; }
+    if (!isValidPin(pin)){ toast("PIN은 숫자 4자리여야 합니다."); return; }
+    if (pin !== pin2){ toast("PIN이 서로 일치하지 않습니다."); return; }
+    try{
+      await db.collection("accounts").add({
+        name, pin, role: "admin", active: true, createdAt: FieldValue.serverTimestamp()
+      });
+      state.role = "admin";
+      state.currentName = name;
+      toast("관리자 계정이 생성되었습니다.");
+      goto("staffList");
+    }catch(err){ toast("생성 실패: " + err.message); }
+  };
+}
+
+/* ---- 0. 역할 선택 ---- */
+function renderRole(){
+  main.innerHTML = `
+    <div class="card">
+      <p class="card-title">시작하기</p>
+      <p class="card-sub">본인의 역할을 선택해 주세요.</p>
+      <button class="btn btn-primary" id="btn-worker">작업자로 시작</button>
+      <button class="btn btn-secondary btn-block-gap" id="btn-admin">관리자로 시작</button>
+      <button class="btn btn-secondary btn-block-gap" id="btn-viewer">조회자로 시작 (기관 확인용)</button>
+    </div>
+  `;
+  document.getElementById("btn-worker").onclick = () => goto("workerLogin");
+  document.getElementById("btn-admin").onclick = () => goto("adminLogin");
+  document.getElementById("btn-viewer").onclick = () => goto("viewerLogin");
+}
+
+/* ---- 1. 작업자 로그인 ---- */
+async function renderWorkerLogin(){
+  main.innerHTML = `
+    <button class="back-link" id="back">← 역할 선택으로</button>
+    <div class="card"><p class="card-title">작업자 로그인</p><div class="empty-state">불러오는 중...</div></div>
+  `;
+  document.getElementById("back").onclick = () => goto("role");
+
+  const all = await fetchAccountsByRole("worker");
+  if (state.view !== "workerLogin") return;
+  const workers = all.filter(w => w.active).sort((a,b) => a.name.localeCompare(b.name, "ko"));
+
+  if (workers.length === 0){
+    main.innerHTML = `
+      <button class="back-link" id="back">← 역할 선택으로</button>
+      <div class="card">
+        <p class="card-title">작업자 로그인</p>
+        <div class="empty-state">등록된 작업자 계정이 없습니다. 관리자에게 계정 등록을 요청하세요.</div>
+      </div>
+    `;
+    document.getElementById("back").onclick = () => goto("role");
+    return;
+  }
+
+  main.innerHTML = `
+    <button class="back-link" id="back">← 역할 선택으로</button>
+    <div class="card">
+      <p class="card-title">작업자 로그인</p>
+      <label for="sel-name">이름</label>
+      <select id="sel-name">${workers.map(w => `<option value="${w.id}">${escapeHtml(w.name)}</option>`).join("")}</select>
+      <label>PIN 4자리</label>
+      <div class="pin-dots" id="pin-dots">${[0,1,2,3].map(() => `<span class="dot"></span>`).join("")}</div>
+      <input type="password" id="pin-input" inputmode="numeric" maxlength="4" style="text-align:center; letter-spacing:6px; font-size:20px;">
+      <button class="btn btn-primary btn-block-gap" id="btn-login">확인</button>
+    </div>
+  `;
+  document.getElementById("back").onclick = () => goto("role");
+  const pinInput = document.getElementById("pin-input");
+  pinDotWiring(pinInput, document.getElementById("pin-dots"));
+  document.getElementById("btn-login").onclick = () => {
+    const w = workers.find(w => w.id === document.getElementById("sel-name").value);
+    if (pinInput.value !== w.pin){ toast("PIN이 일치하지 않습니다."); return; }
+    state.role = "worker";
+    state.currentName = w.name;
+    goto("workerList");
+  };
+}
+
+/* ---- 2. 작업자: 제품 목록 ---- */
+function renderWorkerList(){
+  main.innerHTML = `
+    <button class="back-link" id="back">← 로그아웃</button>
+    <div class="card" style="padding-bottom:8px;">
+      <p class="card-title">${escapeHtml(state.currentName)}님, 작업할 제품을 선택하세요</p>
+      <p class="card-sub">대기·작성중·반려 상태의 제품을 눌러 표시사항을 입력할 수 있습니다.</p>
+    </div>
+    <ul class="item-list" id="list"><li class="empty-state">불러오는 중...</li></ul>
+  `;
+  document.getElementById("back").onclick = () => { state.role = null; state.currentName = null; goto("role"); };
+
+  state.unsub = db.collection("labelItems").orderBy("createdAt", "desc")
+    .onSnapshot(snap => {
+      state.items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const list = document.getElementById("list");
+      if (!list) return;
+      if (state.items.length === 0){
+        list.innerHTML = `<li class="empty-state">등록된 제품이 없습니다. 관리자에게 제품 등록을 요청하세요.</li>`;
+        return;
+      }
+      list.innerHTML = state.items.map(it => `
+        <li class="item-row" data-id="${it.id}">
+          <div>
+            <div class="name">${escapeHtml(it.productName || "(제품명 미입력)")}</div>
+            <div class="meta">${it.lastEditedAt ? "최근 수정: " + fmtDate(it.lastEditedAt) : "등록: " + fmtDate(it.createdAt)}</div>
+          </div>
+          <span class="badge badge-${it.status}">${it.status}</span>
+        </li>
+      `).join("");
+      list.querySelectorAll(".item-row").forEach(row => {
+        row.onclick = () => {
+          const item = state.items.find(i => i.id === row.dataset.id);
+          state.activeItem = item;
+          state.activeItemSnapshot = JSON.parse(JSON.stringify(item.fields || {}));
+          goto("workerForm");
+        };
+      });
+    }, err => toast("목록을 불러오지 못했습니다: " + err.message));
+}
+
+/* ---- 3. 작업자: 입력 폼 ---- */
+function renderWorkerForm(){
+  const item = state.activeItem;
+  const readOnly = item.status === "승인";
+  const groups = [...new Set(FIELD_DEFS.map(f => f.group))];
+
+  main.innerHTML = `
+    <button class="back-link" id="back">← 목록으로</button>
+    <div class="card">
+      <p class="card-title">${escapeHtml(item.productName)}</p>
+      <p class="card-sub">
+        <span class="badge badge-${item.status}">${item.status}</span>
+        ${item.status === "반려" && item.reviewComment ? `&nbsp; 반려 사유: ${escapeHtml(item.reviewComment)}` : ""}
+      </p>
+      ${readOnly ? `<div class="notice">승인된 항목은 수정할 수 없습니다. 수정이 필요하면 관리자에게 문의하세요.</div>` : ""}
+      <form id="item-form">
+        ${groups.map(g => `
+          <fieldset>
+            <legend>${g}</legend>
+            ${FIELD_DEFS.filter(f => f.group === g).map(f => `
+              <label for="f-${f.key}">${f.label}</label>
+              ${f.textarea
+                ? `<textarea id="f-${f.key}" ${readOnly?"disabled":""} placeholder="${f.placeholder}">${escapeHtml((item.fields||{})[f.key] || "")}</textarea>`
+                : `<input type="text" id="f-${f.key}" ${readOnly?"disabled":""} placeholder="${f.placeholder}" value="${escapeHtml((item.fields||{})[f.key] || "")}">`
+              }
+            `).join("")}
+          </fieldset>
+        `).join("")}
+      </form>
+      ${!readOnly ? `
+        <div class="row-gap btn-block-gap">
+          <button class="btn btn-secondary" id="btn-draft">임시저장</button>
+          <button class="btn btn-primary" id="btn-submit">제출</button>
+        </div>
+      ` : ""}
+    </div>
+  `;
+  document.getElementById("back").onclick = () => goto("workerList");
+  if (!readOnly){
+    document.getElementById("btn-draft").onclick = () => saveWork(false);
+    document.getElementById("btn-submit").onclick = () => saveWork(true);
+  }
+}
+
+function collectFormFields(){
+  const fields = {};
+  FIELD_DEFS.forEach(f => {
+    const el = document.getElementById("f-" + f.key);
+    fields[f.key] = el.value.trim();
+  });
+  return fields;
+}
+
+async function saveWork(isSubmit){
+  const item = state.activeItem;
+  const newFields = collectFormFields();
+
+  if (isSubmit){
+    const filled = Object.values(newFields).some(v => v);
+    if (!filled){ toast("최소 한 개 항목 이상 입력 후 제출해 주세요."); return; }
+  }
+
+  const before = state.activeItemSnapshot || {};
+  const diffs = FIELD_DEFS.filter(f => (before[f.key] || "") !== (newFields[f.key] || ""));
+
+  const newStatus = isSubmit ? "제출됨" : (item.status === "대기" ? "작성중" : item.status);
+  const now = FieldValue.serverTimestamp();
+
+  const update = {
+    fields: newFields,
+    status: newStatus,
+    lastEditedBy: state.currentName,
+    lastEditedAt: now
+  };
+  if (isSubmit){
+    update.submittedBy = state.currentName;
+    update.submittedAt = now;
+  }
+
+  try{
+    await db.collection("labelItems").doc(item.id).update(update);
+
+    const batchWrites = diffs.map(f => db.collection("history").add({
+      itemId: item.id,
+      productName: item.productName,
+      action: "수정",
+      field: f.label,
+      oldValue: before[f.key] || "",
+      newValue: newFields[f.key] || "",
+      actor: state.currentName,
+      at: FieldValue.serverTimestamp()
+    }));
+    if (isSubmit){
+      batchWrites.push(db.collection("history").add({
+        itemId: item.id,
+        productName: item.productName,
+        action: "제출",
+        field: "",
+        oldValue: "",
+        newValue: "",
+        actor: state.currentName,
+        at: FieldValue.serverTimestamp()
+      }));
+    }
+    await Promise.all(batchWrites);
+
+    toast(isSubmit ? "제출되었습니다." : "임시저장되었습니다.");
+    goto("workerList");
+  }catch(err){
+    toast("저장 실패: " + err.message);
+  }
+}
+
+/* ---- 4. 관리자 / 조회자 로그인 (계정은 1개씩만 존재) ---- */
+async function renderRoleLogin(role){
+  const title = role === "admin" ? "관리자 로그인" : "조회자 로그인";
+  const viewName = role === "admin" ? "adminLogin" : "viewerLogin";
+  main.innerHTML = `
+    <button class="back-link" id="back">← 역할 선택으로</button>
+    <div class="card"><p class="card-title">${title}</p><div class="empty-state">불러오는 중...</div></div>
+  `;
+  document.getElementById("back").onclick = () => goto("role");
+
+  const accounts = await fetchAccountsByRole(role);
+  if (state.view !== viewName) return;
+  const account = accounts[0];
+
+  if (!account){
+    main.innerHTML = `
+      <button class="back-link" id="back">← 역할 선택으로</button>
+      <div class="card">
+        <p class="card-title">${title}</p>
+        <div class="empty-state">${role === "admin" ? "관리자 계정이 없습니다." : "조회용 계정이 아직 등록되지 않았습니다. 관리자에게 문의하세요."}</div>
+      </div>
+    `;
+    document.getElementById("back").onclick = () => goto("role");
+    return;
+  }
+
+  main.innerHTML = `
+    <button class="back-link" id="back">← 역할 선택으로</button>
+    <div class="card">
+      <p class="card-title">${title}</p>
+      <label>PIN 4자리</label>
+      <div class="pin-dots" id="pin-dots">${[0,1,2,3].map(() => `<span class="dot"></span>`).join("")}</div>
+      <input type="password" id="pin-input" inputmode="numeric" maxlength="4" style="text-align:center; letter-spacing:6px; font-size:20px;">
+      <button class="btn btn-primary btn-block-gap" id="btn-login">확인</button>
+    </div>
+  `;
+  document.getElementById("back").onclick = () => goto("role");
+  const pinInput = document.getElementById("pin-input");
+  pinDotWiring(pinInput, document.getElementById("pin-dots"));
+  document.getElementById("btn-login").onclick = () => {
+    if (pinInput.value !== account.pin){ toast("PIN이 일치하지 않습니다."); return; }
+    state.role = role;
+    state.currentName = account.name;
+    goto("staffList");
+  };
+}
+
+/* ---- 5. 관리자/조회자 공용: 제품 목록 ---- */
+function renderStaffList(){
+  const isAdmin = state.role === "admin";
+  main.innerHTML = `
+    <button class="back-link" id="back">← 로그아웃</button>
+    ${isAdmin ? `
+    <div class="card">
+      <p class="card-title">신규 제품 등록</p>
+      <label for="new-name">제품명</label>
+      <input type="text" id="new-name" placeholder="예: 올리브소금치아바타">
+      <button class="btn btn-secondary btn-block-gap" id="btn-add">등록</button>
+    </div>
+    <div class="card">
+      <p class="card-title">계정 관리</p>
+      <p class="card-sub">작업자·조회자 계정, 관리자 PIN을 관리합니다.</p>
+      <button class="btn btn-secondary" id="btn-accounts">계정 관리 화면 열기</button>
+    </div>
+    ` : `
+    <div class="card">
+      <p class="card-title">조회 전용 화면</p>
+      <p class="card-sub">${escapeHtml(state.currentName)}님은 목록 열람과 이력 내보내기만 가능합니다.</p>
+    </div>
+    `}
+    <div class="card">
+      <p class="card-title">제품 목록</p>
+      <div class="filter-tabs" id="tabs">
+        ${["전체", ...STATUS].map(s => `<button class="filter-tab ${state.filter===s?"active":""}" data-f="${s}">${s}</button>`).join("")}
+      </div>
+      <ul class="item-list" id="list"><li class="empty-state">불러오는 중...</li></ul>
+      <button class="btn btn-secondary btn-block-gap" id="btn-export">기간별 CSV 내보내기</button>
+    </div>
+  `;
+  document.getElementById("back").onclick = () => { state.role = null; state.currentName = null; goto("role"); };
+  document.getElementById("btn-export").onclick = () => goto("export");
+  if (isAdmin){
+    document.getElementById("btn-accounts").onclick = () => goto("accountManage");
+    document.getElementById("btn-add").onclick = async () => {
+      const name = document.getElementById("new-name").value.trim();
+      if (!name){ toast("제품명을 입력해 주세요."); return; }
+      try{
+        const ref = await db.collection("labelItems").add({
+          productName: name,
+          status: "대기",
+          fields: {},
+          createdAt: FieldValue.serverTimestamp(),
+          createdBy: state.currentName
+        });
+        await db.collection("history").add({
+          itemId: ref.id, productName: name, action: "등록", field: "", oldValue: "", newValue: "",
+          actor: state.currentName, at: FieldValue.serverTimestamp()
+        });
+        document.getElementById("new-name").value = "";
+        toast("등록되었습니다.");
+      }catch(err){ toast("등록 실패: " + err.message); }
+    };
+  }
+  document.getElementById("tabs").querySelectorAll(".filter-tab").forEach(btn => {
+    btn.onclick = () => { state.filter = btn.dataset.f; renderStaffList(); };
+  });
+
+  state.unsub = db.collection("labelItems").orderBy("createdAt", "desc")
+    .onSnapshot(snap => {
+      state.items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const list = document.getElementById("list");
+      if (!list) return;
+      const filtered = state.filter === "전체"
+        ? state.items
+        : state.items.filter(i => i.status === state.filter);
+      if (filtered.length === 0){
+        list.innerHTML = `<li class="empty-state">해당 상태의 제품이 없습니다.</li>`;
+        return;
+      }
+      list.innerHTML = filtered.map(it => `
+        <li class="item-row" data-id="${it.id}">
+          <div>
+            <div class="name">${escapeHtml(it.productName || "(제품명 미입력)")}</div>
+            <div class="meta">${it.submittedAt ? "제출: " + fmtDate(it.submittedAt) : "등록: " + fmtDate(it.createdAt)}</div>
+          </div>
+          <span class="badge badge-${it.status}">${it.status}</span>
+        </li>
+      `).join("");
+      list.querySelectorAll(".item-row").forEach(row => {
+        row.onclick = () => {
+          state.activeItem = state.items.find(i => i.id === row.dataset.id);
+          goto("staffDetail");
+        };
+      });
+    }, err => toast("목록을 불러오지 못했습니다: " + err.message));
+}
+
+/* ---- 6. 관리자/조회자 공용: 상세 (승인/반려는 관리자만) ---- */
+function renderStaffDetail(){
+  const item = state.activeItem;
+  const fields = item.fields || {};
+  const isAdmin = state.role === "admin";
+  main.innerHTML = `
+    <button class="back-link" id="back">← 목록으로</button>
+    <div class="card">
+      <p class="card-title">${escapeHtml(item.productName)}</p>
+      <p class="card-sub"><span class="badge badge-${item.status}">${item.status}</span></p>
+      ${FIELD_DEFS.map(f => `
+        <div class="field-view-row">
+          <div class="k">${f.label}</div>
+          <div class="v">${escapeHtml(fields[f.key] || "-")}</div>
+        </div>
+      `).join("")}
+    </div>
+    ${isAdmin && item.status === "제출됨" ? `
+      <div class="card">
+        <p class="card-title">검수 처리</p>
+        <button class="btn btn-approve" id="btn-approve">승인</button>
+        <label>반려 사유 (반려 시 필수)</label>
+        <textarea id="reject-reason" placeholder="반려 사유를 입력하세요"></textarea>
+        <button class="btn btn-reject btn-block-gap" id="btn-reject">반려</button>
+      </div>
+    ` : ""}
+    ${item.status === "반려" && item.reviewComment ? `
+      <div class="card"><p class="card-title">반려 사유</p><p>${escapeHtml(item.reviewComment)}</p></div>
+    ` : ""}
+  `;
+  document.getElementById("back").onclick = () => goto("staffList");
+  const approveBtn = document.getElementById("btn-approve");
+  const rejectBtn = document.getElementById("btn-reject");
+  if (approveBtn){
+    approveBtn.onclick = async () => {
+      try{
+        await db.collection("labelItems").doc(item.id).update({
+          status: "승인", reviewedBy: state.currentName, reviewedAt: FieldValue.serverTimestamp(), reviewComment: ""
+        });
+        await db.collection("history").add({
+          itemId: item.id, productName: item.productName, action: "승인", field: "", oldValue: "", newValue: "",
+          actor: state.currentName, at: FieldValue.serverTimestamp()
+        });
+        toast("승인되었습니다.");
+        goto("staffList");
+      }catch(err){ toast("처리 실패: " + err.message); }
+    };
+  }
+  if (rejectBtn){
+    rejectBtn.onclick = async () => {
+      const reason = document.getElementById("reject-reason").value.trim();
+      if (!reason){ toast("반려 사유를 입력해 주세요."); return; }
+      try{
+        await db.collection("labelItems").doc(item.id).update({
+          status: "반려", reviewedBy: state.currentName, reviewedAt: FieldValue.serverTimestamp(), reviewComment: reason
+        });
+        await db.collection("history").add({
+          itemId: item.id, productName: item.productName, action: "반려", field: "", oldValue: "", newValue: reason,
+          actor: state.currentName, at: FieldValue.serverTimestamp()
+        });
+        toast("반려 처리되었습니다.");
+        goto("staffList");
+      }catch(err){ toast("처리 실패: " + err.message); }
+    };
+  }
+}
+
+/* ---- 7. 관리자 전용: 계정 관리 ---- */
+async function renderAccountManage(){
+  main.innerHTML = `
+    <button class="back-link" id="back">← 제품 목록으로</button>
+    <div class="card"><p class="card-title">계정 관리</p><div class="empty-state">불러오는 중...</div></div>
+  `;
+  document.getElementById("back").onclick = () => goto("staffList");
+
+  const allSnap = await db.collection("accounts").get();
+  if (state.view !== "accountManage") return;
+  const all = allSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const admin = all.find(a => a.role === "admin");
+  const viewer = all.find(a => a.role === "viewer");
+  const workers = all.filter(a => a.role === "worker").sort((a,b) => a.name.localeCompare(b.name, "ko"));
+
+  main.innerHTML = `
+    <button class="back-link" id="back">← 제품 목록으로</button>
+
+    <div class="card">
+      <p class="card-title">관리자 정보</p>
+      <p class="card-sub">본인의 이름과 PIN을 변경할 수 있습니다.</p>
+      <label for="adm-name">이름</label>
+      <input type="text" id="adm-name" value="${escapeHtml(admin ? admin.name : "")}">
+      <label for="adm-pin">PIN 4자리</label>
+      <input type="text" id="adm-pin" inputmode="numeric" maxlength="4" value="${admin ? admin.pin : ""}">
+      <button class="btn btn-secondary btn-block-gap" id="btn-save-admin">저장</button>
+    </div>
+
+    <div class="card">
+      <p class="card-title">조회자 계정 (기관 확인용)</p>
+      <p class="card-sub">${viewer ? "고정된 조회 전용 계정입니다. 이름과 PIN을 바꿀 수 있습니다." : "아직 등록되지 않았습니다. 이름과 PIN을 정해 등록해 주세요."}</p>
+      <label for="vw-name">이름</label>
+      <input type="text" id="vw-name" placeholder="예: 기관 조회용" value="${escapeHtml(viewer ? viewer.name : "")}">
+      <label for="vw-pin">PIN 4자리</label>
+      <input type="text" id="vw-pin" inputmode="numeric" maxlength="4" value="${viewer ? viewer.pin : ""}">
+      <button class="btn btn-secondary btn-block-gap" id="btn-save-viewer">${viewer ? "저장" : "등록"}</button>
+    </div>
+
+    <div class="card">
+      <p class="card-title">작업자 계정</p>
+      <p class="card-sub">비활성화하면 로그인만 막히고 기존 작업 이력은 그대로 남습니다.</p>
+      <div id="worker-rows">
+        ${workers.length === 0 ? `<div class="empty-state">등록된 작업자가 없습니다.</div>` : workers.map(w => `
+          <div class="account-row" data-id="${w.id}">
+            <div class="top">
+              <div class="name-wrap"><span class="status-dot ${w.active?'on':'off'}"></span><span class="name">${escapeHtml(w.name)}</span></div>
+              <span class="pin-tag">PIN ${w.pin}</span>
+            </div>
+            <div class="actions">
+              <button class="btn btn-sm btn-secondary" data-act="toggle">${w.active ? "비활성화" : "재활성화"}</button>
+              <button class="btn btn-sm btn-secondary" data-act="editpin">PIN 변경</button>
+            </div>
+            <div class="inline-edit" data-editbox style="display:none;">
+              <input type="text" inputmode="numeric" maxlength="4" placeholder="새 PIN 4자리" data-newpin>
+              <button class="btn btn-sm btn-primary btn-block-gap" data-act="savepin">저장</button>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+      <hr class="section-divider">
+      <p class="card-title" style="font-size:14px;">새 작업자 추가</p>
+      <label for="new-worker-name">이름</label>
+      <input type="text" id="new-worker-name" placeholder="예: 김OO">
+      <label for="new-worker-pin">PIN 4자리</label>
+      <input type="text" id="new-worker-pin" inputmode="numeric" maxlength="4" placeholder="숫자 4자리">
+      <button class="btn btn-primary btn-block-gap" id="btn-add-worker">작업자 추가</button>
+    </div>
+  `;
+  document.getElementById("back").onclick = () => goto("staffList");
+
+  document.getElementById("btn-save-admin").onclick = async () => {
+    const name = document.getElementById("adm-name").value.trim();
+    const pin = document.getElementById("adm-pin").value.trim();
+    if (!name){ toast("이름을 입력해 주세요."); return; }
+    if (!isValidPin(pin)){ toast("PIN은 숫자 4자리여야 합니다."); return; }
+    try{
+      await db.collection("accounts").doc(admin.id).update({ name, pin });
+      if (state.currentName === admin.name) state.currentName = name;
+      toast("관리자 정보가 저장되었습니다.");
+      renderAccountManage();
+    }catch(err){ toast("저장 실패: " + err.message); }
+  };
+
+  document.getElementById("btn-save-viewer").onclick = async () => {
+    const name = document.getElementById("vw-name").value.trim();
+    const pin = document.getElementById("vw-pin").value.trim();
+    if (!name){ toast("이름을 입력해 주세요."); return; }
+    if (!isValidPin(pin)){ toast("PIN은 숫자 4자리여야 합니다."); return; }
+    try{
+      if (viewer){
+        await db.collection("accounts").doc(viewer.id).update({ name, pin });
+      }else{
+        await db.collection("accounts").add({ name, pin, role: "viewer", active: true, createdAt: FieldValue.serverTimestamp() });
+      }
+      toast("조회자 계정이 저장되었습니다.");
+      renderAccountManage();
+    }catch(err){ toast("저장 실패: " + err.message); }
+  };
+
+  document.getElementById("btn-add-worker").onclick = async () => {
+    const name = document.getElementById("new-worker-name").value.trim();
+    const pin = document.getElementById("new-worker-pin").value.trim();
+    if (!name){ toast("이름을 입력해 주세요."); return; }
+    if (!isValidPin(pin)){ toast("PIN은 숫자 4자리여야 합니다."); return; }
+    try{
+      await db.collection("accounts").add({ name, pin, role: "worker", active: true, createdAt: FieldValue.serverTimestamp() });
+      toast("작업자가 추가되었습니다.");
+      renderAccountManage();
+    }catch(err){ toast("추가 실패: " + err.message); }
+  };
+
+  document.getElementById("worker-rows").querySelectorAll(".account-row").forEach(row => {
+    const id = row.dataset.id;
+    const worker = workers.find(w => w.id === id);
+    row.querySelectorAll("[data-act]").forEach(btn => {
+      btn.onclick = async () => {
+        const act = btn.dataset.act;
+        if (act === "toggle"){
+          try{
+            await db.collection("accounts").doc(id).update({ active: !worker.active });
+            toast(worker.active ? "비활성화되었습니다." : "재활성화되었습니다.");
+            renderAccountManage();
+          }catch(err){ toast("처리 실패: " + err.message); }
+        }else if (act === "editpin"){
+          const box = row.querySelector("[data-editbox]");
+          box.style.display = box.style.display === "none" ? "block" : "none";
+        }else if (act === "savepin"){
+          const newPin = row.querySelector("[data-newpin]").value.trim();
+          if (!isValidPin(newPin)){ toast("PIN은 숫자 4자리여야 합니다."); return; }
+          try{
+            await db.collection("accounts").doc(id).update({ pin: newPin });
+            toast("PIN이 변경되었습니다.");
+            renderAccountManage();
+          }catch(err){ toast("변경 실패: " + err.message); }
+        }
+      };
+    });
+  });
+}
+
+/* ---- 8. 관리자/조회자 공용: 기간별 CSV 내보내기 ---- */
+function renderExport(){
+  const today = new Date().toISOString().slice(0,10);
+  main.innerHTML = `
+    <button class="back-link" id="back">← 목록으로</button>
+    <div class="card">
+      <p class="card-title">기간별 이력 내보내기</p>
+      <p class="card-sub">선택한 기간의 등록·수정·제출·승인·반려 이력을 CSV로 내려받습니다. 재택근무 실태조사 등 증빙 자료로 활용할 수 있습니다.</p>
+      <label for="start-date">시작일</label>
+      <input type="date" id="start-date" value="${today}">
+      <label for="end-date">종료일</label>
+      <input type="date" id="end-date" value="${today}">
+      <button class="btn btn-primary btn-block-gap" id="btn-download">CSV 다운로드</button>
+    </div>
+  `;
+  document.getElementById("back").onclick = () => goto("staffList");
+  document.getElementById("btn-download").onclick = async () => {
+    const startStr = document.getElementById("start-date").value;
+    const endStr = document.getElementById("end-date").value;
+    if (!startStr || !endStr){ toast("시작일과 종료일을 선택해 주세요."); return; }
+    const start = Timestamp.fromDate(new Date(startStr + "T00:00:00"));
+    const end = Timestamp.fromDate(new Date(endStr + "T23:59:59"));
+    try{
+      const snap = await db.collection("history")
+        .where("at", ">=", start).where("at", "<=", end)
+        .orderBy("at", "asc").get();
+      if (snap.empty){ toast("해당 기간에 이력이 없습니다."); return; }
+      const rows = [["시각","제품명","처리자","구분","필드","이전값","새값","비고"]];
+      snap.forEach(doc => {
+        const d = doc.data();
+        rows.push([
+          fmtDate(d.at), d.productName || "", d.actor || "", d.action || "",
+          d.field || "", d.oldValue || "", d.newValue || "", ""
+        ]);
+      });
+      downloadCsv(rows, `표시사항_작업이력_${startStr}_${endStr}.csv`);
+      toast("다운로드되었습니다.");
+    }catch(err){
+      toast("내보내기 실패: " + err.message);
+    }
+  };
+}
+
+function downloadCsv(rows, filename){
+  const csv = rows.map(r => r.map(escapeCsv).join(",")).join("\r\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function escapeCsv(v){
+  const s = String(v ?? "");
+  return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function escapeHtml(s){
+  return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+
+/* ---- 초기 진입: admin 계정 존재 여부부터 확인 ---- */
+(async function init(){
+  goto("loading");
+  try{
+    const snap = await db.collection("accounts").where("role", "==", "admin").limit(1).get();
+    if (state.view !== "loading") return;
+    if (snap.empty) goto("adminBootstrap");
+    else goto("role");
+  }catch(err){
+    main.innerHTML = `
+      <div class="card">
+        <p class="card-title">연결 오류</p>
+        <p class="card-sub">${escapeHtml(err.message)}</p>
+        <p class="hint">firebaseConfig 설정 값이 올바른지 확인해 주세요.</p>
+      </div>
+    `;
+  }
+})();
+</script>
+</body>
+</html>
