@@ -336,6 +336,50 @@
     font-size:12px;
     padding:20px 0;
   }
+  .analysis-btn{
+    width:100%;
+    margin-top:12px;
+    background:var(--panel);
+    border:1px solid var(--accent);
+    color:var(--accent);
+    font-size:13px;
+    padding:9px;
+    border-radius:8px;
+    cursor:pointer;
+  }
+  .analysis-box{
+    margin-top:10px;
+    display:none;
+  }
+  .analysis-box textarea{
+    width:100%;
+    min-height:180px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    color:var(--text);
+    font-size:12px;
+    line-height:1.6;
+    border-radius:8px;
+    padding:10px;
+    resize:vertical;
+    box-sizing:border-box;
+  }
+  .analysis-copy-btn{
+    margin-top:6px;
+    width:100%;
+    background:var(--accent);
+    color:#1a1400;
+    border:none;
+    font-size:13px;
+    font-weight:600;
+    padding:9px;
+    border-radius:8px;
+    cursor:pointer;
+  }
+  .analysis-copy-btn.copied{
+    background:var(--long);
+    color:#fff;
+  }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
@@ -346,7 +390,7 @@
 <div class="wrap">
 
   <div class="header">
-    <div class="version-badge">v3.1 · 2026-07-27</div>
+    <div class="version-badge">v3.4 · 2026-07-27</div>
   </div>
 
   <!-- 입력 -->
@@ -407,6 +451,11 @@
         <canvas id="macdChart"></canvas>
       </div>
       <div class="chart-loading" id="chartLoading" style="display:none;">캔들 데이터 불러오는 중...</div>
+      <button type="button" class="analysis-btn" id="analysisBtn" onclick="generateAnalysisText()">📋 전체 타임프레임(5분·15분·1시간·4시간·1일) 분석 텍스트 생성</button>
+      <div class="analysis-box" id="analysisBox">
+        <textarea id="analysisOutput" readonly></textarea>
+        <button type="button" class="analysis-copy-btn" id="analysisCopyBtn" onclick="copyAnalysisText()">복사하기</button>
+      </div>
     </div>
 
     <div class="row">
@@ -1281,6 +1330,7 @@ let candleChartInstance = null;
 let rsiChartInstance = null;
 let macdChartInstance = null;
 let chartFetchInFlight = false;
+let lastChartSnapshot = null;
 
 function calcSMA(closes, period){
   const out = new Array(closes.length).fill(null);
@@ -1398,6 +1448,9 @@ function renderAllCharts(candles){
   const rsi = calcRSI(closes, 14);
   const { macdLine, signalLine, histogram } = calcMACD(closes, 12, 26, 9);
 
+  // "AI 분석용 텍스트 생성" 버튼에서 재사용할 수 있도록 최신 계산 결과를 저장해둡니다.
+  lastChartSnapshot = { candles, ma20, ma60, rsi, macdLine, signalLine, histogram, symbol: currentSymbol, timeframe: currentTimeframe };
+
   const gridColor = 'rgba(255,255,255,0.06)';
   const tickColor = '#8a8a8a';
   const upColor = '#00c076';
@@ -1496,6 +1549,147 @@ setInterval(() => {
     loadChartData();
   }
 }, 30000);
+
+function formatCandleTime(ts){
+  const d = new Date(ts);
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mi = String(d.getMinutes()).padStart(2,'0');
+  return `${mm}/${dd} ${hh}:${mi}`;
+}
+
+// 캡처 대신, 지금 화면의 캔들/지표/포지션 데이터를 텍스트로 정리해서 복사할 수 있게 만듭니다.
+async function fetchTimeframeCandles(symbol, interval, limit){
+  const url = `https://api.bybit.com/v5/market/kline?category=linear&symbol=${symbol}&interval=${interval}&limit=${limit}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  const list = data?.result?.list || [];
+  const rows = [...list].sort((a,b) => Number(a[0]) - Number(b[0]));
+  return rows.map(r => ({
+    x: Number(r[0]), o: parseFloat(r[1]), h: parseFloat(r[2]), l: parseFloat(r[3]), c: parseFloat(r[4])
+  }));
+}
+
+// Bybit 계정 롱/숏 비율(매수/매도 포지션 계정 비중). period는 캔들 간격과 별개의 값 체계입니다.
+const TF_TO_RATIO_PERIOD = { '5':'5min', '15':'15min', '60':'1h', '240':'4h', 'D':'1d' };
+async function fetchLongShortRatio(symbol, period, limit){
+  const url = `https://api.bybit.com/v5/market/account-ratio?category=linear&symbol=${symbol}&period=${period}&limit=${limit}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  const list = data?.result?.list || [];
+  return [...list].sort((a,b) => Number(a.timestamp) - Number(b.timestamp));
+}
+
+// 5분/15분/1시간/4시간/1일봉을 한 번에 가져와서 텍스트 하나로 합칩니다 (타임프레임별로 매번 캡처할 필요 없게).
+async function generateAnalysisText(){
+  const btn = document.getElementById('analysisBtn');
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '불러오는 중... (5개 타임프레임)';
+
+  const timeframes = ['5','15','60','240','D'];
+  const [candleResults, ratioResults] = await Promise.all([
+    Promise.allSettled(timeframes.map(tf => fetchTimeframeCandles(currentSymbol, tf, 50))),
+    Promise.allSettled(timeframes.map(tf => fetchLongShortRatio(currentSymbol, TF_TO_RATIO_PERIOD[tf], 6)))
+  ]);
+
+  const sections = timeframes.map((tf, i) => {
+    const r = candleResults[i];
+    if(r.status !== 'fulfilled' || !r.value.length){
+      return `[${TF_LABELS[tf]}]\n데이터 조회 실패`;
+    }
+    const candles = r.value;
+    const closes = candles.map(c => c.c);
+    const ma20 = calcSMA(closes, 20);
+    const ma60 = calcSMA(closes, 60);
+    const rsi = calcRSI(closes, 14);
+    const { macdLine, signalLine, histogram } = calcMACD(closes, 12, 26, 9);
+    const lastIdx = candles.length - 1;
+    const recent = candles.slice(-8);
+    const candleLines = recent.map(c =>
+      `${formatCandleTime(c.x)} O${fmtPrice(c.o)} H${fmtPrice(c.h)} L${fmtPrice(c.l)} C${fmtPrice(c.c)}`
+    ).join('\n');
+
+    // 롱/숏 계정 비율: 최신값과 직전값을 비교해 쏠림이 심해지는지/완화되는지도 같이 넣습니다.
+    let ratioLine = '계정 롱/숏 비율: 데이터 없음';
+    const rr = ratioResults[i];
+    if(rr.status === 'fulfilled' && rr.value.length){
+      const ratioList = rr.value;
+      const latest = ratioList[ratioList.length-1];
+      const buyPct = (parseFloat(latest.buyRatio)*100).toFixed(1);
+      const sellPct = (parseFloat(latest.sellRatio)*100).toFixed(1);
+      const dominant = parseFloat(latest.buyRatio) >= parseFloat(latest.sellRatio) ? '롱' : '숏';
+      let trendNote = '';
+      if(ratioList.length >= 2){
+        const prev = ratioList[ratioList.length-2];
+        const diff = parseFloat(latest.buyRatio) - parseFloat(prev.buyRatio);
+        if(Math.abs(diff) >= 0.01){
+          trendNote = diff > 0 ? ' (직전 대비 롱 비중 증가 중)' : ' (직전 대비 숏 비중 증가 중)';
+        }
+      }
+      ratioLine = `계정 롱/숏 비율: 롱 ${buyPct}% / 숏 ${sellPct}% (우세: ${dominant})${trendNote}`;
+    }
+
+    return `[${TF_LABELS[tf]}]
+최근 캔들(${recent.length}개, 오래된순):
+${candleLines}
+MA20 ${ma20[lastIdx]!=null?fmtPrice(ma20[lastIdx]):'-'} / MA60 ${ma60[lastIdx]!=null?fmtPrice(ma60[lastIdx]):'-'} / RSI ${rsi[lastIdx]!=null?rsi[lastIdx].toFixed(1):'-'} / MACD ${macdLine[lastIdx]!=null?macdLine[lastIdx].toFixed(4):'-'} Signal ${signalLine[lastIdx]!=null?signalLine[lastIdx].toFixed(4):'-'} Hist ${histogram[lastIdx]!=null?histogram[lastIdx].toFixed(4):'-'}
+${ratioLine}`;
+  }).join('\n\n');
+
+  const entry = parseFloat(document.getElementById('entryPrice').value);
+  const target = parseFloat(document.getElementById('priceInput').value);
+  const lev = document.getElementById('leverage').value;
+  const marginKRW = document.getElementById('margin').value;
+  const breakevenText = document.getElementById('outBreakeven').textContent;
+  const liqText = document.getElementById('outLiqPrice').textContent;
+  const pnlPctText = document.getElementById('outPctPnlPct').textContent;
+  const pnlAmtText = document.getElementById('outPctPnlAmt').textContent;
+
+  const text = `[${currentSymbol}] 타임프레임별(5분/15분/1시간/4시간/1일) 캔들 데이터입니다.
+
+${sections}
+
+내 포지션:
+- 방향: ${direction === 'long' ? 'Long' : 'Short'}
+- 진입가: ${isNaN(entry) ? '-' : fmtPrice(entry)}
+- 예상가(목표): ${isNaN(target) ? '-' : fmtPrice(target)}
+- 레버리지: ${lev}배
+- 증거금: ${marginKRW}원
+- 평단가: ${breakevenText}
+- 예상 청산가: ${liqText}
+- 현재 손익: ${pnlPctText} (${pnlAmtText})
+
+이 데이터를 기준으로 타임프레임별 흐름, 롱/숏 비율이 시사하는 쏠림, 단기/중기 방향에 대한 확률적 우세 판단(확정 예측이 아닌 근거 기반 견해), 주요 지지·저항, 주의할 점을 분석해줘.`;
+
+  document.getElementById('analysisOutput').value = text;
+  document.getElementById('analysisBox').style.display = 'block';
+  const copyBtn = document.getElementById('analysisCopyBtn');
+  copyBtn.textContent = '복사하기';
+  copyBtn.classList.remove('copied');
+
+  btn.disabled = false;
+  btn.textContent = originalLabel;
+}
+
+async function copyAnalysisText(){
+  const textarea = document.getElementById('analysisOutput');
+  const btn = document.getElementById('analysisCopyBtn');
+  try{
+    await navigator.clipboard.writeText(textarea.value);
+  }catch(e){
+    // 클립보드 API가 막힌 환경(예: http 접속, 일부 인앱브라우저) 대비 폴백
+    textarea.select();
+    document.execCommand('copy');
+  }
+  btn.textContent = '✓ 복사됨';
+  btn.classList.add('copied');
+  setTimeout(() => {
+    btn.textContent = '복사하기';
+    btn.classList.remove('copied');
+  }, 1500);
+}
 
 // 초기 실행
 calc();
