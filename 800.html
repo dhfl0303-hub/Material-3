@@ -390,7 +390,7 @@
 <div class="wrap">
 
   <div class="header">
-    <div class="version-badge">v3.4 · 2026-07-27</div>
+    <div class="version-badge">v3.5 · 2026-07-27</div>
   </div>
 
   <!-- 입력 -->
@@ -1644,8 +1644,12 @@ ${ratioLine}`;
   const marginKRW = document.getElementById('margin').value;
   const breakevenText = document.getElementById('outBreakeven').textContent;
   const liqText = document.getElementById('outLiqPrice').textContent;
-  const pnlPctText = document.getElementById('outPctPnlPct').textContent;
-  const pnlAmtText = document.getElementById('outPctPnlAmt').textContent;
+  // "예상가 손익" = 목표가(예상가)에 도달했다고 가정했을 때의 시뮬레이션 값 (실시간 손익 아님)
+  const targetPnlPctText = document.getElementById('outPctPnlPct').textContent;
+  const targetPnlAmtText = document.getElementById('outPctPnlAmt').textContent;
+  // "실시간 손익" = 지금 이 순간의 실제 시세(lastLivePrice) 기준 손익
+  const liveCurrentPriceText = lastLivePrice !== null ? `${fmtPrice(lastLivePrice)} USDT` : '조회 안 됨';
+  const livePnlText = document.getElementById('livePricePnl').textContent;
 
   const text = `[${currentSymbol}] 타임프레임별(5분/15분/1시간/4시간/1일) 캔들 데이터입니다.
 
@@ -1654,12 +1658,13 @@ ${sections}
 내 포지션:
 - 방향: ${direction === 'long' ? 'Long' : 'Short'}
 - 진입가: ${isNaN(entry) ? '-' : fmtPrice(entry)}
-- 예상가(목표): ${isNaN(target) ? '-' : fmtPrice(target)}
 - 레버리지: ${lev}배
 - 증거금: ${marginKRW}원
-- 평단가: ${breakevenText}
+- 평단가(손익분기점): ${breakevenText}
 - 예상 청산가: ${liqText}
-- 현재 손익: ${pnlPctText} (${pnlAmtText})
+- 현재 시세: ${liveCurrentPriceText}
+- 실시간 손익(현재 시세 기준): ${livePnlText}
+- 예상가(목표가) ${isNaN(target) ? '미입력' : fmtPrice(target) + ' USDT'} 도달 시 시뮬레이션 손익: ${targetPnlPctText} (${targetPnlAmtText})
 
 이 데이터를 기준으로 타임프레임별 흐름, 롱/숏 비율이 시사하는 쏠림, 단기/중기 방향에 대한 확률적 우세 판단(확정 예측이 아닌 근거 기반 견해), 주요 지지·저항, 주의할 점을 분석해줘.`;
 
