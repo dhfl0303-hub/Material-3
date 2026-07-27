@@ -385,12 +385,14 @@
 <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@0.2.1/dist/chartjs-chart-financial.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 </head>
 <body>
 <div class="wrap">
 
   <div class="header">
-    <div class="version-badge">v3.5 · 2026-07-27</div>
+    <div class="version-badge">v3.7 · 2026-07-27</div>
   </div>
 
   <!-- 입력 -->
@@ -437,6 +439,7 @@
           <button type="button" class="tf-btn" id="tfBtn-60" onclick="setTimeframe('60')">1시간</button>
           <button type="button" class="tf-btn" id="tfBtn-240" onclick="setTimeframe('240')">4시간</button>
           <button type="button" class="tf-btn" id="tfBtn-D" onclick="setTimeframe('D')">1일</button>
+          <button type="button" class="tf-btn" onclick="resetChartZoom()" title="확대/축소 원래대로">↺ 리셋</button>
         </div>
       </div>
       <div class="chart-canvas-wrap">
@@ -1402,6 +1405,28 @@ function calcMACD(closes, fast=12, slow=26, signal=9){
   return { macdLine, signalLine, histogram };
 }
 
+function resetChartZoom(){
+  if(candleChartInstance && typeof candleChartInstance.resetZoom === 'function'){
+    candleChartInstance.resetZoom();
+  }
+}
+
+// 캔들/RSI/MACD는 위에서 events:['click']로 설정해 탭(클릭)할 때만 툴팁이 뜨게 했습니다.
+// 대신 차트 바깥을 누르면 남아있는 툴팁을 꺼줘야 하므로 여기서 처리합니다.
+function dismissChartTooltips(e){
+  [candleChartInstance, rsiChartInstance, macdChartInstance].forEach(ch => {
+    if(!ch) return;
+    if(e.target === ch.canvas) return; // 그 차트 자신을 누른 경우는 차트가 알아서 처리
+    if(ch.tooltip && ch.tooltip.opacity > 0){
+      ch.setActiveElements([]);
+      ch.tooltip.setActiveElements([], {x:0, y:0});
+      ch.update();
+    }
+  });
+}
+document.addEventListener('click', dismissChartTooltips);
+document.addEventListener('touchstart', dismissChartTooltips, {passive:true});
+
 function setTimeframe(tf){
   currentTimeframe = tf;
   Object.keys(TF_LABELS).forEach(k => {
@@ -1479,8 +1504,19 @@ function renderAllCharts(candles){
       ]
     },
     options: {
-      responsive: true, maintainAspectRatio: false, animation: false,
-      plugins: { legend: { labels: { color: tickColor, boxWidth: 10, font: { size: 10 } } } },
+      responsive: true, maintainAspectRatio: false, animation: false, events: ['click'],
+      plugins: {
+        legend: { labels: { color: tickColor, boxWidth: 10, font: { size: 10 } } },
+        zoom: {
+          pan: { enabled: true, mode: 'x' },
+          zoom: {
+            wheel: { enabled: true },
+            pinch: { enabled: true },
+            mode: 'x'
+          },
+          limits: { x: { minRange: 5 * 60 * 1000 } }
+        }
+      },
       scales: {
         x: { type: 'time', grid: { color: gridColor }, ticks: { color: tickColor, maxRotation: 0, font: { size: 9 } } },
         y: { position: 'right', grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 9 } } }
@@ -1500,7 +1536,7 @@ function renderAllCharts(candles){
       }]
     },
     options: {
-      responsive: true, maintainAspectRatio: false, animation: false,
+      responsive: true, maintainAspectRatio: false, animation: false, events: ['click'],
       plugins: { legend: { display: false } },
       scales: {
         x: { type: 'time', grid: { color: gridColor }, ticks: { color: tickColor, maxRotation: 0, font: { size: 9 } } },
@@ -1533,7 +1569,7 @@ function renderAllCharts(candles){
       ]
     },
     options: {
-      responsive: true, maintainAspectRatio: false, animation: false,
+      responsive: true, maintainAspectRatio: false, animation: false, events: ['click'],
       plugins: { legend: { labels: { color: tickColor, boxWidth: 10, font: { size: 10 } } } },
       scales: {
         x: { type: 'time', grid: { color: gridColor }, ticks: { color: tickColor, maxRotation: 0, font: { size: 9 } } },
