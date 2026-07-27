@@ -453,7 +453,7 @@
 <div class="wrap">
 
   <div class="header">
-    <div class="version-badge">v3.8 · 2026-07-27</div>
+    <div class="version-badge">v3.9 · 2026-07-27</div>
   </div>
 
   <!-- 입력 -->
@@ -1076,7 +1076,6 @@ function setDirection(d){
   calc();
 }
 setDirection('long');
-setEntryMode('single', true);
 
 // ===== 분할매매 모드 =====
 let entryMode = 'single'; // 'single' | 'split'
@@ -1171,6 +1170,8 @@ function updateSplitEntries(){
   calc();
   scheduleSaveSettings();
 }
+
+setEntryMode('single', true);
 
 function fmt(n, digits=2){
   if(isNaN(n)) return '-';
