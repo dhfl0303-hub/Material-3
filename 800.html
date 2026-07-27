@@ -274,13 +274,79 @@
   .accordion-body{
     padding:0 16px 16px 16px;
   }
+
+  .chart-card{
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px;
+    margin-top:12px;
+  }
+  .chart-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .chart-title{
+    font-size:13px;
+    color:var(--sub);
+  }
+  .tf-buttons{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+  }
+  .tf-btn{
+    background:var(--panel);
+    border:1px solid var(--border);
+    color:var(--sub);
+    font-size:12px;
+    padding:5px 10px;
+    border-radius:6px;
+    cursor:pointer;
+  }
+  .tf-btn.active{
+    background:rgba(240,185,11,0.15);
+    color:var(--accent);
+    border-color:var(--accent);
+  }
+  .chart-canvas-wrap{
+    position:relative;
+    height:240px;
+    width:100%;
+  }
+  .indicator-canvas-wrap{
+    position:relative;
+    height:110px;
+    width:100%;
+    margin-top:10px;
+  }
+  .indicator-label{
+    font-size:11px;
+    color:var(--sub);
+    margin-top:8px;
+    margin-bottom:2px;
+  }
+  .chart-loading{
+    text-align:center;
+    color:var(--sub);
+    font-size:12px;
+    padding:20px 0;
+  }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@0.2.1/dist/chartjs-chart-financial.min.js"></script>
 </head>
 <body>
 <div class="wrap">
 
   <div class="header">
-    <div class="version-badge">v3.0 · 2026-07-23</div>
+    <div class="version-badge">v3.1 · 2026-07-27</div>
   </div>
 
   <!-- 입력 -->
@@ -316,6 +382,31 @@
         <button type="button" class="btn-mini" id="applyToEntryBtn" disabled onclick="applyLivePrice('entryPrice')">→ 진입가</button>
         <button type="button" class="btn-mini" id="applyToTargetBtn" disabled onclick="applyLivePrice('priceInput')">→ 예상가</button>
       </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title" id="chartTitle">BTCUSDT 캔들차트</span>
+        <div class="tf-buttons">
+          <button type="button" class="tf-btn" id="tfBtn-5" onclick="setTimeframe('5')">5분</button>
+          <button type="button" class="tf-btn" id="tfBtn-15" onclick="setTimeframe('15')">15분</button>
+          <button type="button" class="tf-btn" id="tfBtn-60" onclick="setTimeframe('60')">1시간</button>
+          <button type="button" class="tf-btn" id="tfBtn-240" onclick="setTimeframe('240')">4시간</button>
+          <button type="button" class="tf-btn" id="tfBtn-D" onclick="setTimeframe('D')">1일</button>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas id="candleChart"></canvas>
+      </div>
+      <div class="indicator-label">RSI (14)</div>
+      <div class="indicator-canvas-wrap">
+        <canvas id="rsiChart"></canvas>
+      </div>
+      <div class="indicator-label">MACD (12, 26, 9)</div>
+      <div class="indicator-canvas-wrap">
+        <canvas id="macdChart"></canvas>
+      </div>
+      <div class="chart-loading" id="chartLoading" style="display:none;">캔들 데이터 불러오는 중...</div>
     </div>
 
     <div class="row">
@@ -576,6 +667,7 @@ function changeCoin(symbol){
   resetLiveDisplayForSymbolChange();
   scheduleSaveSettings();
   fetchLivePrice(true);
+  if(typeof loadChartData === 'function') loadChartData();
 }
 
 // 타이핑한 값을 실제 Bybit 심볼로 변환 (예: "eth" -> "ETHUSDT"). 못 찾으면 null
@@ -690,6 +782,7 @@ window.loadAndApplySettings = async function(){
     currentSymbol = resolved;
     resetLiveDisplayForSymbolChange();
     fetchLivePrice(true);
+    if(typeof loadChartData === 'function') loadChartData();
   } else {
     updateLivePriceLabel();
   }
@@ -1181,8 +1274,232 @@ document.querySelectorAll('input[type=number]').forEach(el=>{
   el.addEventListener('wheel', function(e){ this.blur(); }, {passive:true});
 });
 
+// ===== 캔들 차트 + 보조지표 (MA, RSI, MACD) =====
+let currentTimeframe = '15';
+const TF_LABELS = { '5':'5분','15':'15분','60':'1시간','240':'4시간','D':'1일' };
+let candleChartInstance = null;
+let rsiChartInstance = null;
+let macdChartInstance = null;
+let chartFetchInFlight = false;
+
+function calcSMA(closes, period){
+  const out = new Array(closes.length).fill(null);
+  let sum = 0;
+  for(let i=0;i<closes.length;i++){
+    sum += closes[i];
+    if(i>=period) sum -= closes[i-period];
+    if(i>=period-1) out[i] = sum/period;
+  }
+  return out;
+}
+
+function calcEMA(values, period){
+  const out = new Array(values.length).fill(null);
+  const k = 2/(period+1);
+  let emaPrev = null;
+  for(let i=0;i<values.length;i++){
+    if(i === period-1){
+      let sum = 0;
+      for(let j=0;j<period;j++) sum += values[j];
+      emaPrev = sum/period;
+      out[i] = emaPrev;
+    } else if(i >= period){
+      emaPrev = values[i]*k + emaPrev*(1-k);
+      out[i] = emaPrev;
+    }
+  }
+  return out;
+}
+
+// Wilder's smoothing 방식 RSI
+function calcRSI(closes, period=14){
+  const out = new Array(closes.length).fill(null);
+  let avgGain = 0, avgLoss = 0;
+  for(let i=1;i<closes.length;i++){
+    const diff = closes[i]-closes[i-1];
+    const gain = diff>0?diff:0;
+    const loss = diff<0?-diff:0;
+    if(i<period){
+      avgGain += gain; avgLoss += loss;
+    } else if(i===period){
+      avgGain = (avgGain+gain)/period;
+      avgLoss = (avgLoss+loss)/period;
+      out[i] = avgLoss===0 ? 100 : 100-(100/(1+avgGain/avgLoss));
+    } else {
+      avgGain = (avgGain*(period-1)+gain)/period;
+      avgLoss = (avgLoss*(period-1)+loss)/period;
+      out[i] = avgLoss===0 ? 100 : 100-(100/(1+avgGain/avgLoss));
+    }
+  }
+  return out;
+}
+
+function calcMACD(closes, fast=12, slow=26, signal=9){
+  const emaFast = calcEMA(closes, fast);
+  const emaSlow = calcEMA(closes, slow);
+  const macdLine = closes.map((_,i) => (emaFast[i]!=null && emaSlow[i]!=null) ? emaFast[i]-emaSlow[i] : null);
+  const macdValid = macdLine.filter(v => v!=null);
+  const signalValid = calcEMA(macdValid, signal);
+  const signalLine = new Array(closes.length).fill(null);
+  let vi = 0;
+  for(let i=0;i<closes.length;i++){
+    if(macdLine[i]!=null){
+      signalLine[i] = signalValid[vi];
+      vi++;
+    }
+  }
+  const histogram = closes.map((_,i) => (macdLine[i]!=null && signalLine[i]!=null) ? macdLine[i]-signalLine[i] : null);
+  return { macdLine, signalLine, histogram };
+}
+
+function setTimeframe(tf){
+  currentTimeframe = tf;
+  Object.keys(TF_LABELS).forEach(k => {
+    const btn = document.getElementById('tfBtn-'+k);
+    if(btn) btn.classList.toggle('active', k === tf);
+  });
+  loadChartData();
+}
+
+async function loadChartData(){
+  if(chartFetchInFlight) return;
+  chartFetchInFlight = true;
+  const loadingEl = document.getElementById('chartLoading');
+  loadingEl.style.display = 'block';
+  document.getElementById('chartTitle').textContent = `${currentSymbol} 캔들차트 (${TF_LABELS[currentTimeframe]})`;
+  try{
+    const url = `https://api.bybit.com/v5/market/kline?category=linear&symbol=${currentSymbol}&interval=${currentTimeframe}&limit=200`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const list = data?.result?.list || [];
+    // Bybit는 최신순으로 내려주므로 시간 오름차순으로 정렬합니다.
+    const rows = [...list].sort((a,b) => Number(a[0]) - Number(b[0]));
+    const candles = rows.map(r => ({
+      x: Number(r[0]),
+      o: parseFloat(r[1]),
+      h: parseFloat(r[2]),
+      l: parseFloat(r[3]),
+      c: parseFloat(r[4])
+    }));
+    renderAllCharts(candles);
+  }catch(e){
+    console.error('캔들 데이터 조회 실패', e);
+  }finally{
+    loadingEl.style.display = 'none';
+    chartFetchInFlight = false;
+  }
+}
+
+function renderAllCharts(candles){
+  if(!candles.length) return;
+  const closes = candles.map(c => c.c);
+  const ma20 = calcSMA(closes, 20);
+  const ma60 = calcSMA(closes, 60);
+  const rsi = calcRSI(closes, 14);
+  const { macdLine, signalLine, histogram } = calcMACD(closes, 12, 26, 9);
+
+  const gridColor = 'rgba(255,255,255,0.06)';
+  const tickColor = '#8a8a8a';
+  const upColor = '#00c076';
+  const downColor = '#f6465d';
+
+  // --- 캔들 + 이동평균선 ---
+  const candleCtx = document.getElementById('candleChart');
+  if(candleChartInstance) candleChartInstance.destroy();
+  candleChartInstance = new Chart(candleCtx, {
+    type: 'candlestick',
+    data: {
+      datasets: [
+        {
+          label: currentSymbol,
+          data: candles,
+          color: { up: upColor, down: downColor, unchanged: tickColor }
+        },
+        {
+          type: 'line', label: 'MA20', data: candles.map((c,i) => ({x:c.x, y:ma20[i]})),
+          borderColor: '#f0b90b', borderWidth: 1, pointRadius: 0, spanGaps: true
+        },
+        {
+          type: 'line', label: 'MA60', data: candles.map((c,i) => ({x:c.x, y:ma60[i]})),
+          borderColor: '#5b8def', borderWidth: 1, pointRadius: 0, spanGaps: true
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { labels: { color: tickColor, boxWidth: 10, font: { size: 10 } } } },
+      scales: {
+        x: { type: 'time', grid: { color: gridColor }, ticks: { color: tickColor, maxRotation: 0, font: { size: 9 } } },
+        y: { position: 'right', grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 9 } } }
+      }
+    }
+  });
+
+  // --- RSI ---
+  const rsiCtx = document.getElementById('rsiChart');
+  if(rsiChartInstance) rsiChartInstance.destroy();
+  rsiChartInstance = new Chart(rsiCtx, {
+    type: 'line',
+    data: {
+      datasets: [{
+        label: 'RSI', data: candles.map((c,i) => ({x:c.x, y:rsi[i]})),
+        borderColor: '#a78bfa', borderWidth: 1.2, pointRadius: 0, spanGaps: true
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { type: 'time', grid: { color: gridColor }, ticks: { color: tickColor, maxRotation: 0, font: { size: 9 } } },
+        y: { position: 'right', min: 0, max: 100, grid: { color: gridColor },
+             ticks: { color: tickColor, font: { size: 9 }, callback: v => [30,50,70].includes(v) ? v : '' } }
+      }
+    }
+  });
+
+  // --- MACD ---
+  const macdCtx = document.getElementById('macdChart');
+  if(macdChartInstance) macdChartInstance.destroy();
+  macdChartInstance = new Chart(macdCtx, {
+    type: 'bar',
+    data: {
+      datasets: [
+        {
+          type: 'bar', label: 'Histogram',
+          data: candles.map((c,i) => ({x:c.x, y:histogram[i]})),
+          backgroundColor: candles.map((c,i) => (histogram[i]==null) ? 'transparent' : (histogram[i] >= 0 ? upColor : downColor))
+        },
+        {
+          type: 'line', label: 'MACD', data: candles.map((c,i) => ({x:c.x, y:macdLine[i]})),
+          borderColor: '#f0b90b', borderWidth: 1, pointRadius: 0, spanGaps: true
+        },
+        {
+          type: 'line', label: 'Signal', data: candles.map((c,i) => ({x:c.x, y:signalLine[i]})),
+          borderColor: '#5b8def', borderWidth: 1, pointRadius: 0, spanGaps: true
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { labels: { color: tickColor, boxWidth: 10, font: { size: 10 } } } },
+      scales: {
+        x: { type: 'time', grid: { color: gridColor }, ticks: { color: tickColor, maxRotation: 0, font: { size: 9 } } },
+        y: { position: 'right', grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 9 } } }
+      }
+    }
+  });
+}
+
+// 코인/타임프레임이 그대로여도 최신 캔들을 반영하도록 30초마다 자동 갱신
+setInterval(() => {
+  if(document.visibilityState === 'visible'){
+    loadChartData();
+  }
+}, 30000);
+
 // 초기 실행
 calc();
+setTimeframe('15');
 // renderHistory()는 파이어베이스 모듈 스크립트 쪽에서 준비 완료 후 호출합니다.
 </script>
 </body>
