@@ -380,6 +380,67 @@
     background:var(--long);
     color:#fff;
   }
+
+  .split-entry-card{
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px;
+    margin-bottom:12px;
+  }
+  .split-entry-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+    font-size:13px;
+    color:var(--sub);
+  }
+  .split-entry-row{
+    display:flex;
+    gap:6px;
+    align-items:center;
+    margin-bottom:8px;
+  }
+  .split-entry-row input{
+    flex:1;
+    min-width:0;
+    background:var(--panel);
+    border:1px solid var(--border);
+    color:var(--text);
+    font-size:14px;
+    padding:8px;
+    border-radius:6px;
+  }
+  .split-entry-row .split-entry-label{
+    font-size:11px;
+    color:var(--sub);
+    width:34px;
+    flex-shrink:0;
+  }
+  .split-entry-row .split-row-del{
+    flex-shrink:0;
+    background:var(--panel);
+    border:1px solid var(--border);
+    color:var(--short);
+    width:32px;
+    height:32px;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:14px;
+  }
+  .split-entry-summary{
+    font-size:12px;
+    color:var(--sub);
+    line-height:1.6;
+    border-top:1px solid var(--border);
+    padding-top:8px;
+    margin-top:4px;
+  }
+  input[readonly]{
+    opacity:0.65;
+    cursor:not-allowed;
+  }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
@@ -392,7 +453,7 @@
 <div class="wrap">
 
   <div class="header">
-    <div class="version-badge">v3.7 · 2026-07-27</div>
+    <div class="version-badge">v3.8 · 2026-07-27</div>
   </div>
 
   <!-- 입력 -->
@@ -472,11 +533,33 @@
     </div>
 
     <div class="row">
+      <div class="field" style="flex:1">
+        <label>진입 방식</label>
+        <div class="toggle">
+          <button id="btnSingleEntry" onclick="setEntryMode('single')">단일진입</button>
+          <button id="btnSplitEntry" onclick="setEntryMode('split')">분할매매</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" id="singleEntryRow">
       <div class="field">
         <label>진입가 (USDT)</label>
         <input type="number" id="entryPrice" value="65780" step="0.1" oninput="calc()">
       </div>
-      <div class="field">
+    </div>
+
+    <div id="splitEntryCard" class="split-entry-card" style="display:none;">
+      <div class="split-entry-header">
+        <span>분할 진입 회차</span>
+        <button type="button" class="btn-mini" onclick="addSplitRow()">+ 행 추가</button>
+      </div>
+      <div id="splitEntryRows"></div>
+      <div class="split-entry-summary" id="splitEntrySummary">진입가·증거금을 입력하면 평균 진입가가 자동 계산됩니다.</div>
+    </div>
+
+    <div class="row">
+      <div class="field" style="flex:1">
         <label>예상가 (USDT)</label>
         <input type="number" id="priceInput" value="" step="0.1" placeholder="예상 가격 입력" oninput="calc()">
       </div>
@@ -485,10 +568,10 @@
     <div class="row">
       <div class="field">
         <label>배율 (x)</label>
-        <input type="number" id="leverage" value="10" step="1" oninput="calc()">
+        <input type="number" id="leverage" value="10" step="1" oninput="calc(); if(entryMode==='split') updateSplitEntries();">
       </div>
       <div class="field">
-        <label>증거금 (원화)</label>
+        <label>증거금 (원화)<span id="marginAutoNote" style="display:none; color:var(--sub); font-weight:normal;"> · 분할매매 자동계산</span></label>
         <input type="number" id="margin" value="138000" step="1000" oninput="calc()">
       </div>
     </div>
@@ -785,10 +868,13 @@ loadSymbolList();
 const SETTINGS_FIELDS = ['entryPrice','priceInput','leverage','margin','mmRate','fxRate','feeRate','coinInput'];
 
 function collectSettings(){
-  const obj = { direction };
+  const obj = { direction, entryMode };
   SETTINGS_FIELDS.forEach(id => {
     obj[id] = document.getElementById(id).value;
   });
+  if(entryMode === 'split'){
+    obj.splitEntries = JSON.stringify(getSplitRowsData());
+  }
   return obj;
 }
 
@@ -803,6 +889,21 @@ function applySettings(data){
     direction = data.direction;
     document.getElementById('btnLong').className = direction === 'long' ? 'active-long' : '';
     document.getElementById('btnShort').className = direction === 'short' ? 'active-short' : '';
+  }
+  if(data.entryMode === 'split' && data.splitEntries){
+    try{
+      const rows = JSON.parse(data.splitEntries);
+      document.getElementById('splitEntryRows').innerHTML = '';
+      if(rows.length){
+        rows.forEach(r => addSplitRow(r.price, r.marginKRW, true));
+      }
+      setEntryMode('split', true);
+    }catch(e){
+      console.error('분할매매 데이터 복원 실패', e);
+      setEntryMode('single', true);
+    }
+  } else {
+    setEntryMode('single', true);
   }
 }
 
@@ -975,6 +1076,101 @@ function setDirection(d){
   calc();
 }
 setDirection('long');
+setEntryMode('single', true);
+
+// ===== 분할매매 모드 =====
+let entryMode = 'single'; // 'single' | 'split'
+let splitRowCount = 0;
+
+function setEntryMode(mode, skipSave){
+  entryMode = mode;
+  document.getElementById('btnSingleEntry').className = mode==='single' ? 'active-long' : '';
+  document.getElementById('btnSplitEntry').className = mode==='split' ? 'active-long' : '';
+  document.getElementById('singleEntryRow').style.display = mode==='single' ? 'flex' : 'none';
+  document.getElementById('splitEntryCard').style.display = mode==='split' ? 'block' : 'none';
+  document.getElementById('marginAutoNote').style.display = mode==='split' ? 'inline' : 'none';
+  document.getElementById('entryPrice').readOnly = (mode==='split');
+  document.getElementById('margin').readOnly = (mode==='split');
+
+  if(mode==='split'){
+    if(document.querySelectorAll('#splitEntryRows .split-entry-row').length === 0){
+      // 처음 분할매매로 전환하면, 기존 단일 진입가/증거금 값을 1행으로 옮겨서 시작합니다.
+      const curEntry = document.getElementById('entryPrice').value;
+      const curMarginKRW = document.getElementById('margin').value;
+      addSplitRow(curEntry, curMarginKRW, true);
+    } else {
+      updateSplitEntries();
+    }
+  } else {
+    calc();
+  }
+  if(!skipSave) scheduleSaveSettings();
+}
+
+function addSplitRow(price, marginKRW, skipSave){
+  splitRowCount++;
+  const rowId = 'split-' + splitRowCount;
+  const container = document.getElementById('splitEntryRows');
+  const row = document.createElement('div');
+  row.className = 'split-entry-row';
+  row.id = rowId;
+  row.innerHTML = `
+    <span class="split-entry-label">진입가</span>
+    <input type="number" class="split-price" placeholder="진입가" value="${price!=null?price:''}" step="0.1" oninput="updateSplitEntries()">
+    <span class="split-entry-label">증거금</span>
+    <input type="number" class="split-margin" placeholder="증거금(원)" value="${marginKRW!=null?marginKRW:''}" step="1000" oninput="updateSplitEntries()">
+    <button type="button" class="split-row-del" onclick="removeSplitRow('${rowId}')">✕</button>
+  `;
+  container.appendChild(row);
+  if(!skipSave) updateSplitEntries();
+}
+
+function removeSplitRow(rowId){
+  const row = document.getElementById(rowId);
+  if(row) row.remove();
+  updateSplitEntries();
+}
+
+function getSplitRowsData(){
+  const rows = document.querySelectorAll('#splitEntryRows .split-entry-row');
+  const data = [];
+  rows.forEach(row => {
+    const price = parseFloat(row.querySelector('.split-price').value);
+    const marginKRW = parseFloat(row.querySelector('.split-margin').value);
+    data.push({ price: isNaN(price) ? null : price, marginKRW: isNaN(marginKRW) ? null : marginKRW });
+  });
+  return data;
+}
+
+// 회차별 (진입가, 증거금)을 증거금 비중으로 가중평균해서 진입가를 합치고,
+// 총 증거금을 기존 entryPrice/margin 필드에 채워 넣어 나머지 계산은 전부 기존 로직을 그대로 씁니다.
+function updateSplitEntries(){
+  const rows = getSplitRowsData();
+  const valid = rows.filter(r => r.price != null && r.marginKRW != null && r.marginKRW > 0);
+  const summaryEl = document.getElementById('splitEntrySummary');
+
+  if(valid.length === 0){
+    summaryEl.textContent = '진입가·증거금을 입력하면 평균 진입가가 자동 계산됩니다.';
+    scheduleSaveSettings();
+    return;
+  }
+
+  let totalMarginKRW = 0;
+  let weightedSum = 0;
+  valid.forEach(r => {
+    totalMarginKRW += r.marginKRW;
+    weightedSum += r.price * r.marginKRW;
+  });
+  const avgEntry = weightedSum / totalMarginKRW;
+
+  document.getElementById('entryPrice').value = avgEntry.toFixed(2);
+  document.getElementById('margin').value = Math.round(totalMarginKRW);
+
+  summaryEl.textContent = `${valid.length}회 진입 · 평균 진입가 ${fmtPrice(avgEntry)} USDT · 총 증거금 ${fmt(totalMarginKRW,0)}원`;
+
+  calc();
+  scheduleSaveSettings();
+}
 
 function fmt(n, digits=2){
   if(isNaN(n)) return '-';
