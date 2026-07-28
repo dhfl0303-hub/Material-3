@@ -324,6 +324,28 @@
     width:100%;
     margin-top:10px;
   }
+  /* ===== PC 가로폼 레이아웃 (1280px 이상에서만 적용, 모바일은 기존 1컬럼 그대로) =====
+     컬럼 최소폭 합(480+340+380+gap32=1232px)이 1000px보다 커서, 1000~1280px 구간에서
+     가로 스크롤이 생기는 것을 막기 위해 브레이크포인트를 1280px로 잡았습니다.
+     표시 순서: 1.차트분석(넓은 트랙) 2.포지션입력(좁은 트랙) 3.계산결과 등
+     → HTML 콘텐츠는 그대로 두고 order로만 순서를 바꿨습니다.
+     포지션입력(col-left) 카드는 내용이 적어 1·3번째 컬럼보다 짧아지므로,
+     stretch로 세로 길이를 나머지 컬럼 높이에 맞춥니다. */
+  @media (min-width:1280px){
+    .wrap{max-width:1360px;}
+    .desktop-grid{
+      display:grid;
+      grid-template-columns:minmax(480px,1fr) 340px 380px;
+      gap:16px;
+      align-items:stretch;
+    }
+    .col-left, .col-mid, .col-right{min-width:0;}
+    .col-mid{order:1;}
+    .col-left{order:2; display:flex; flex-direction:column;}
+    .col-right{order:3;}
+    .col-left > .card{flex:1;}
+  }
+
   .indicator-label{
     font-size:11px;
     color:var(--sub);
@@ -453,8 +475,11 @@
 <div class="wrap">
 
   <div class="header">
-    <div class="version-badge">v3.9 · 2026-07-27</div>
+    <div class="version-badge">v4.4 · 2026-07-28</div>
   </div>
+
+  <div class="desktop-grid">
+  <div class="col-left">
 
   <!-- 입력 -->
   <div class="card">
@@ -488,37 +513,6 @@
         <button type="button" class="btn-mini" onclick="fetchLivePrice(true)">새로고침</button>
         <button type="button" class="btn-mini" id="applyToEntryBtn" disabled onclick="applyLivePrice('entryPrice')">→ 진입가</button>
         <button type="button" class="btn-mini" id="applyToTargetBtn" disabled onclick="applyLivePrice('priceInput')">→ 예상가</button>
-      </div>
-    </div>
-
-    <div class="chart-card">
-      <div class="chart-header">
-        <span class="chart-title" id="chartTitle">BTCUSDT 캔들차트</span>
-        <div class="tf-buttons">
-          <button type="button" class="tf-btn" id="tfBtn-5" onclick="setTimeframe('5')">5분</button>
-          <button type="button" class="tf-btn" id="tfBtn-15" onclick="setTimeframe('15')">15분</button>
-          <button type="button" class="tf-btn" id="tfBtn-60" onclick="setTimeframe('60')">1시간</button>
-          <button type="button" class="tf-btn" id="tfBtn-240" onclick="setTimeframe('240')">4시간</button>
-          <button type="button" class="tf-btn" id="tfBtn-D" onclick="setTimeframe('D')">1일</button>
-          <button type="button" class="tf-btn" onclick="resetChartZoom()" title="확대/축소 원래대로">↺ 리셋</button>
-        </div>
-      </div>
-      <div class="chart-canvas-wrap">
-        <canvas id="candleChart"></canvas>
-      </div>
-      <div class="indicator-label">RSI (14)</div>
-      <div class="indicator-canvas-wrap">
-        <canvas id="rsiChart"></canvas>
-      </div>
-      <div class="indicator-label">MACD (12, 26, 9)</div>
-      <div class="indicator-canvas-wrap">
-        <canvas id="macdChart"></canvas>
-      </div>
-      <div class="chart-loading" id="chartLoading" style="display:none;">캔들 데이터 불러오는 중...</div>
-      <button type="button" class="analysis-btn" id="analysisBtn" onclick="generateAnalysisText()">📋 전체 타임프레임(5분·15분·1시간·4시간·1일) 분석 텍스트 생성</button>
-      <div class="analysis-box" id="analysisBox">
-        <textarea id="analysisOutput" readonly></textarea>
-        <button type="button" class="analysis-copy-btn" id="analysisCopyBtn" onclick="copyAnalysisText()">복사하기</button>
       </div>
     </div>
 
@@ -561,7 +555,10 @@
     <div class="row">
       <div class="field" style="flex:1">
         <label>예상가 (USDT)</label>
-        <input type="number" id="priceInput" value="" step="0.1" placeholder="예상 가격 입력" oninput="calc()">
+        <div style="display:flex; gap:6px;">
+          <input type="number" id="priceInput" value="" step="0.1" placeholder="예상 가격 입력" oninput="calc()" style="flex:1;">
+          <button type="button" class="btn-mini" onclick="clearTargetPrice()">지우기</button>
+        </div>
       </div>
     </div>
 
@@ -603,6 +600,51 @@
 
     <div class="hint">유지증거금율 기본값 0.5%는 바이빗 50배 구간 실측치(진입 65,780 / 청산 64,758.70) 기준 근사값입니다. 실제 청산가는 거래소 주문창의 예상 청산가를 반드시 다시 확인하세요.</div>
   </div>
+
+  </div>
+  <div class="col-mid">
+
+  <!-- 차트 분석 -->
+  <div class="card">
+    <div class="card-title">캔들차트 · 거래량 · RSI · MACD 분석</div>
+    <div class="chart-card" style="margin-top:0;">
+      <div class="chart-header">
+        <span class="chart-title" id="chartTitle">BTCUSDT 캔들차트</span>
+        <div class="tf-buttons">
+          <button type="button" class="tf-btn" id="tfBtn-5" onclick="setTimeframe('5')">5분</button>
+          <button type="button" class="tf-btn" id="tfBtn-15" onclick="setTimeframe('15')">15분</button>
+          <button type="button" class="tf-btn" id="tfBtn-60" onclick="setTimeframe('60')">1시간</button>
+          <button type="button" class="tf-btn" id="tfBtn-240" onclick="setTimeframe('240')">4시간</button>
+          <button type="button" class="tf-btn" id="tfBtn-D" onclick="setTimeframe('D')">1일</button>
+          <button type="button" class="tf-btn" onclick="resetChartZoom()" title="확대/축소 원래대로">↺ 리셋</button>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas id="candleChart"></canvas>
+      </div>
+      <div class="indicator-label">거래량</div>
+      <div class="indicator-canvas-wrap">
+        <canvas id="volumeChart"></canvas>
+      </div>
+      <div class="indicator-label">RSI (14)</div>
+      <div class="indicator-canvas-wrap">
+        <canvas id="rsiChart"></canvas>
+      </div>
+      <div class="indicator-label">MACD (12, 26, 9)</div>
+      <div class="indicator-canvas-wrap">
+        <canvas id="macdChart"></canvas>
+      </div>
+      <div class="chart-loading" id="chartLoading" style="display:none;">캔들 데이터 불러오는 중...</div>
+      <button type="button" class="analysis-btn" id="analysisBtn" onclick="generateAnalysisText()">📋 전체 타임프레임(5분·15분·1시간·4시간·1일) 분석 텍스트 생성</button>
+      <div class="analysis-box" id="analysisBox">
+        <textarea id="analysisOutput" readonly></textarea>
+        <button type="button" class="analysis-copy-btn" id="analysisCopyBtn" onclick="copyAnalysisText()">복사하기</button>
+      </div>
+    </div>
+  </div>
+
+  </div>
+  <div class="col-right">
 
   <!-- 결과 -->
   <div class="card">
@@ -678,6 +720,9 @@
     </div>
     <div id="historyList"><div class="empty">불러오는 중...</div></div>
     <button class="btn btn-clear" onclick="clearHistory()">전체 삭제</button>
+  </div>
+
+  </div>
   </div>
 
   <div class="note">
@@ -1055,6 +1100,12 @@ async function fetchBtcPrice(isFirstLoad){
 function applyLivePrice(targetInputId){
   if(lastLivePrice === null) return;
   document.getElementById(targetInputId).value = lastLivePrice.toFixed(priceDecimals(lastLivePrice));
+  calc();
+}
+
+// 예상가는 필요할 때만 채우는 값이라, 다시 빈 상태(-)로 되돌리는 원클릭 버튼입니다.
+function clearTargetPrice(){
+  document.getElementById('priceInput').value = '';
   calc();
 }
 
@@ -1529,6 +1580,7 @@ const TF_LABELS = { '5':'5분','15':'15분','60':'1시간','240':'4시간','D':'
 let candleChartInstance = null;
 let rsiChartInstance = null;
 let macdChartInstance = null;
+let volumeChartInstance = null;
 let chartFetchInFlight = false;
 let lastChartSnapshot = null;
 
@@ -1541,6 +1593,23 @@ function calcSMA(closes, period){
     if(i>=period-1) out[i] = sum/period;
   }
   return out;
+}
+
+// 볼린저 밴드: 중심선은 기존 MA20을 그대로 재사용하고, 같은 20구간 표준편차로 상/하단만 계산합니다.
+function calcBollinger(closes, ma, period=20, mult=2){
+  const upper = new Array(closes.length).fill(null);
+  const lower = new Array(closes.length).fill(null);
+  for(let i=0;i<closes.length;i++){
+    if(ma[i]==null) continue;
+    let sumSq = 0;
+    for(let j=i-period+1;j<=i;j++){
+      sumSq += Math.pow(closes[j]-ma[i], 2);
+    }
+    const stdDev = Math.sqrt(sumSq/period);
+    upper[i] = ma[i] + mult*stdDev;
+    lower[i] = ma[i] - mult*stdDev;
+  }
+  return { upper, lower };
 }
 
 function calcEMA(values, period){
@@ -1611,7 +1680,7 @@ function resetChartZoom(){
 // 캔들/RSI/MACD는 위에서 events:['click']로 설정해 탭(클릭)할 때만 툴팁이 뜨게 했습니다.
 // 대신 차트 바깥을 누르면 남아있는 툴팁을 꺼줘야 하므로 여기서 처리합니다.
 function dismissChartTooltips(e){
-  [candleChartInstance, rsiChartInstance, macdChartInstance].forEach(ch => {
+  [candleChartInstance, volumeChartInstance, rsiChartInstance, macdChartInstance].forEach(ch => {
     if(!ch) return;
     if(e.target === ch.canvas) return; // 그 차트 자신을 누른 경우는 차트가 알아서 처리
     if(ch.tooltip && ch.tooltip.opacity > 0){
@@ -1651,7 +1720,8 @@ async function loadChartData(){
       o: parseFloat(r[1]),
       h: parseFloat(r[2]),
       l: parseFloat(r[3]),
-      c: parseFloat(r[4])
+      c: parseFloat(r[4]),
+      v: parseFloat(r[5])
     }));
     renderAllCharts(candles);
   }catch(e){
@@ -1667,6 +1737,7 @@ function renderAllCharts(candles){
   const closes = candles.map(c => c.c);
   const ma20 = calcSMA(closes, 20);
   const ma60 = calcSMA(closes, 60);
+  const { upper: bbUpper, lower: bbLower } = calcBollinger(closes, ma20, 20, 2);
   const rsi = calcRSI(closes, 14);
   const { macdLine, signalLine, histogram } = calcMACD(closes, 12, 26, 9);
 
@@ -1697,13 +1768,26 @@ function renderAllCharts(candles){
         {
           type: 'line', label: 'MA60', data: candles.map((c,i) => ({x:c.x, y:ma60[i]})),
           borderColor: '#5b8def', borderWidth: 1, pointRadius: 0, spanGaps: true
+        },
+        {
+          type: 'line', label: 'BB Upper', data: candles.map((c,i) => ({x:c.x, y:bbUpper[i]})),
+          borderColor: 'rgba(139,148,158,0.6)', borderWidth: 1, borderDash: [4,3], pointRadius: 0, spanGaps: true, hidden: false
+        },
+        {
+          type: 'line', label: 'BB Lower', data: candles.map((c,i) => ({x:c.x, y:bbLower[i]})),
+          borderColor: 'rgba(139,148,158,0.6)', borderWidth: 1, borderDash: [4,3], pointRadius: 0, spanGaps: true, hidden: false
         }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false, animation: false, events: ['click'],
       plugins: {
-        legend: { labels: { color: tickColor, boxWidth: 10, font: { size: 10 } } },
+        legend: {
+          labels: {
+            color: tickColor, boxWidth: 10, font: { size: 10 },
+            filter: item => item.text !== 'BB Upper' && item.text !== 'BB Lower'
+          }
+        },
         zoom: {
           pan: { enabled: true, mode: 'x' },
           zoom: {
@@ -1714,6 +1798,28 @@ function renderAllCharts(candles){
           limits: { x: { minRange: 5 * 60 * 1000 } }
         }
       },
+      scales: {
+        x: { type: 'time', grid: { color: gridColor }, ticks: { color: tickColor, maxRotation: 0, font: { size: 9 } } },
+        y: { position: 'right', grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 9 } } }
+      }
+    }
+  });
+
+  // --- 거래량 ---
+  const volumeCtx = document.getElementById('volumeChart');
+  if(volumeChartInstance) volumeChartInstance.destroy();
+  volumeChartInstance = new Chart(volumeCtx, {
+    type: 'bar',
+    data: {
+      datasets: [{
+        label: '거래량',
+        data: candles.map(c => ({x:c.x, y:c.v})),
+        backgroundColor: candles.map(c => c.c >= c.o ? 'rgba(0,192,118,0.6)' : 'rgba(246,70,93,0.6)')
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false, events: ['click'],
+      plugins: { legend: { display: false } },
       scales: {
         x: { type: 'time', grid: { color: gridColor }, ticks: { color: tickColor, maxRotation: 0, font: { size: 9 } } },
         y: { position: 'right', grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 9 } } }
