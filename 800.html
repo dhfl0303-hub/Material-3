@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>레버리지 청산가 계산기</title>
+<title>Lev</title>
 <style>
   :root{
     --bg:#0a0a0a;
@@ -475,7 +475,7 @@
 <div class="wrap">
 
   <div class="header">
-    <div class="version-badge">v4.4 · 2026-07-28</div>
+    <div class="version-badge">v4.8 · 2026-07-28</div>
   </div>
 
   <div class="desktop-grid">
@@ -832,6 +832,11 @@ function updateLivePriceLabel(){
   document.getElementById('livePriceLabel').textContent = `${currentSymbol} 실시간가 (1초 자동 갱신)`;
 }
 
+// 브라우저 탭/작업표시줄 제목에 선택한 코인의 실시간가를 같이 표시합니다.
+function updatePageTitle(price){
+  document.title = `Lev ${coinLabelOf(currentSymbol)} ${fmtPrice(price)}`;
+}
+
 // 코인 전환 시 공통 초기화 (실시간가 리셋 + 라벨 갱신)
 function resetLiveDisplayForSymbolChange(){
   lastLivePrice = null;
@@ -1028,6 +1033,7 @@ async function fetchLivePrice(isFirstLoad){
     entryBtn.disabled = false;
     targetBtn.disabled = false;
     updateLivePnl();
+    updatePageTitle(price);
   }catch(e){
     console.error('시세 조회 실패', e);
     if(lastLivePrice === null){
@@ -1906,8 +1912,22 @@ async function fetchTimeframeCandles(symbol, interval, limit){
   const list = data?.result?.list || [];
   const rows = [...list].sort((a,b) => Number(a[0]) - Number(b[0]));
   return rows.map(r => ({
-    x: Number(r[0]), o: parseFloat(r[1]), h: parseFloat(r[2]), l: parseFloat(r[3]), c: parseFloat(r[4])
+    x: Number(r[0]), o: parseFloat(r[1]), h: parseFloat(r[2]), l: parseFloat(r[3]), c: parseFloat(r[4]), v: parseFloat(r[5])
   }));
+}
+
+// 펀딩비 · 미결제약정(OI): 타임프레임과 무관한 값이라 분석 텍스트 생성 시 한 번만 조회합니다.
+async function fetchFundingInfo(symbol){
+  const url = `https://api.bybit.com/v5/market/tickers?category=linear&symbol=${symbol}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  const t = data?.result?.list?.[0];
+  if(!t) return null;
+  return {
+    fundingRate: parseFloat(t.fundingRate),
+    openInterest: parseFloat(t.openInterest),
+    nextFundingTime: Number(t.nextFundingTime)
+  };
 }
 
 // Bybit 계정 롱/숏 비율(매수/매도 포지션 계정 비중). period는 캔들 간격과 별개의 값 체계입니다.
@@ -1928,9 +1948,11 @@ async function generateAnalysisText(){
   btn.textContent = '불러오는 중... (5개 타임프레임)';
 
   const timeframes = ['5','15','60','240','D'];
-  const [candleResults, ratioResults] = await Promise.all([
-    Promise.allSettled(timeframes.map(tf => fetchTimeframeCandles(currentSymbol, tf, 50))),
-    Promise.allSettled(timeframes.map(tf => fetchLongShortRatio(currentSymbol, TF_TO_RATIO_PERIOD[tf], 6)))
+  // 캔들 개수를 100개로 늘렸습니다 (기존 50개로는 MA60 계산이 아예 안 되던 문제 수정 + 지지/저항 계산용 여유분).
+  const [candleResults, ratioResults, fundingInfo] = await Promise.all([
+    Promise.allSettled(timeframes.map(tf => fetchTimeframeCandles(currentSymbol, tf, 100))),
+    Promise.allSettled(timeframes.map(tf => fetchLongShortRatio(currentSymbol, TF_TO_RATIO_PERIOD[tf], 6))),
+    fetchFundingInfo(currentSymbol).catch(() => null)
   ]);
 
   const sections = timeframes.map((tf, i) => {
@@ -1942,6 +1964,7 @@ async function generateAnalysisText(){
     const closes = candles.map(c => c.c);
     const ma20 = calcSMA(closes, 20);
     const ma60 = calcSMA(closes, 60);
+    const { upper: bbUpper, lower: bbLower } = calcBollinger(closes, ma20, 20, 2);
     const rsi = calcRSI(closes, 14);
     const { macdLine, signalLine, histogram } = calcMACD(closes, 12, 26, 9);
     const lastIdx = candles.length - 1;
@@ -1949,6 +1972,19 @@ async function generateAnalysisText(){
     const candleLines = recent.map(c =>
       `${formatCandleTime(c.x)} O${fmtPrice(c.o)} H${fmtPrice(c.h)} L${fmtPrice(c.l)} C${fmtPrice(c.c)}`
     ).join('\n');
+
+    // 거래량: 마지막 캔들이 조회 구간 평균 대비 얼마나 큰지(쏠림·신뢰도 판단용)
+    const volumes = candles.map(c => c.v).filter(v => !isNaN(v));
+    const avgVolume = volumes.length ? volumes.reduce((a,b)=>a+b,0)/volumes.length : null;
+    const lastVolume = candles[lastIdx].v;
+    const volumeLine = (avgVolume && !isNaN(lastVolume))
+      ? `거래량: 최근 캔들 ${fmt(lastVolume,0)} (조회 구간 평균 대비 ${(lastVolume/avgVolume*100).toFixed(0)}%)`
+      : '거래량: 데이터 없음';
+
+    // 구간 내 고점/저점: 조회한 캔들 전체 범위에서의 최고/최저가 (지지·저항 후보)
+    const swingHigh = Math.max(...candles.map(c => c.h));
+    const swingLow = Math.min(...candles.map(c => c.l));
+    const swingLine = `구간 내 고점/저점(최근 ${candles.length}개 캔들 기준): 고점 ${fmtPrice(swingHigh)} / 저점 ${fmtPrice(swingLow)}`;
 
     // 롱/숏 계정 비율: 최신값과 직전값을 비교해 쏠림이 심해지는지/완화되는지도 같이 넣습니다.
     let ratioLine = '계정 롱/숏 비율: 데이터 없음';
@@ -1973,7 +2009,9 @@ async function generateAnalysisText(){
     return `[${TF_LABELS[tf]}]
 최근 캔들(${recent.length}개, 오래된순):
 ${candleLines}
-MA20 ${ma20[lastIdx]!=null?fmtPrice(ma20[lastIdx]):'-'} / MA60 ${ma60[lastIdx]!=null?fmtPrice(ma60[lastIdx]):'-'} / RSI ${rsi[lastIdx]!=null?rsi[lastIdx].toFixed(1):'-'} / MACD ${macdLine[lastIdx]!=null?macdLine[lastIdx].toFixed(4):'-'} Signal ${signalLine[lastIdx]!=null?signalLine[lastIdx].toFixed(4):'-'} Hist ${histogram[lastIdx]!=null?histogram[lastIdx].toFixed(4):'-'}
+MA20 ${ma20[lastIdx]!=null?fmtPrice(ma20[lastIdx]):'-'} / MA60 ${ma60[lastIdx]!=null?fmtPrice(ma60[lastIdx]):'-'} / BB상단 ${bbUpper[lastIdx]!=null?fmtPrice(bbUpper[lastIdx]):'-'} / BB하단 ${bbLower[lastIdx]!=null?fmtPrice(bbLower[lastIdx]):'-'} / RSI ${rsi[lastIdx]!=null?rsi[lastIdx].toFixed(1):'-'} / MACD ${macdLine[lastIdx]!=null?macdLine[lastIdx].toFixed(4):'-'} Signal ${signalLine[lastIdx]!=null?signalLine[lastIdx].toFixed(4):'-'} Hist ${histogram[lastIdx]!=null?histogram[lastIdx].toFixed(4):'-'}
+${volumeLine}
+${swingLine}
 ${ratioLine}`;
   }).join('\n\n');
 
@@ -1990,7 +2028,16 @@ ${ratioLine}`;
   const liveCurrentPriceText = lastLivePrice !== null ? `${fmtPrice(lastLivePrice)} USDT` : '조회 안 됨';
   const livePnlText = document.getElementById('livePricePnl').textContent;
 
+  // 펀딩비/미결제약정은 타임프레임과 무관한 시장 전체 지표라 섹션 밖에 한 줄로 따로 둡니다.
+  let fundingLine = '펀딩비/미결제약정: 데이터 없음';
+  if(fundingInfo){
+    const frPct = (fundingInfo.fundingRate*100).toFixed(4);
+    const frBias = fundingInfo.fundingRate > 0 ? '롱 우세(롱이 숏에 비용 지불)' : (fundingInfo.fundingRate < 0 ? '숏 우세(숏이 롱에 비용 지불)' : '중립');
+    fundingLine = `펀딩비: ${frPct}% (${frBias}) / 미결제약정(OI): ${fmt(fundingInfo.openInterest,0)}`;
+  }
+
   const text = `[${currentSymbol}] 타임프레임별(5분/15분/1시간/4시간/1일) 캔들 데이터입니다.
+${fundingLine}
 
 ${sections}
 
