@@ -213,11 +213,12 @@ p{margin-bottom:6px;line-height:1.6}
 
   <div class="card">
     <div class="card-title">🎯 축소조합 (Wheeling System)</div>
-    <div class="text-dim mb8" style="font-size:11px">유망 번호 8~12개를 선택하면, 그중 3개가 당첨번호에 포함될 경우 최소 1장은 3개 일치(5등)가 보장되는 최소 조합 세트를 생성합니다. ※ 조합 계산량 때문에 최대 12개까지만 지원하며, 이 범위에서는 3개 이상 포함 확률이 위 계산기 기준 6~18% 수준입니다. 90%까지 올리려면 후보를 30개 안팎으로 넓혀야 하는데, 그러면 조합 수가 너무 많아져(수백~수천 장) 이 기능으로는 지원하지 않습니다.</div>
+    <div class="text-dim mb8" style="font-size:11px">유망 번호를 선택하면, 그중 3개가 당첨번호에 포함될 경우 최소 1장은 3개 일치(5등)가 보장되는 최소 조합 세트를 실제로 생성합니다. 최대 18개까지 지원합니다(그 이상은 조합 수가 폭증해 계산이 사실상 불가능합니다). 18개 기준으로도 3개 이상 포함 확률은 위 계산기 기준 약 46%이며, 90%를 달성하려면 후보 30개·조합 수백~수천 장이 필요해 이 기능 범위를 벗어납니다.</div>
     <div class="mb8">
-      <span style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">유망 번호 선택 (8~12개):</span>
+      <span style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">유망 번호 선택 (8~18개):</span>
       <div id="wheelNumSelector" style="display:flex;flex-wrap:wrap;gap:4px"></div>
       <div class="flex-between mt8"><span class="text-dim" style="font-size:11px">선택: <span id="wheelCount" class="text-gold fw700">0</span>개 (3개 이상 포함 확률: <span id="wheelProb" class="text-gold fw700">0%</span>)</span><button class="btn btn-primary btn-sm" onclick="generateWheel()" id="wheelBtn" disabled>🎯 축소조합 생성</button></div>
+      <div id="wheelLoading" class="hidden text-dim mt6" style="font-size:11px">⏳ 조합 계산 중입니다... (번호 수가 많으면 몇 초 걸릴 수 있어요)</div>
     </div>
     <div id="wheelResults" class="hidden"></div>
   </div>
@@ -730,7 +731,7 @@ function initWheelSelector(){
     btn.textContent = i;
     btn.onclick = () => {
       if(wheelSelected.has(i)){ wheelSelected.delete(i); btn.classList.remove('active'); }
-      else if(wheelSelected.size < 12){ wheelSelected.add(i); btn.classList.add('active'); }
+      else if(wheelSelected.size < 18){ wheelSelected.add(i); btn.classList.add('active'); }
       document.getElementById('wheelCount').textContent = wheelSelected.size;
       document.getElementById('wheelBtn').disabled = wheelSelected.size < 8;
       document.getElementById('wheelProb').textContent = wheelSelected.size>0 ? (probAtLeast3(wheelSelected.size)*100).toFixed(1)+'%' : '0%';
@@ -742,42 +743,48 @@ function generateWheel(){
   const nums = [...wheelSelected].sort((a,b)=>a-b);
   const K = nums.length;
   if(K < 8) return;
-  const allCombos = [];
-  const combo = (start, curr) => {
-    if(curr.length === 6){ allCombos.push([...curr]); return; }
-    for(let i=start; i<K; i++){ curr.push(nums[i]); combo(i+1, curr); curr.pop(); }
-  };
-  combo(0, []);
-  const needed = [];
-  const uncovered = new Set();
-  const triples = [];
-  const triCombo = (start, curr) => {
-    if(curr.length === 3){ triples.push([...curr]); return; }
-    for(let i=start; i<K; i++){ curr.push(nums[i]); triCombo(i+1, curr); curr.pop(); }
-  };
-  triCombo(0, []);
-  triples.forEach((_,i) => uncovered.add(i));
-
-  while(uncovered.size > 0){
-    let bestCombo = null, bestCover = 0;
-    for(const c of allCombos){
-      let cover = 0;
-      uncovered.forEach(ti => {
-        const t = triples[ti];
-        if(t.every(n => c.includes(n))) cover++;
-      });
-      if(cover > bestCover){ bestCover = cover; bestCombo = c; }
+  document.getElementById('wheelBtn').disabled = true;
+  document.getElementById('wheelLoading').classList.remove('hidden');
+  document.getElementById('wheelResults').classList.add('hidden');
+  setTimeout(()=>runWheelCalc(nums), 30);
+}
+function runWheelCalc(nums){
+  const K = nums.length;
+  const comboMasks = [];
+  (function combo(start,depth,mask){
+    if(depth===6){ comboMasks.push(mask); return; }
+    for(let i=start;i<K;i++){ combo(i+1,depth+1,mask|(1<<i)); }
+  })(0,0,0);
+  const tripleMasks = [];
+  (function tri(start,depth,mask){
+    if(depth===3){ tripleMasks.push(mask); return; }
+    for(let i=start;i<K;i++){ tri(i+1,depth+1,mask|(1<<i)); }
+  })(0,0,0);
+  let uncovered = tripleMasks.map((_,i)=>i);
+  const neededMasks = [];
+  while(uncovered.length > 0){
+    let bestIdx=-1, bestCover=0, bestCoveredList=null;
+    for(let ci=0; ci<comboMasks.length; ci++){
+      const cm = comboMasks[ci];
+      let cover=0; const coveredList=[];
+      for(const ti of uncovered){ const tm=tripleMasks[ti]; if((tm & cm)===tm){ cover++; coveredList.push(ti); } }
+      if(cover > bestCover){ bestCover=cover; bestIdx=ci; bestCoveredList=coveredList; }
     }
-    if(!bestCombo) break;
-    needed.push(bestCombo);
-    const toRemove = new Set();
-    uncovered.forEach(ti => {
-      const t = triples[ti];
-      if(t.every(n => bestCombo.includes(n))) toRemove.add(ti);
-    });
-    toRemove.forEach(ti => uncovered.delete(ti));
+    if(bestIdx===-1) break;
+    neededMasks.push(comboMasks[bestIdx]);
+    const coveredSet = new Set(bestCoveredList);
+    uncovered = uncovered.filter(ti=>!coveredSet.has(ti));
   }
-
+  const needed = neededMasks.map(mask=>{
+    const arr=[];
+    for(let i=0;i<K;i++){ if(mask & (1<<i)) arr.push(nums[i]); }
+    return arr;
+  });
+  renderWheelResult(needed, K);
+}
+function renderWheelResult(needed, K){
+  document.getElementById('wheelLoading').classList.add('hidden');
+  document.getElementById('wheelBtn').disabled = false;
   const cost = needed.length * 1000;
   let html = '<div class="card mt8"><div class="card-title">🎯 축소조합 결과</div>';
   html += '<div class="grid2 mb8"><div class="stat"><div class="stat-val text-gold">'+needed.length+'장</div><div class="stat-label">최소 조합 수</div></div><div class="stat"><div class="stat-val">'+cost.toLocaleString()+'원</div><div class="stat-label">총 비용</div></div></div>';
