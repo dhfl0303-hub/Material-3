@@ -199,19 +199,6 @@ p{margin-bottom:6px;line-height:1.6}
   <div id="genResults" class="hidden"><div class="card"><div class="card-title" id="genResultTitle"></div><div id="genResultBody"></div></div></div>
 
   <div class="card">
-    <div class="card-title">📈 적중 확률 계산기 (조합수학)</div>
-    <div class="text-dim mb8" style="font-size:11px">후보 번호를 N개 잡았을 때, 실제 당첨번호 6개 중 3개 이상이 그 안에 포함될 확률입니다. 초기하분포 기반 순수 계산값이며, 어떤 번호를 고르든 확률은 동일합니다(예측 아님, 다음 회차 결과를 바꾸지 않습니다).</div>
-    <div class="mb8">
-      <input type="range" min="6" max="45" value="20" id="covSlider" style="width:100%" oninput="renderCoverageCalc()">
-      <div class="flex-between mt6"><span class="text-dim" style="font-size:11px">후보 번호 수</span><span class="text-gold fw700" id="covN">20개</span></div>
-    </div>
-    <div class="grid2">
-      <div class="stat"><div class="stat-val text-gold" id="covProb">--%</div><div class="stat-label">6개 중 3개 이상 포함 확률</div></div>
-      <div class="stat"><div class="stat-val" id="covNeeded90">--개</div><div class="stat-label">90% 도달에 필요한 개수</div></div>
-    </div>
-  </div>
-
-  <div class="card">
     <div class="card-title">🎯 축소조합 (Wheeling System)</div>
     <div class="text-dim mb8" style="font-size:11px">유망 번호를 선택하면, 그중 3개가 당첨번호에 포함될 경우 최소 1장은 3개 일치(5등)가 보장되는 최소 조합 세트를 실제로 생성합니다. 최대 18개까지 지원합니다(그 이상은 조합 수가 폭증해 계산이 사실상 불가능합니다). 18개 기준으로도 3개 이상 포함 확률은 위 계산기 기준 약 46%이며, 90%를 달성하려면 후보 30개·조합 수백~수천 장이 필요해 이 기능 범위를 벗어납니다.</div>
     <div class="mb8">
@@ -221,6 +208,24 @@ p{margin-bottom:6px;line-height:1.6}
       <div id="wheelLoading" class="hidden text-dim mt6" style="font-size:11px">⏳ 조합 계산 중입니다... (번호 수가 많으면 몇 초 걸릴 수 있어요)</div>
     </div>
     <div id="wheelResults" class="hidden"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🎰 몬테카를로 시뮬레이터 (기대값 체험)</div>
+    <div class="text-dim mb8" style="font-size:11px">실제 등수별 당첨 확률로 가상 구매를 수백~수천 번 반복 시뮬레이션해서, 장기적으로 사면 손익이 어떻게 분포되는지 보여줍니다. 예측이 아니라 통계 시뮬레이션이며 다음 회차 결과와는 무관합니다.</div>
+    <div class="grid2 mb8">
+      <div><span class="text-dim" style="font-size:11px;display:block;margin-bottom:4px">주당 구매 장수</span><select id="mcTickets" style="width:100%"><option value="1">1장</option><option value="5" selected>5장</option><option value="10">10장</option><option value="20">20장</option></select></div>
+      <div><span class="text-dim" style="font-size:11px;display:block;margin-bottom:4px">시뮬레이션 기간</span><select id="mcYears" style="width:100%"><option value="1">1년</option><option value="5" selected>5년</option><option value="10">10년</option><option value="30">30년</option></select></div>
+    </div>
+    <div class="text-dim mb6" style="font-size:10px">등수별 평균 당첨금(원) · 1·2·3등은 회차마다 크게 변동하는 참고값이라 직접 수정 가능, 4·5등은 법정 고정금액</div>
+    <div class="grid3 mb8" style="gap:6px">
+      <div><span class="text-dim" style="font-size:10px">1등 평균</span><input type="number" id="mcPrize1" value="2400000000" style="width:100%;font-size:11px"></div>
+      <div><span class="text-dim" style="font-size:10px">2등 평균</span><input type="number" id="mcPrize2" value="60000000" style="width:100%;font-size:11px"></div>
+      <div><span class="text-dim" style="font-size:10px">3등 평균</span><input type="number" id="mcPrize3" value="1500000" style="width:100%;font-size:11px"></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="runMonteCarlo()">🎲 시뮬레이션 실행</button>
+    <div id="mcLoading" class="hidden text-dim mt6" style="font-size:11px">⏳ 계산 중...</div>
+    <div id="mcResults" class="hidden mt8"></div>
   </div>
 
   <div class="card"><div class="card-title">📘 전략별 수학 원리</div><div style="font-size:11px;color:var(--textDim);line-height:1.6"><p><strong class="text-gold">균형 분포</strong> — 5개 구간에서 골고루 추출. 5개 이상 일치 확률을 높이기 위한 분산 전략.</p><p><strong class="text-gold">인기번호 회피</strong> — 게임이론 기반. 당첨 시 분배 인원 최소화로 실질 수익 극대화.</p><p><strong class="text-gold">포아송 보정</strong> — 기대 출현 횟수(λ) 대비 실제 출현이 적은 번호에 가중치 부여.</p><p><strong class="text-gold">갭 분석</strong> — 최근 15회차 미출현 번호 우선 선택. 평균회귀 관점의 전략.</p></div></div>
@@ -415,7 +420,7 @@ async function initApp(){
   const forceTimeout=setTimeout(()=>{
     document.getElementById('loadingOverlay').classList.add('hidden');
     document.getElementById('mainApp').classList.remove('hidden');
-    if(DRAWS.length>0){updateStatusBar();renderStatsTab();renderStrategies();initIndicatorSelects();initWheelSelector();renderCoverageCalc()}
+    if(DRAWS.length>0){updateStatusBar();renderStatsTab();renderStrategies();initIndicatorSelects();initWheelSelector()}
   },10000);
   const FS_TIMEOUT=3000;
   const withTimeout=(p)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),FS_TIMEOUT))]);
@@ -470,7 +475,7 @@ async function initApp(){
   renderStatsTab();
   renderStrategies();
   initIndicatorSelects();
-  initWheelSelector();renderCoverageCalc();
+  initWheelSelector();
 }
 
 async function loadFromFirestore(){
@@ -711,14 +716,6 @@ function probAtLeast3(poolSize, pop=45, winners=6, kMin=3){
   }
   return p/total;
 }
-function renderCoverageCalc(){
-  const n = +document.getElementById('covSlider').value;
-  document.getElementById('covN').textContent = n+'개';
-  document.getElementById('covProb').textContent = (probAtLeast3(n)*100).toFixed(1)+'%';
-  let needed = 45;
-  for(let i=6;i<=45;i++){ if(probAtLeast3(i)>=0.9){ needed=i; break; } }
-  document.getElementById('covNeeded90').textContent = needed+'개';
-}
 
 /* ===== 축소조합 ===== */
 let wheelSelected = new Set();
@@ -739,6 +736,84 @@ function initWheelSelector(){
     c.appendChild(btn);
   }
 }
+/* ===== 몬테카를로 시뮬레이터 ===== */
+const LOTTO_TIER_P = { p1:1/8145060, p2:6/8145060, p3:228/8145060, p4:11115/8145060, p5:182780/8145060 };
+function sampleTier(){
+  const r = Math.random();
+  let c = LOTTO_TIER_P.p1; if(r<c) return 1;
+  c += LOTTO_TIER_P.p2; if(r<c) return 2;
+  c += LOTTO_TIER_P.p3; if(r<c) return 3;
+  c += LOTTO_TIER_P.p4; if(r<c) return 4;
+  c += LOTTO_TIER_P.p5; if(r<c) return 5;
+  return 0;
+}
+function runMonteCarlo(){
+  document.getElementById('mcLoading').classList.remove('hidden');
+  document.getElementById('mcResults').classList.add('hidden');
+  setTimeout(doMonteCarlo, 30);
+}
+function doMonteCarlo(){
+  const ticketsPerWeek = +document.getElementById('mcTickets').value;
+  const years = +document.getElementById('mcYears').value;
+  const prize1 = +document.getElementById('mcPrize1').value || 0;
+  const prize2 = +document.getElementById('mcPrize2').value || 0;
+  const prize3 = +document.getElementById('mcPrize3').value || 0;
+  const prize4 = 50000, prize5 = 5000;
+  const totalTickets = ticketsPerWeek * 52 * years;
+  const cost = totalTickets * 1000;
+  const numTrials = Math.max(200, Math.min(3000, Math.floor(4000000/Math.max(totalTickets,1))));
+  const netResults = [];
+  let winAny1 = 0;
+  for(let t=0; t<numTrials; t++){
+    let winnings = 0, got1 = false;
+    for(let i=0; i<totalTickets; i++){
+      const tier = sampleTier();
+      if(tier===1){ winnings+=prize1; got1=true; }
+      else if(tier===2) winnings+=prize2;
+      else if(tier===3) winnings+=prize3;
+      else if(tier===4) winnings+=prize4;
+      else if(tier===5) winnings+=prize5;
+    }
+    if(got1) winAny1++;
+    netResults.push(winnings - cost);
+  }
+  netResults.sort((a,b)=>a-b);
+  const avgNet = netResults.reduce((a,b)=>a+b,0)/numTrials;
+  const profitRate = netResults.filter(n=>n>0).length/numTrials*100;
+  const theoreticalEV = LOTTO_TIER_P.p1*prize1+LOTTO_TIER_P.p2*prize2+LOTTO_TIER_P.p3*prize3+LOTTO_TIER_P.p4*prize4+LOTTO_TIER_P.p5*prize5;
+  const returnRate = (theoreticalEV/1000*100).toFixed(1);
+  renderMonteCarloResult({totalTickets,cost,numTrials,avgNet,profitRate,winAny1,returnRate,netResults});
+}
+function renderMonteCarloResult(r){
+  document.getElementById('mcLoading').classList.add('hidden');
+  let html = '<div class="grid2 mb8">'+
+    '<div class="stat"><div class="stat-val">'+r.cost.toLocaleString()+'원</div><div class="stat-label">총 지출 ('+r.totalTickets.toLocaleString()+'장)</div></div>'+
+    '<div class="stat"><div class="stat-val '+(r.avgNet>=0?'text-green':'text-red')+'">'+(r.avgNet>=0?'+':'')+Math.round(r.avgNet).toLocaleString()+'원</div><div class="stat-label">평균 손익 ('+r.numTrials.toLocaleString()+'회 시뮬레이션 평균)</div></div>'+
+    '</div>';
+  html += '<div class="grid3 mb8">'+
+    '<div class="stat"><div class="stat-val">'+r.profitRate.toFixed(1)+'%</div><div class="stat-label">흑자로 끝난 비율</div></div>'+
+    '<div class="stat"><div class="stat-val text-gold">'+(r.winAny1/r.numTrials*100).toFixed(2)+'%</div><div class="stat-label">기간 중 1등 1회+ 확률</div></div>'+
+    '<div class="stat"><div class="stat-val">'+r.returnRate+'%</div><div class="stat-label">이론적 기대 회수율</div></div>'+
+    '</div>';
+  html += '<div class="chart-wrapper" style="height:200px"><canvas id="mcChart"></canvas></div>';
+  html += '<div class="info-neutral mt8" style="font-size:10px">시뮬레이션 '+r.numTrials.toLocaleString()+'회 중 최저 '+Math.round(r.netResults[0]).toLocaleString()+'원 ~ 최고 '+Math.round(r.netResults[r.netResults.length-1]).toLocaleString()+'원까지 갈렸습니다. 판매액의 일부만 당첨금으로 환원되는 구조라 장기적으로는 지출보다 덜 돌아오는 쪽이 우세합니다.</div>';
+  html += '<div class="info-neutral mt6" style="font-size:10px">💡 "평균 손익"이 "이론적 기대 회수율"보다 훨씬 나쁘게 나오는 게 정상입니다. 이론값에는 1등(약 815만분의1) 몫이 포함돼 있는데, 실제로는 그 정도 확률의 사건이 거의 안 터지기 때문에 대부분의 시뮬레이션은 이론 평균보다 낮은 결과로 수렴합니다.</div>';
+  document.getElementById('mcResults').innerHTML = html;
+  document.getElementById('mcResults').classList.remove('hidden');
+  renderMcChart(r.netResults);
+}
+function renderMcChart(netResults){
+  destroyChart('mcChart');
+  if(typeof Chart==='undefined') return;
+  const bins = 20;
+  const min = netResults[0], max = netResults[netResults.length-1];
+  const range = (max-min)||1;
+  const counts = new Array(bins).fill(0);
+  netResults.forEach(v=>{ let idx=Math.floor((v-min)/range*bins); if(idx>=bins)idx=bins-1; if(idx<0)idx=0; counts[idx]++; });
+  const labels = counts.map((_,i)=>{ const lo=min+range*i/bins; return (lo/10000>=1||lo/10000<=-1)?Math.round(lo/10000)+'만':Math.round(lo); });
+  CI.mcChart = new Chart(document.getElementById('mcChart'), {type:'bar', data:{labels, datasets:[{label:'시뮬레이션 분포', data:counts, backgroundColor:'#FECA57'}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:chartTooltip},scales:{x:{ticks:{color:'#556677',font:{size:8},maxRotation:60,minRotation:60},grid:{display:false}},y:{ticks:{color:'#556677',font:{size:9}},grid:{color:chartGridColor}}}}});
+}
+
 function generateWheel(){
   const nums = [...wheelSelected].sort((a,b)=>a-b);
   const K = nums.length;
@@ -1159,9 +1234,24 @@ function analyzeMyNumbers(){
   });
   const avgScore=(totalScore/6).toFixed(1);
 
-  // 백테스트 요약
+  // 백테스트 요약 (상세 회차 포함)
   let bt3plus=0,bt4plus=0,bt5plus=0;
-  DRAWS.forEach(d=>{const mc=myNums.filter(n=>d.nums.includes(n)).length;if(mc>=3)bt3plus++;if(mc>=4)bt4plus++;if(mc>=5)bt5plus++});
+  const btHits=[];
+  DRAWS.forEach(d=>{
+    const matched=myNums.filter(n=>d.nums.includes(n));const mc=matched.length;
+    if(mc>=3){bt3plus++;btHits.push({round:d.round,date:d.date,nums:d.nums,matched,mc});}
+    if(mc>=4)bt4plus++;if(mc>=5)bt5plus++;
+  });
+  btHits.sort((a,b)=>b.mc-a.mc||b.round-a.round);
+
+  // 인기번호 회피 스코어 (1~31 생일번호대 비율 기반 — 단일 지표 참고용)
+  const over31=myNums.filter(n=>n>31).length;
+  const avoidScore=Math.round(over31/6*100);
+  const hasConsecutive=myNums.some((n,i)=>i>0&&n===myNums[i-1]+1);
+  const allOdd=odd===6, allEven=even===6;
+  let avoidLabel='보통',avoidColor='';
+  if(avoidScore>=67){avoidLabel='회피형 (분산 우수)';avoidColor='text-green';}
+  else if(avoidScore<34){avoidLabel='인기형 (편중 조합)';avoidColor='text-red';}
 
   let rowsHtml=myIndData.map(item=>{
     let rsiText='<span class="text-dim">보통 ('+item.rsi+')</span>';
@@ -1187,7 +1277,19 @@ function analyzeMyNumbers(){
     '<div class="grid3"><div class="stat"><div class="stat-val text-cyan">'+bt3plus+'회</div><div class="stat-label">3개+ 일치</div></div>'+
     '<div class="stat"><div class="stat-val text-green">'+bt4plus+'회</div><div class="stat-label">4개+ 일치</div></div>'+
     '<div class="stat"><div class="stat-val text-gold">'+bt5plus+'회</div><div class="stat-label">5개+ 일치 (3등↑)</div></div></div>'+
-    '<div class="info-neutral">총 '+DRAWS.length+'회차 대상 백테스트 결과</div></div>';
+    '<div class="info-neutral">총 '+DRAWS.length+'회차 대상 백테스트 결과</div>'+
+    (btHits.length>0 ? '<div class="mt8" style="max-height:260px;overflow-y:auto">'+btHits.slice(0,30).map(h=>
+      '<div style="padding:6px 0;border-bottom:1px solid rgba(30,45,69,.12)">'+
+      '<div class="flex-between mb4"><span class="fw700" style="font-size:11px">'+h.round+'회</span><span class="text-dim" style="font-size:10px">'+(h.date||'')+'</span><span class="fw700 '+(h.mc>=5?'text-gold':h.mc>=4?'text-green':'text-cyan')+'" style="font-size:11px">'+h.mc+'개 일치</span></div>'+
+      '<div class="flex-center gap4" style="flex-wrap:wrap">'+h.nums.map(n=>{const isMatch=h.matched.includes(n);return '<span class="'+ballClass(n)+' ball-sm" style="'+(isMatch?'':'opacity:0.3')+'">'+n+'</span>';}).join('')+'</div></div>'
+    ).join('')+(btHits.length>30?'<div class="text-dim text-center mt6" style="font-size:10px">...외 '+(btHits.length-30)+'건</div>':'')+'</div>' : '') +
+    '</div>'+
+    '<div class="card mt8"><div class="card-title">🙈 인기번호 회피 스코어</div>'+
+    '<div class="text-dim mb8" style="font-size:11px">사람들이 생일·기념일 숫자 습관으로 1~31에 선택이 몰리는 경향은 잘 알려진 사실입니다. 32~45 번호가 많을수록 다른 사람과 조합이 덜 겹칠 가능성이 있다는 단일 지표 기반 참고값이며, 당첨 확률 자체와는 무관합니다.</div>'+
+    '<div class="stat mb8" style="background:rgba(240,192,64,.08);border:1px solid rgba(240,192,64,.2)"><div class="stat-val '+avoidColor+'">'+avoidScore+'점</div><div class="stat-label">회피 스코어 (0~100, 높을수록 분산) — '+avoidLabel+'</div></div>'+
+    '<div class="grid2 mb8"><div class="stat"><div class="stat-val">'+over31+'/6개</div><div class="stat-label">32~45 번호 개수</div></div><div class="stat"><div class="stat-val">'+(6-over31)+'/6개</div><div class="stat-label">1~31 번호 개수</div></div></div>'+
+    (hasConsecutive||allOdd||allEven ? '<div class="info-neutral" style="font-size:10px">참고: '+[hasConsecutive?'연속번호 포함':'',allOdd?'전부 홀수':'',allEven?'전부 짝수':''].filter(Boolean).join(' · ')+' — 이런 패턴이 실제로 더 몰리는지는 정확한 공개 데이터가 없어 단정하지 않습니다.</div>' : '') +
+    '</div>';
 
   document.getElementById('analyzeResult').innerHTML=html;
   document.getElementById('analyzeResult').classList.remove('hidden');
