@@ -199,12 +199,25 @@ p{margin-bottom:6px;line-height:1.6}
   <div id="genResults" class="hidden"><div class="card"><div class="card-title" id="genResultTitle"></div><div id="genResultBody"></div></div></div>
 
   <div class="card">
+    <div class="card-title">📈 적중 확률 계산기 (조합수학)</div>
+    <div class="text-dim mb8" style="font-size:11px">후보 번호를 N개 잡았을 때, 실제 당첨번호 6개 중 3개 이상이 그 안에 포함될 확률입니다. 초기하분포 기반 순수 계산값이며, 어떤 번호를 고르든 확률은 동일합니다(예측 아님, 다음 회차 결과를 바꾸지 않습니다).</div>
+    <div class="mb8">
+      <input type="range" min="6" max="45" value="20" id="covSlider" style="width:100%" oninput="renderCoverageCalc()">
+      <div class="flex-between mt6"><span class="text-dim" style="font-size:11px">후보 번호 수</span><span class="text-gold fw700" id="covN">20개</span></div>
+    </div>
+    <div class="grid2">
+      <div class="stat"><div class="stat-val text-gold" id="covProb">--%</div><div class="stat-label">6개 중 3개 이상 포함 확률</div></div>
+      <div class="stat"><div class="stat-val" id="covNeeded90">--개</div><div class="stat-label">90% 도달에 필요한 개수</div></div>
+    </div>
+  </div>
+
+  <div class="card">
     <div class="card-title">🎯 축소조합 (Wheeling System)</div>
-    <div class="text-dim mb8" style="font-size:11px">유망 번호 8~12개를 선택하면, 그중 3개가 당첨번호에 포함될 경우 최소 1장은 3개 일치(5등)가 보장되는 최소 조합 세트를 생성합니다.</div>
+    <div class="text-dim mb8" style="font-size:11px">유망 번호 8~12개를 선택하면, 그중 3개가 당첨번호에 포함될 경우 최소 1장은 3개 일치(5등)가 보장되는 최소 조합 세트를 생성합니다. ※ 조합 계산량 때문에 최대 12개까지만 지원하며, 이 범위에서는 3개 이상 포함 확률이 위 계산기 기준 6~18% 수준입니다. 90%까지 올리려면 후보를 30개 안팎으로 넓혀야 하는데, 그러면 조합 수가 너무 많아져(수백~수천 장) 이 기능으로는 지원하지 않습니다.</div>
     <div class="mb8">
       <span style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">유망 번호 선택 (8~12개):</span>
       <div id="wheelNumSelector" style="display:flex;flex-wrap:wrap;gap:4px"></div>
-      <div class="flex-between mt8"><span class="text-dim" style="font-size:11px">선택: <span id="wheelCount" class="text-gold fw700">0</span>개</span><button class="btn btn-primary btn-sm" onclick="generateWheel()" id="wheelBtn" disabled>🎯 축소조합 생성</button></div>
+      <div class="flex-between mt8"><span class="text-dim" style="font-size:11px">선택: <span id="wheelCount" class="text-gold fw700">0</span>개 (3개 이상 포함 확률: <span id="wheelProb" class="text-gold fw700">0%</span>)</span><button class="btn btn-primary btn-sm" onclick="generateWheel()" id="wheelBtn" disabled>🎯 축소조합 생성</button></div>
     </div>
     <div id="wheelResults" class="hidden"></div>
   </div>
@@ -401,7 +414,7 @@ async function initApp(){
   const forceTimeout=setTimeout(()=>{
     document.getElementById('loadingOverlay').classList.add('hidden');
     document.getElementById('mainApp').classList.remove('hidden');
-    if(DRAWS.length>0){updateStatusBar();renderStatsTab();renderStrategies();initIndicatorSelects();initWheelSelector()}
+    if(DRAWS.length>0){updateStatusBar();renderStatsTab();renderStrategies();initIndicatorSelects();initWheelSelector();renderCoverageCalc()}
   },10000);
   const FS_TIMEOUT=3000;
   const withTimeout=(p)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),FS_TIMEOUT))]);
@@ -456,7 +469,7 @@ async function initApp(){
   renderStatsTab();
   renderStrategies();
   initIndicatorSelects();
-  initWheelSelector();
+  initWheelSelector();renderCoverageCalc();
 }
 
 async function loadFromFirestore(){
@@ -679,6 +692,33 @@ function generateNumbers(){
   document.getElementById('genResultBody').innerHTML=results.map((r,i)=>'<div class="result-row"><div class="flex-center gap4"><span style="font-size:10px;color:var(--textDim);width:20px">#'+(i+1)+'</span>'+r.nums.map(n=>renderBall(n)).join('')+'</div><div class="result-meta"><span>합:'+r.sum+'</span><span>홀짝:'+r.oe+'</span><span>고저:'+r.lh+'</span></div></div>').join('');
 }
 
+/* ===== 적중 확률 계산기 (초기하분포) ===== */
+function comb(n,k){
+  if(k<0||k>n) return 0;
+  k=Math.min(k,n-k);
+  let res=1;
+  for(let i=0;i<k;i++){ res = res*(n-i)/(i+1); }
+  return res;
+}
+function probAtLeast3(poolSize, pop=45, winners=6, kMin=3){
+  const total = comb(pop, poolSize);
+  if(total<=0) return 0;
+  let p=0;
+  for(let k=kMin;k<=winners;k++){
+    if(poolSize-k<0) continue;
+    p += comb(winners,k)*comb(pop-winners, poolSize-k);
+  }
+  return p/total;
+}
+function renderCoverageCalc(){
+  const n = +document.getElementById('covSlider').value;
+  document.getElementById('covN').textContent = n+'개';
+  document.getElementById('covProb').textContent = (probAtLeast3(n)*100).toFixed(1)+'%';
+  let needed = 45;
+  for(let i=6;i<=45;i++){ if(probAtLeast3(i)>=0.9){ needed=i; break; } }
+  document.getElementById('covNeeded90').textContent = needed+'개';
+}
+
 /* ===== 축소조합 ===== */
 let wheelSelected = new Set();
 function initWheelSelector(){
@@ -693,6 +733,7 @@ function initWheelSelector(){
       else if(wheelSelected.size < 12){ wheelSelected.add(i); btn.classList.add('active'); }
       document.getElementById('wheelCount').textContent = wheelSelected.size;
       document.getElementById('wheelBtn').disabled = wheelSelected.size < 8;
+      document.getElementById('wheelProb').textContent = wheelSelected.size>0 ? (probAtLeast3(wheelSelected.size)*100).toFixed(1)+'%' : '0%';
     };
     c.appendChild(btn);
   }
