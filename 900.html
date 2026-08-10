@@ -734,6 +734,13 @@
       </div>
     </div>
 
+    <div class="row" style="align-items:center;">
+      <div class="field" style="display:flex; align-items:center; gap:8px;">
+        <input type="checkbox" id="botTestMode" style="width:16px;height:16px;">
+        <label for="botTestMode" style="margin-bottom:0; color:var(--sub); font-size:12px;">테스트 모드 (트리거 무시하고 강제 진입 — 진입/청산 동작 확인용)</label>
+      </div>
+    </div>
+
     <button type="button" class="btn btn-save" id="botToggleBtn" onclick="toggleBot()">봇 시작</button>
     <div class="hint" id="botStatusHint" style="margin-top:8px;">정지 상태 · 시작을 누르면 1분마다 확인합니다.</div>
 
@@ -1921,6 +1928,7 @@ function computeLevels(candles1h){
   const ma60 = calcSMA(closes, 60);
   const { upper, lower } = calcBollinger(closes, ma20, 20, 2);
   const rsiArr = calcRSI(closes, 14);
+  const { histogram } = calcMACD(closes, 12, 26, 9);
   const i = candles1h.length - 1;
   if(ma20[i] == null || ma60[i] == null) return { trend: 'flat' };
 
@@ -1941,7 +1949,7 @@ function computeLevels(candles1h){
     .sort((a, b) => b - a);
 
   return {
-    trend, rsi: rsiArr[i],
+    trend, rsi: rsiArr[i], ma20: ma20[i], ma60: ma60[i], macdHist: histogram[i],
     r1: resistCandidates[0] ?? null, r2: resistCandidates[1] ?? null,
     s1: supportCandidates[0] ?? null, s2: supportCandidates[1] ?? null
   };
@@ -1993,6 +2001,41 @@ function estimateBotPnlKRW(pos, price){
   return Math.round(moveFrac * pos.leverage * pos.marginKRW);
 }
 
+// 진입 근거를 사람이 읽을 수 있는 문장으로 생성
+function buildEntryRationale(symbol, levels, trig, price, leverage, target, stopDistPct, testMode){
+  if(testMode){
+    return `[테스트 모드] 트리거 조건을 무시하고 강제 진입했습니다. 1시간봉 추세는 ${levels.trend === 'up' ? '정배열' : (levels.trend === 'down' ? '역배열' : '횡보')} 상태였고, 실제 트리거 근거는 없습니다.`;
+  }
+  const trendLabel = levels.trend === 'up' ? '정배열' : '역배열';
+  const ma20Txt = fmtPrice(levels.ma20);
+  const ma60Txt = fmtPrice(levels.ma60);
+  const rsiTxt = levels.rsi != null ? levels.rsi.toFixed(1) : '-';
+  const macdTxt = levels.macdHist != null ? levels.macdHist.toFixed(4) : '-';
+
+  let triggerDesc;
+  if(trig.type === '저항돌파'){
+    triggerDesc = `5분봉 종가가 저항 ${fmtPrice(trig.trigger)}을 마감 기준으로 돌파해 롱 진입.`;
+  } else if(trig.type === '지지이탈'){
+    triggerDesc = `5분봉 종가가 지지 ${fmtPrice(trig.trigger)}를 마감 기준으로 이탈해 숏 진입.`;
+  } else if(trig.type === '눌림목반등'){
+    triggerDesc = `가격이 지지 ${fmtPrice(trig.trigger)} 부근까지 내려온 뒤 양봉으로 마감해 눌림목 반등 롱 진입.`;
+  } else if(trig.type === '눌림목반락'){
+    triggerDesc = `가격이 저항 ${fmtPrice(trig.trigger)} 부근까지 올라온 뒤 음봉으로 마감해 눌림목 반락 숏 진입.`;
+  } else {
+    triggerDesc = `${trig.type} 조건 충족으로 진입.`;
+  }
+
+  return `[${coinLabelOf(symbol)}] 1시간봉 ${trendLabel}(MA20 ${ma20Txt} / MA60 ${ma60Txt}), RSI ${rsiTxt}, MACD 히스토그램 ${macdTxt}로 ${levels.trend === 'up' ? '롱' : '숏'} 우세 판단. `
+    + `${triggerDesc} 손절은 트리거 구조상 ${fmtPrice(trig.stop)}(진입가 대비 ${stopDistPct.toFixed(2)}%), `
+    + `레버리지는 최대손실 허용%를 손절거리로 나눠 ${leverage}x로 산정, 목표가는 익절 목표액을 레버리지에 맞춰 환산한 ${fmtPrice(target)}로 고정했습니다.`;
+}
+
+function buildExitRationale(pos){
+  if(pos.closeReason === 'target') return `목표가 ${fmtPrice(pos.target)} 도달로 익절 종료.`;
+  if(pos.closeReason === 'stop') return `손절가 ${fmtPrice(pos.stop)} 도달로 손절 종료.`;
+  return `청산가 ${fmtPrice(pos.liq)} 도달로 강제 청산.`;
+}
+
 async function tryOpenBotPosition(symbol){
   const st = getBotState(symbol);
   if(st.position) return;
@@ -2009,22 +2052,36 @@ async function tryOpenBotPosition(symbol){
   ]);
   if(!c1h.length || !c5m.length) return;
 
+  const testMode = document.getElementById('botTestMode').checked;
   const levels = computeLevels(c1h);
-  if(levels.trend === 'flat') return;
-  const trig = detectTrigger(levels, c5m);
-  if(!trig) return;
+
+  let trig;
+  if(testMode){
+    // 테스트 모드: 트리거 조건 무시하고 즉시 진입(진입/청산 로직 동작 확인용).
+    // 방향은 추세가 있으면 그대로 따르고, 횡보면 롱으로 기본 지정. 손절/목표 구조는 실제와 동일한 계산 경로를 그대로 사용.
+    const dir = levels.trend === 'down' ? 'short' : 'long';
+    const lastClose = c5m[c5m.length - 1].c;
+    const fallbackStopPct = 1; // 구조적 트리거가 없으니 진입가 대비 1% 를 임시 손절 거리로 사용
+    const stop = dir === 'long' ? lastClose * (1 - fallbackStopPct / 100) : lastClose * (1 + fallbackStopPct / 100);
+    trig = { dir, type: '테스트강제진입', stop };
+  } else {
+    if(levels.trend === 'flat') return;
+    trig = detectTrigger(levels, c5m);
+    if(!trig) return;
+  }
 
   const price = await fetchLivePriceOnce(symbol);
   if(!price) return;
 
-  const { leverage, target } = computeSizingAndTarget(trig.dir, price, trig.stop, marginKRW, targetKRW, riskPct, levCap);
+  const { leverage, target, stopDistPct } = computeSizingAndTarget(trig.dir, price, trig.stop, marginKRW, targetKRW, riskPct, levCap);
   const mmRate = parseFloat(document.getElementById('mmRate').value) || 0.5;
   const liq = calcLiqPrice(price, leverage, mmRate, trig.dir);
+  const rationale = buildEntryRationale(symbol, levels, trig, price, leverage, target, stopDistPct, testMode);
 
   const pos = {
     symbol, dir: trig.dir, type: trig.type,
     entry: price, stop: trig.stop, target, liq, leverage, marginKRW,
-    openTime: Date.now(), lastPrice: price, pnlKRW: 0
+    openTime: Date.now(), lastPrice: price, pnlKRW: 0, rationale
   };
 
   try{
@@ -2032,7 +2089,7 @@ async function tryOpenBotPosition(symbol){
       pos.docId = await window.fbAddBotTrade({
         symbol: pos.symbol, dir: pos.dir, type: pos.type,
         entry: pos.entry, stop: pos.stop, target: pos.target, liq: pos.liq,
-        leverage: pos.leverage, marginKRW: pos.marginKRW,
+        leverage: pos.leverage, marginKRW: pos.marginKRW, rationale: pos.rationale,
         status: 'open', openTime: pos.openTime
       });
     }
@@ -2072,6 +2129,7 @@ async function checkBotPosition(symbol){
     pos.closePrice = closePrice;
     pos.closeTime = Date.now();
     pos.pnlKRW = estimateBotPnlKRW(pos, closePrice);
+    pos.exitRationale = buildExitRationale(pos);
 
     st.trades.unshift({ ...pos });
     st.position = null;
@@ -2079,7 +2137,8 @@ async function checkBotPosition(symbol){
     if(typeof window.fbUpdateBotTrade === 'function' && pos.docId){
       try{
         await window.fbUpdateBotTrade(pos.docId, {
-          status: 'closed', closeReason, closePrice, pnlKRW: pos.pnlKRW, closeTime: pos.closeTime
+          status: 'closed', closeReason, closePrice, pnlKRW: pos.pnlKRW, closeTime: pos.closeTime,
+          exitRationale: pos.exitRationale
         });
       }catch(e){
         console.error('봇 거래 종료 저장 실패', e);
@@ -2165,6 +2224,7 @@ function renderBotPanels(){
         진입 ${fmtPrice(p.entry)} · 손절 ${fmtPrice(p.stop)} · 목표 ${fmtPrice(p.target)} · 청산가 ${p.liq ? fmtPrice(p.liq) : '-'}<br>
         레버리지 ${p.leverage}x · 현재가 ${p.lastPrice ? fmtPrice(p.lastPrice) : '-'}
       </div>
+      ${p.rationale ? `<div class="history-detail" style="margin-top:6px; padding-top:6px; border-top:1px dashed var(--border); line-height:1.6;">${p.rationale}</div>` : ''}
     </div>`;
   }).join('');
 }
@@ -2184,6 +2244,13 @@ function renderBotTradeLog(){
           <span class="history-pnl ${pnlClass}">${fmt(t.pnlKRW, 0)}원</span>
         </div>
         <div class="history-detail">진입 ${fmtPrice(t.entry)} → 종료 ${fmtPrice(t.closePrice)} · ${new Date(t.openTime).toLocaleString('ko-KR')}</div>
+        ${(t.rationale || t.exitRationale) ? `<details style="margin-top:6px;">
+          <summary style="cursor:pointer; font-size:11px; color:var(--sub);">근거 보기</summary>
+          <div class="history-detail" style="margin-top:4px; line-height:1.6;">
+            ${t.rationale ? `<div>${t.rationale}</div>` : ''}
+            ${t.exitRationale ? `<div style="margin-top:4px;">${t.exitRationale}</div>` : ''}
+          </div>
+        </details>` : ''}
       </div>`;
     }).join('');
   }
