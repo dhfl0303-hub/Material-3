@@ -2074,7 +2074,7 @@ async function tryOpenBotPosition(symbol){
   if(!price) return;
 
   const { leverage, target, stopDistPct } = computeSizingAndTarget(trig.dir, price, trig.stop, marginKRW, targetKRW, riskPct, levCap);
-  const mmRate = parseFloat(document.getElementById('mmRate').value) || 0.5;
+  const mmRate = (parseFloat(document.getElementById('mmRate').value) || 0.5) / 100;
   const liq = calcLiqPrice(price, leverage, mmRate, trig.dir);
   const rationale = buildEntryRationale(symbol, levels, trig, price, leverage, target, stopDistPct, testMode);
 
