@@ -707,12 +707,8 @@
 
     <div class="row">
       <div class="field">
-        <label>감시 심볼 A</label>
-        <input type="text" id="botSymbolA" value="BTCUSDT" list="coinList" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>감시 심볼 B</label>
-        <input type="text" id="botSymbolB" value="UBUSDT" list="coinList" autocomplete="off">
+        <label>감시 심볼</label>
+        <input type="text" id="botSymbolA" value="UBUSDT" list="coinList" autocomplete="off">
       </div>
     </div>
 
@@ -2097,8 +2093,7 @@ async function checkBotPosition(symbol){
 
 function getBotSymbols(){
   const a = document.getElementById('botSymbolA').value.trim().toUpperCase();
-  const b = document.getElementById('botSymbolB').value.trim().toUpperCase();
-  return [...new Set([a, b].filter(Boolean))];
+  return a ? [a] : [];
 }
 
 async function botTick(){
