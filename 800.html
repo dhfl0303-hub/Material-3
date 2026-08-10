@@ -476,7 +476,7 @@
 <div class="wrap">
 
   <div class="header">
-    <div class="version-badge">v4.9 · 2026-08-10</div>
+    <div class="version-badge">v5.0 · 2026-08-10</div>
   </div>
 
   <div class="desktop-grid">
@@ -574,6 +574,14 @@
         <input type="number" id="margin" value="138000" step="1000" oninput="calc()">
       </div>
     </div>
+
+    <div class="row">
+      <div class="field">
+        <label>총 자금 — 교차 증거금 (원화)</label>
+        <input type="number" id="totalFunds" value="" step="1000" placeholder="계좌 전체 잔고 입력" oninput="calc()">
+      </div>
+    </div>
+    <div class="hint" style="margin-top:-4px; margin-bottom:10px;">교차마진: 청산가는 총 자금 기준으로 계산됩니다. 비워두면 증거금 = 총 자금 (격리마진처럼 동작).</div>
 
     <div class="row">
       <div class="field">
@@ -911,7 +919,7 @@ async function loadSymbolList(){
 loadSymbolList();
 
 // ===== 입력값(설정) 저장/불러오기 =====
-const SETTINGS_FIELDS = ['entryPrice','priceInput','leverage','margin','mmRate','fxRate','feeRate','coinInput'];
+const SETTINGS_FIELDS = ['entryPrice','priceInput','leverage','margin','totalFunds','mmRate','fxRate','feeRate','coinInput'];
 
 function collectSettings(){
   const obj = { direction, entryMode };
@@ -1255,11 +1263,19 @@ function getInputs(){
   const entry = parseFloat(document.getElementById('entryPrice').value);
   const lev = parseFloat(document.getElementById('leverage').value);
   const marginKRW = parseFloat(document.getElementById('margin').value);
+  const totalFundsKRWRaw = parseFloat(document.getElementById('totalFunds').value);
   const mm = parseFloat(document.getElementById('mmRate').value) / 100;
   const fx = parseFloat(document.getElementById('fxRate').value);
   const fee = parseFloat(document.getElementById('feeRate').value) / 100;
   const margin = marginKRW / fx;
-  return {entry, lev, margin, marginKRW, mm, fx, fee};
+  // 교차마진: 총 자금이 입력되면 청산가 계산에 사용, 비어있으면 증거금=총자금(격리처럼)
+  const hasTotalFunds = !isNaN(totalFundsKRWRaw) && totalFundsKRWRaw > 0;
+  const totalFunds = hasTotalFunds ? totalFundsKRWRaw / fx : margin;
+  const totalFundsKRW = hasTotalFunds ? totalFundsKRWRaw : marginKRW;
+  // 실효 레버리지 (청산가 계산용) = 포지션크기 / 총자금
+  const posValue = margin * lev;
+  const effectiveLev = totalFunds > 0 ? posValue / totalFunds : lev;
+  return {entry, lev, effectiveLev, margin, marginKRW, totalFunds, totalFundsKRW, mm, fx, fee};
 }
 
 function calcLiqPrice(entry, lev, mm, dir){
@@ -1271,10 +1287,9 @@ function calcLiqPrice(entry, lev, mm, dir){
 }
 
 function calc(){
-  const {entry, lev, margin, marginKRW, mm, fx, fee} = getInputs();
+  const {entry, lev, effectiveLev, margin, marginKRW, totalFunds, totalFundsKRW, mm, fx, fee} = getInputs();
   scheduleSaveSettings();
 
-  // 무포 모드에서도 계산은 가능하게 두되 (시뮬레이션 용도), 손익 표시만 비활성화
   if(!entry || !lev || !margin || isNaN(fx)){
     return;
   }
@@ -1283,7 +1298,6 @@ function calc(){
   document.getElementById('outMarginKRW').textContent = `${fmt(marginKRW,0)} 원 (${fmt(margin)} USDT)`;
   document.getElementById('outPosValue').textContent = `${fmt(posValue)} USDT ≈ ${fmt(posValue*fx,0)} 원`;
 
-  // 무포일 때는 방향이 없으므로 long 기준으로 계산 (시뮬레이션 참고용)
   const dirForCalc = direction === 'none' ? 'long' : direction;
 
   const breakeven = dirForCalc === 'long'
@@ -1291,7 +1305,8 @@ function calc(){
     : entry * (1 - 2*fee);
   document.getElementById('outBreakeven').textContent = `${fmtPrice(breakeven)} USDT`;
 
-  const liqPrice = calcLiqPrice(entry, lev, mm, dirForCalc);
+  // ★ 교차마진: 청산가는 실효 레버리지(=포지션크기/총자금) 기준
+  const liqPrice = calcLiqPrice(entry, effectiveLev, mm, dirForCalc);
   document.getElementById('outLiqPrice').textContent = `${fmtPrice(liqPrice)} USDT`;
   document.getElementById('outLiqPrice').className = 'result-value big val-accent';
 
@@ -1308,8 +1323,8 @@ function buildTable(entry, lev, margin, fx){
   const dir = direction === 'none' ? 'long' : direction;
   let rows = '';
 
-  const {mm} = getInputs();
-  const liqPrice = calcLiqPrice(entry, lev, mm, dir);
+  const {mm, effectiveLev} = getInputs();
+  const liqPrice = calcLiqPrice(entry, effectiveLev, mm, dir);
 
   rows += `<tr class="entry-row"><td>진입 (0%)</td><td>${fmtPrice(entry)}</td><td>0.00</td><td>0</td></tr>`;
 
@@ -2020,19 +2035,22 @@ ${ratioLine}`;
     const target = parseFloat(document.getElementById('priceInput').value);
     const lev = document.getElementById('leverage').value;
     const marginKRW = document.getElementById('margin').value;
+    const totalFundsKRWVal = document.getElementById('totalFunds').value;
     const breakevenText = document.getElementById('outBreakeven').textContent;
     const liqText = document.getElementById('outLiqPrice').textContent;
     const targetPnlPctText = document.getElementById('outPctPnlPct').textContent;
     const targetPnlAmtText = document.getElementById('outPctPnlAmt').textContent;
     const liveCurrentPriceText = lastLivePrice !== null ? `${fmtPrice(lastLivePrice)} USDT` : '조회 안 됨';
     const livePnlText = document.getElementById('livePricePnl').textContent;
+    const totalFundsLine = (totalFundsKRWVal && parseFloat(totalFundsKRWVal) > 0)
+      ? `- 총 자금 (교차 증거금): ${totalFundsKRWVal}원\n` : '';
 
     positionSection = `내 포지션:
 - 방향: ${direction === 'long' ? 'Long' : 'Short'}
 - 진입가: ${isNaN(entry) ? '-' : fmtPrice(entry)}
 - 레버리지: ${lev}배
 - 증거금: ${marginKRW}원
-- 평단가(손익분기점): ${breakevenText}
+${totalFundsLine}- 평단가(손익분기점): ${breakevenText}
 - 예상 청산가: ${liqText}
 - 현재 시세: ${liveCurrentPriceText}
 - 실시간 손익(현재 시세 기준): ${livePnlText}
