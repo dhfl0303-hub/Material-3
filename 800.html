@@ -571,14 +571,16 @@
       </div>
       <div class="field">
         <label>증거금 (원화)<span id="marginAutoNote" style="display:none; color:var(--sub); font-weight:normal;"> · 분할매매 자동계산</span></label>
-        <input type="number" id="margin" value="138000" step="1000" oninput="calc()">
+        <input type="number" id="margin" value="138000" step="1000" oninput="calc(); updateFundsUsdt();">
+        <div id="marginUsdt" style="font-size:11px;color:var(--sub);margin-top:4px;"></div>
       </div>
     </div>
 
     <div class="row">
       <div class="field">
         <label>총 자금 — 교차 증거금 (원화)</label>
-        <input type="number" id="totalFunds" value="" step="1000" placeholder="계좌 전체 잔고 입력" oninput="calc()">
+        <input type="number" id="totalFunds" value="" step="1000" placeholder="계좌 전체 잔고 입력" oninput="calc(); updateFundsUsdt();">
+        <div id="totalFundsUsdt" style="font-size:11px;color:var(--sub);margin-top:4px;"></div>
       </div>
     </div>
     <div class="hint" style="margin-top:-4px; margin-bottom:10px;">교차마진: 청산가는 총 자금 기준으로 계산됩니다. 비워두면 증거금 = 총 자금 (격리마진처럼 동작).</div>
@@ -593,7 +595,7 @@
     <div class="row">
       <div class="field">
         <label>원/달러 환율</label>
-        <input type="number" id="fxRate" value="1380" step="1" oninput="calc()">
+        <input type="number" id="fxRate" value="1380" step="1" oninput="calc(); updateFundsUsdt();">
       </div>
     </div>
     <div class="fx-status-row">
@@ -1065,10 +1067,10 @@ function updateLivePnl(){
     return;
   }
 
-  const {entry, lev, margin, fx} = getInputs();
+  const {entry, lev, margin, totalFunds, fx} = getInputs();
   if(!entry || !lev || !margin){
     pnlEl.textContent = '진입가 대비 -';
-    totalEl.textContent = '합계(증거금+손익) -';
+    totalEl.textContent = '합계(총자금+손익) -';
     return;
   }
 
@@ -1082,9 +1084,12 @@ function updateLivePnl(){
   pnlEl.textContent = `진입가 대비 ${fmtSigned(pct,2)}% · ${fmtSigned(pnlPct,1)}% · ${fmtSigned(pnlAmt)} USDT (${fmtSigned(pnlKRW,0)}원)`;
   pnlEl.className = 'live-price-pnl ' + (pnlAmt >= 0 ? 'val-long' : 'val-short');
 
-  const totalUSDT = margin + pnlAmt;
+  // 교차마진: 총 자금 기준 합계 / 격리: 증거금 기준 합계
+  const baseUSDT = totalFunds > margin ? totalFunds : margin;
+  const totalUSDT = baseUSDT + pnlAmt;
   const totalKRW = totalUSDT * fx;
-  totalEl.textContent = `합계(증거금+손익) ${fmt(totalUSDT)} USDT (${fmt(totalKRW,0)}원)`;
+  const label = totalFunds > margin ? '합계(총자금+손익)' : '합계(증거금+손익)';
+  totalEl.textContent = `${label} ${fmt(totalUSDT)} USDT (${fmt(totalKRW,0)}원)`;
   totalEl.className = 'live-price-total ' + (pnlAmt >= 0 ? 'val-long' : 'val-short');
 }
 
@@ -1286,6 +1291,28 @@ function calcLiqPrice(entry, lev, mm, dir){
   }
 }
 
+// 원화 → USDT 실시간 환산 표시
+function updateFundsUsdt(){
+  const fx = parseFloat(document.getElementById('fxRate').value);
+  if(!fx || isNaN(fx)) return;
+
+  const marginKRW = parseFloat(document.getElementById('margin').value);
+  const marginEl = document.getElementById('marginUsdt');
+  if(!isNaN(marginKRW) && marginKRW > 0){
+    marginEl.textContent = `≈ ${fmt(marginKRW / fx)} USDT`;
+  } else {
+    marginEl.textContent = '';
+  }
+
+  const totalKRW = parseFloat(document.getElementById('totalFunds').value);
+  const totalEl = document.getElementById('totalFundsUsdt');
+  if(!isNaN(totalKRW) && totalKRW > 0){
+    totalEl.textContent = `≈ ${fmt(totalKRW / fx)} USDT`;
+  } else {
+    totalEl.textContent = '';
+  }
+}
+
 function calc(){
   const {entry, lev, effectiveLev, margin, marginKRW, totalFunds, totalFundsKRW, mm, fx, fee} = getInputs();
   scheduleSaveSettings();
@@ -1316,6 +1343,7 @@ function calc(){
   buildTable(entry, lev, margin, fx);
   calcFromPrice();
   updateLivePnl();
+  updateFundsUsdt();
 }
 
 function buildTable(entry, lev, margin, fx){
