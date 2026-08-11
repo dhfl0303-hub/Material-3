@@ -708,44 +708,50 @@
     <div class="row">
       <div class="field">
         <label>감시 심볼</label>
-        <input type="text" id="botSymbolA" value="UBUSDT" list="coinList" autocomplete="off">
+        <input type="text" id="botSymbolA" value="UBUSDT" list="coinList" autocomplete="off" oninput="scheduleSaveBotSettings()">
       </div>
     </div>
 
     <div class="row">
       <div class="field">
         <label>거래당 증거금 (원)</label>
-        <input type="number" id="botMargin" value="250000" step="10000">
+        <input type="number" id="botMargin" value="250000" step="10000" oninput="scheduleSaveBotSettings()">
       </div>
       <div class="field">
         <label>거래당 익절 목표 (원)</label>
-        <input type="number" id="botTargetKRW" value="100000" step="10000">
+        <input type="number" id="botTargetKRW" value="100000" step="10000" oninput="scheduleSaveBotSettings()">
       </div>
     </div>
 
     <div class="row">
       <div class="field">
         <label>증거금 대비 최대손실 허용 (%)</label>
-        <input type="number" id="botRiskPct" value="20" step="1">
+        <input type="number" id="botRiskPct" value="20" step="1" oninput="scheduleSaveBotSettings()">
       </div>
       <div class="field">
         <label>레버리지 상한 (x)</label>
-        <input type="number" id="botLevCap" value="50" step="1">
+        <input type="number" id="botLevCap" value="50" step="1" oninput="scheduleSaveBotSettings()">
       </div>
     </div>
 
     <div class="row" style="align-items:center;">
       <div class="field" style="display:flex; align-items:center; gap:8px;">
-        <input type="checkbox" id="botTestMode" style="width:16px;height:16px;">
+        <input type="checkbox" id="botTestMode" style="width:16px;height:16px;" onchange="scheduleSaveBotSettings()">
         <label for="botTestMode" style="margin-bottom:0; color:var(--sub); font-size:12px;">테스트 모드 (트리거 무시하고 강제 진입 — 진입/청산 동작 확인용)</label>
       </div>
     </div>
 
     <button type="button" class="btn btn-save" id="botToggleBtn" onclick="toggleBot()">봇 시작</button>
-    <div class="hint" id="botStatusHint" style="margin-top:8px;">정지 상태 · 시작을 누르면 1분마다 확인합니다.</div>
+    <div class="hint" id="botStatusHint" style="margin-top:8px;">정지 상태 · 시작을 누르면 진입 탐색은 1분마다, 보유 포지션 감시는 1초마다 돕니다.</div>
+    <div class="hint" id="botSyncHint" style="margin-top:4px;"></div>
 
     <div id="botSymbolPanels" style="margin-top:14px;">
       <div class="empty">봇을 시작하면 여기에 심볼별 상태가 표시됩니다.</div>
+    </div>
+
+    <div class="card-title" style="margin-top:18px;">실시간 감시 로그 (진입탐색 1분·보유중 체결감시 1초)</div>
+    <div id="botWatchLog" style="max-height:280px; overflow-y:auto; background:var(--panel2); border:1px solid var(--border); border-radius:8px; padding:10px 12px;">
+      <div class="empty">봇을 시작하면 판단 내용이 여기 쌓입니다.</div>
     </div>
 
     <div class="card-title" style="margin-top:18px;">봇 거래 로그</div>
@@ -772,7 +778,7 @@
   import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import {
     getFirestore, collection, addDoc, getDocs, deleteDoc, doc,
-    query, orderBy, serverTimestamp, writeBatch, setDoc, getDoc
+    query, orderBy, serverTimestamp, writeBatch, setDoc, getDoc, onSnapshot
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -790,6 +796,7 @@
 
   const SETTINGS_DOC = doc(db, 'leverage_settings', 'current');
   const BOT_TRADES_COLLECTION = 'bot_trades';
+  const BOT_SETTINGS_DOC = doc(db, 'bot_settings', 'current');
 
   const authReady = signInAnonymously(auth).catch(e => {
     console.error('익명 로그인 실패', e);
@@ -805,6 +812,20 @@
     const snap = await getDoc(SETTINGS_DOC);
     return snap.exists() ? snap.data() : null;
   };
+
+  window.fbSaveBotSettings = async function(data){
+    await authReady;
+    await setDoc(BOT_SETTINGS_DOC, data, { merge: true });
+  };
+
+  authReady.then(() => {
+    // 봇 설정(심볼·증거금·목표액·ON/OFF 등) 실시간 구독: 다른 기기에서 바꾸면 이 기기 화면도 즉시 반영
+    onSnapshot(BOT_SETTINGS_DOC, (snap) => {
+      if(snap.exists() && typeof window.onBotSettingsSnapshot === 'function'){
+        window.onBotSettingsSnapshot(snap.data());
+      }
+    }, (e) => console.error('봇 설정 구독 실패', e));
+  });
 
   window.fbAddBotTrade = async function(item){
     await authReady;
@@ -1901,8 +1922,34 @@ async function copyAnalysisText(){
 // ================= 모의매매 봇 =================
 let botRunning = false;
 let botTimer = null;
+let botFastTimer = null;
 let botTickInFlight = false;
 const botState = {}; // { SYMBOL: { position: null|{...}, trades: [...] } }
+const botWatchLog = []; // 매 틱마다 판단 근거를 남기는 실시간 감시 로그 (최근 60개 유지)
+
+function addWatchLog(symbol, message, kind){
+  botWatchLog.unshift({ time: Date.now(), symbol, message, kind: kind || 'watch' });
+  if(botWatchLog.length > 60) botWatchLog.length = 60;
+  renderWatchLog();
+}
+
+function renderWatchLog(){
+  const wrap = document.getElementById('botWatchLog');
+  if(!wrap) return;
+  if(!botWatchLog.length){
+    wrap.innerHTML = '<div class="empty">봇을 시작하면 1분마다(보유 중엔 1초마다) 판단 내용이 여기 쌓입니다.</div>';
+    return;
+  }
+  const colorOf = (kind) => kind === 'enter' ? 'var(--long)' : (kind === 'exit' ? 'var(--short)' : 'var(--sub)');
+  wrap.innerHTML = botWatchLog.map(item => {
+    const timeTxt = new Date(item.time).toLocaleTimeString('ko-KR', { hour12:false });
+    return `<div style="padding:6px 0; border-bottom:1px solid #1f1f1f; font-size:12px; line-height:1.6;">
+      <span style="color:var(--sub);">${timeTxt}</span>
+      <span style="color:var(--accent); font-weight:600; margin:0 6px;">${coinLabelOf(item.symbol)}</span>
+      <span style="color:${colorOf(item.kind)};">${item.message}</span>
+    </div>`;
+  }).join('');
+}
 
 function getBotState(symbol){
   if(!botState[symbol]) botState[symbol] = { position: null, trades: [] };
@@ -2044,34 +2091,52 @@ async function tryOpenBotPosition(symbol){
   const targetKRW = parseFloat(document.getElementById('botTargetKRW').value) || 0;
   const riskPct = parseFloat(document.getElementById('botRiskPct').value) || 20;
   const levCap = parseFloat(document.getElementById('botLevCap').value) || 50;
-  if(marginKRW <= 0 || targetKRW <= 0) return;
+  if(marginKRW <= 0 || targetKRW <= 0){
+    addWatchLog(symbol, '증거금·익절목표가 입력되지 않아 스킵', 'skip');
+    return;
+  }
 
   const [c1h, c5m] = await Promise.all([
     fetchTimeframeCandles(symbol, '60', 100),
     fetchTimeframeCandles(symbol, '5', 50)
   ]);
-  if(!c1h.length || !c5m.length) return;
+  if(!c1h.length || !c5m.length){
+    addWatchLog(symbol, '캔들 데이터 조회 실패', 'skip');
+    return;
+  }
 
   const testMode = document.getElementById('botTestMode').checked;
   const levels = computeLevels(c1h);
+  const lastClose = c5m[c5m.length - 1].c;
 
   let trig;
   if(testMode){
     // 테스트 모드: 트리거 조건 무시하고 즉시 진입(진입/청산 로직 동작 확인용).
     // 방향은 추세가 있으면 그대로 따르고, 횡보면 롱으로 기본 지정. 손절/목표 구조는 실제와 동일한 계산 경로를 그대로 사용.
     const dir = levels.trend === 'down' ? 'short' : 'long';
-    const lastClose = c5m[c5m.length - 1].c;
     const fallbackStopPct = 1; // 구조적 트리거가 없으니 진입가 대비 1% 를 임시 손절 거리로 사용
     const stop = dir === 'long' ? lastClose * (1 - fallbackStopPct / 100) : lastClose * (1 + fallbackStopPct / 100);
     trig = { dir, type: '테스트강제진입', stop };
   } else {
-    if(levels.trend === 'flat') return;
+    if(levels.trend === 'flat'){
+      addWatchLog(symbol, `관망 · 1시간봉 MA20/MA60 횡보(방향 불분명), RSI ${levels.rsi != null ? levels.rsi.toFixed(1) : '-'}`, 'watch');
+      return;
+    }
     trig = detectTrigger(levels, c5m);
-    if(!trig) return;
+    if(!trig){
+      const trendTxt = levels.trend === 'up' ? '정배열(롱 탐색)' : '역배열(숏 탐색)';
+      const r1Txt = levels.r1 != null ? `저항1 ${fmtPrice(levels.r1)}(현재 대비 ${((levels.r1-lastClose)/lastClose*100).toFixed(2)}%)` : '저항1 없음';
+      const s1Txt = levels.s1 != null ? `지지1 ${fmtPrice(levels.s1)}(현재 대비 ${((levels.s1-lastClose)/lastClose*100).toFixed(2)}%)` : '지지1 없음';
+      addWatchLog(symbol, `관망 · 1시간봉 ${trendTxt}, RSI ${levels.rsi != null ? levels.rsi.toFixed(1) : '-'} · 현재가 ${fmtPrice(lastClose)} · ${r1Txt} · ${s1Txt} · 트리거 미충족`, 'watch');
+      return;
+    }
   }
 
   const price = await fetchLivePriceOnce(symbol);
-  if(!price) return;
+  if(!price){
+    addWatchLog(symbol, '실시간 시세 조회 실패로 진입 보류', 'skip');
+    return;
+  }
 
   const { leverage, target, stopDistPct } = computeSizingAndTarget(trig.dir, price, trig.stop, marginKRW, targetKRW, riskPct, levCap);
   const mmRate = (parseFloat(document.getElementById('mmRate').value) || 0.5) / 100;
@@ -2098,16 +2163,23 @@ async function tryOpenBotPosition(symbol){
   }
 
   st.position = pos;
+  addWatchLog(symbol, `🟢 진입 체결 · ${dirLabel(trig.dir)} ${fmtPrice(price)} · ${trig.type} · ${leverage}x`, 'enter');
   renderBotPanels();
 }
 
-async function checkBotPosition(symbol){
+// 보유 중인 포지션을 현재가와 비교해 종료 여부를 판단. logPeriodic=true일 때만
+// (1분 탐색 틱에서) 종료가 아니어도 상태 로그를 남기고, 1초 체결감시 틱에서는
+// 종료됐을 때만 로그를 남겨 로그가 도배되지 않게 한다.
+async function evaluateOpenPosition(symbol, logPeriodic){
   const st = getBotState(symbol);
   const pos = st.position;
   if(!pos) return;
 
   const price = await fetchLivePriceOnce(symbol);
-  if(!price) return;
+  if(!price){
+    if(logPeriodic) addWatchLog(symbol, '실시간 시세 조회 실패(보유 포지션 점검 스킵)', 'skip');
+    return;
+  }
 
   let closeReason = null;
   if(pos.dir === 'long'){
@@ -2144,10 +2216,16 @@ async function checkBotPosition(symbol){
         console.error('봇 거래 종료 저장 실패', e);
       }
     }
+
+    addWatchLog(symbol, `🔴 ${reasonLabel(closeReason)} 종료 · 종료가 ${fmtPrice(closePrice)} · 손익 ${fmt(pos.pnlKRW,0)}원`, 'exit');
+    renderBotTradeLog();
+  } else if(logPeriodic){
+    const distStopPct = Math.abs((price - pos.stop) / price * 100);
+    const distTargetPct = Math.abs((pos.target - price) / price * 100);
+    addWatchLog(symbol, `보유 중 · 현재가 ${fmtPrice(price)} · 손절까지 ${distStopPct.toFixed(2)}% · 목표까지 ${distTargetPct.toFixed(2)}% · 평가손익 ${fmt(pos.pnlKRW,0)}원`, 'watch');
   }
 
   renderBotPanels();
-  renderBotTradeLog();
 }
 
 function getBotSymbols(){
@@ -2164,7 +2242,7 @@ async function botTick(){
       const st = getBotState(sym);
       try{
         if(st.position){
-          await checkBotPosition(sym);
+          await evaluateOpenPosition(sym, true); // 1분 틱: 보유 중이어도 상태 로그 남김
         } else {
           await tryOpenBotPosition(sym);
         }
@@ -2177,20 +2255,104 @@ async function botTick(){
   }
 }
 
-function toggleBot(){
-  botRunning = !botRunning;
+let botFastTickInFlight = false;
+async function botFastTick(){
+  if(botFastTickInFlight) return;
+  botFastTickInFlight = true;
+  try{
+    const symbols = getBotSymbols();
+    for(const sym of symbols){
+      const st = getBotState(sym);
+      if(!st.position) continue; // 무포 상태 진입 탐색은 1분 틱(캔들 마감 기준)에서만 수행
+      try{
+        await evaluateOpenPosition(sym, false); // 1초 틱: 종료됐을 때만 로그, 화면 숫자는 매초 갱신
+      }catch(e){
+        console.error('봇 체결감시 오류', sym, e);
+      }
+    }
+  } finally {
+    botFastTickInFlight = false;
+  }
+}
+
+function setBotRunningLocal(running){
+  botRunning = running;
   const btn = document.getElementById('botToggleBtn');
   const hint = document.getElementById('botStatusHint');
   if(botRunning){
     btn.textContent = '봇 정지';
-    hint.textContent = '실행 중 · 1분마다 확인';
-    botTick();
-    botTimer = setInterval(botTick, 60000);
+    hint.textContent = '실행 중 · 진입 탐색 1분마다 · 보유 포지션 체결 감시 1초마다';
+    if(!botTimer){
+      botTick();
+      botTimer = setInterval(botTick, 60000);
+    }
+    if(!botFastTimer){
+      botFastTimer = setInterval(botFastTick, 1000);
+    }
   } else {
     btn.textContent = '봇 시작';
-    hint.textContent = '정지 상태 · 시작을 누르면 1분마다 확인합니다.';
+    hint.textContent = '정지 상태 · 시작을 누르면 진입 탐색은 1분마다, 보유 포지션 감시는 1초마다 돕니다.';
     clearInterval(botTimer);
+    botTimer = null;
+    clearInterval(botFastTimer);
+    botFastTimer = null;
   }
+}
+
+function collectBotSettings(){
+  return {
+    symbol: document.getElementById('botSymbolA').value.trim().toUpperCase(),
+    marginKRW: document.getElementById('botMargin').value,
+    targetKRW: document.getElementById('botTargetKRW').value,
+    riskPct: document.getElementById('botRiskPct').value,
+    levCap: document.getElementById('botLevCap').value,
+    testMode: document.getElementById('botTestMode').checked,
+    running: botRunning
+  };
+}
+
+async function saveBotSettingsNow(){
+  if(typeof window.fbSaveBotSettings !== 'function') return;
+  try{
+    await window.fbSaveBotSettings(collectBotSettings());
+  }catch(e){
+    console.error('봇 설정 저장 실패', e);
+  }
+}
+
+let botSettingsSaveTimer = null;
+function scheduleSaveBotSettings(){
+  clearTimeout(botSettingsSaveTimer);
+  botSettingsSaveTimer = setTimeout(saveBotSettingsNow, 600);
+}
+
+// 다른 기기에서 설정을 바꾸거나 봇을 켜고/껐을 때 이 기기 화면에도 즉시 반영
+window.onBotSettingsSnapshot = function(data){
+  if(!data) return;
+  if(data.symbol) document.getElementById('botSymbolA').value = data.symbol;
+  if(data.marginKRW !== undefined && data.marginKRW !== '') document.getElementById('botMargin').value = data.marginKRW;
+  if(data.targetKRW !== undefined && data.targetKRW !== '') document.getElementById('botTargetKRW').value = data.targetKRW;
+  if(data.riskPct !== undefined && data.riskPct !== '') document.getElementById('botRiskPct').value = data.riskPct;
+  if(data.levCap !== undefined && data.levCap !== '') document.getElementById('botLevCap').value = data.levCap;
+  if(typeof data.testMode === 'boolean') document.getElementById('botTestMode').checked = data.testMode;
+
+  const remoteRunning = !!data.running;
+  if(remoteRunning !== botRunning){
+    setBotRunningLocal(remoteRunning);
+  }
+  renderBotPanels();
+
+  const syncHint = document.getElementById('botSyncHint');
+  if(syncHint){
+    syncHint.textContent = remoteRunning
+      ? '설정 동기화됨 · 다른 기기에서도 켜짐으로 표시됩니다.'
+      : '설정 동기화됨';
+  }
+};
+
+function toggleBot(){
+  setBotRunningLocal(!botRunning);
+  saveBotSettingsNow();
 }
 
 function dirLabel(dir){ return dir === 'long' ? '롱' : '숏'; }
@@ -2282,6 +2444,21 @@ window.loadBotTrades = async function(){
       st.trades.push(r);
     });
     Object.values(botState).forEach(st => st.trades.sort((a, b) => (b.closeTime || 0) - (a.closeTime || 0)));
+
+    // 열려있던 포지션 복원(심볼당 가장 최근 open 1건). 새로고침으로 사라지지 않도록.
+    const openRows = rows.filter(r => r.status === 'open').sort((a, b) => (b.openTime || 0) - (a.openTime || 0));
+    const seenOpenSymbols = new Set();
+    openRows.forEach(r => {
+      if(seenOpenSymbols.has(r.symbol)) return;
+      seenOpenSymbols.add(r.symbol);
+      const st = getBotState(r.symbol);
+      st.position = {
+        docId: r.id, symbol: r.symbol, dir: r.dir, type: r.type,
+        entry: r.entry, stop: r.stop, target: r.target, liq: r.liq,
+        leverage: r.leverage, marginKRW: r.marginKRW, rationale: r.rationale,
+        openTime: r.openTime, lastPrice: r.entry, pnlKRW: 0
+      };
+    });
   }catch(e){
     console.error('봇 로그 불러오기 실패', e);
   }
