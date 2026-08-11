@@ -2194,6 +2194,7 @@ async function evaluateOpenPosition(symbol, logPeriodic){
 
   pos.lastPrice = price;
   pos.pnlKRW = estimateBotPnlKRW(pos, price);
+  pos.lastCheckedAt = Date.now();
 
   if(closeReason){
     const closePrice = closeReason === 'stop' ? pos.stop : (closeReason === 'target' ? pos.target : pos.liq);
@@ -2385,6 +2386,7 @@ function renderBotPanels(){
       <div class="history-detail">
         진입 ${fmtPrice(p.entry)} · 손절 ${fmtPrice(p.stop)} · 목표 ${fmtPrice(p.target)} · 청산가 ${p.liq ? fmtPrice(p.liq) : '-'}<br>
         레버리지 ${p.leverage}x · 현재가 ${p.lastPrice ? fmtPrice(p.lastPrice) : '-'}
+        <span style="color:var(--sub);"> · 마지막 확인 ${p.lastCheckedAt ? new Date(p.lastCheckedAt).toLocaleTimeString('ko-KR', { hour12:false }) : '-'}</span>
       </div>
       ${p.rationale ? `<div class="history-detail" style="margin-top:6px; padding-top:6px; border-top:1px dashed var(--border); line-height:1.6;">${p.rationale}</div>` : ''}
     </div>`;
