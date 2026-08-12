@@ -585,6 +585,10 @@
     </div>
     <div class="hint" style="margin-top:-4px; margin-bottom:10px;">교차마진: 청산가는 총 자금 기준으로 계산됩니다. 비워두면 증거금 = 총 자금 (격리마진처럼 동작).</div>
 
+    <details style="margin-top:4px;">
+      <summary class="accordion-summary" style="padding:10px 0; font-size:12px; color:var(--sub);">고급 설정 (유지증거금율 · 환율 · 수수료율)</summary>
+      <div class="accordion-body" style="padding:0;">
+
     <div class="row">
       <div class="field">
         <label>유지증거금율 (%)</label>
@@ -611,6 +615,9 @@
     </div>
 
     <div class="hint">유지증거금율 기본값 0.5%는 바이빗 50배 구간 실측치(진입 65,780 / 청산 64,758.70) 기준 근사값입니다. 실제 청산가는 거래소 주문창의 예상 청산가를 반드시 다시 확인하세요.</div>
+
+      </div>
+    </details>
   </div>
 
   </div>
@@ -702,7 +709,7 @@
   <div class="card" id="botCard">
     <div class="card-title">모의매매 봇 (지침서 자동화) · 베타</div>
     <div class="hint" style="margin-top:-4px; margin-bottom:12px;">
-      1시간봉 정배열/역배열로 방향을 정하고, 5분봉 마감 기준 저항 돌파·지지 이탈 또는 눌림목 반등이 확인되면 자동 진입합니다. 손절은 트리거 구조(돌파 캔들 저/고가, 지지·저항 이탈)로 정하고, 레버리지는 아래 "최대손실 허용%"와 손절 거리로 자동 계산합니다. 목표가는 입력하신 "거래당 익절 목표"를 레버리지에 맞춰 가격으로 환산해 미리 고정하고, 도달 전까지 끊지 않습니다. 실제 주문은 나가지 않는 시뮬레이션입니다.
+      4시간/1시간/15분봉을 종합 분석(가중 점수제)해 롱·숏 방향을 정하고, 5분봉 마감 기준 저항 돌파·지지 이탈 또는 눌림목 반등/반락이 확인되면 자동 진입합니다. 점수가 ±2 미만이면 방향 불분명으로 관망합니다. 손절은 트리거 구조(돌파 캔들 저/고가, 지지·저항 이탈)로 정하고, 레버리지는 아래 "최대손실 허용%"와 손절 거리로 자동 계산합니다. 목표가는 "거래당 익절 목표"를 레버리지에 맞춰 가격으로 환산해 고정합니다. 실제 주문은 나가지 않는 시뮬레이션입니다.
     </div>
 
     <div class="row">
@@ -1977,43 +1984,28 @@ async function fetchLivePriceOnce(symbol){
   }
 }
 
-function computeLevels(candles1h){
-  const closes = candles1h.map(c => c.c);
+// 범용 타임프레임 시그널 분석 (MA추세, RSI, MACD)
+function computeTFSignals(candles){
+  const closes = candles.map(c => c.c);
   const ma20 = calcSMA(closes, 20);
   const ma60 = calcSMA(closes, 60);
-  const { upper, lower } = calcBollinger(closes, ma20, 20, 2);
   const rsiArr = calcRSI(closes, 14);
   const { histogram } = calcMACD(closes, 12, 26, 9);
-  const i = candles1h.length - 1;
-  if(ma20[i] == null || ma60[i] == null) return { trend: 'flat' };
-
+  const i = candles.length - 1;
+  if(ma20[i] == null || ma60[i] == null) return { trend:'flat', rsi:null, ma20:null, ma60:null, macdHist:null, macdPrev:null };
   const trend = ma20[i] > ma60[i] ? 'up' : (ma20[i] < ma60[i] ? 'down' : 'flat');
-  const rsi = rsiArr[i];
-  const macdH = histogram[i];
-  // MACD 히스토그램 방향 전환 감지 (직전 대비)
-  const prevMacdH = i > 0 ? histogram[i - 1] : null;
-  const macdCrossDown = (prevMacdH != null && macdH != null && prevMacdH > 0 && macdH <= 0);
-  const macdCrossUp = (prevMacdH != null && macdH != null && prevMacdH < 0 && macdH >= 0);
+  return {
+    trend, rsi: rsiArr[i], ma20: ma20[i], ma60: ma60[i],
+    macdHist: histogram[i], macdPrev: i > 0 ? histogram[i-1] : null
+  };
+}
 
-  // 역추세 트리거 허용 조건:
-  // 정배열인데 RSI 과매수(>65) 또는 MACD 데드크로스 → 숏 트리거도 탐색
-  // 역배열인데 RSI 과매도(<35) 또는 MACD 골든크로스 → 롱 트리거도 탐색
-  let counterTrend = false;
-  let counterReason = '';
-  if(trend === 'up' && (rsi > 65 || macdCrossDown)){
-    counterTrend = true;
-    const reasons = [];
-    if(rsi > 65) reasons.push(`RSI ${rsi.toFixed(1)} 과매수`);
-    if(macdCrossDown) reasons.push('MACD 히스토그램 음전환');
-    counterReason = reasons.join(' + ');
-  } else if(trend === 'down' && (rsi < 35 || macdCrossUp)){
-    counterTrend = true;
-    const reasons = [];
-    if(rsi < 35) reasons.push(`RSI ${rsi.toFixed(1)} 과매도`);
-    if(macdCrossUp) reasons.push('MACD 히스토그램 양전환');
-    counterReason = reasons.join(' + ');
-  }
-
+// 1시간봉 기반 지지/저항 레벨 (S/R)
+function computeSRLevels(candles1h){
+  const closes = candles1h.map(c => c.c);
+  const ma20 = calcSMA(closes, 20);
+  const { upper, lower } = calcBollinger(closes, ma20, 20, 2);
+  const i = candles1h.length - 1;
   const last100 = candles1h.slice(-100);
   const last20 = candles1h.slice(-20);
   const swingHigh = Math.max(...last100.map(c => c.h));
@@ -2021,24 +2013,72 @@ function computeLevels(candles1h){
   const recentHigh20 = Math.max(...last20.map(c => c.h));
   const recentLow20 = Math.min(...last20.map(c => c.l));
   const cur = closes[i];
-
-  const resistCandidates = [recentHigh20, upper[i], swingHigh]
-    .filter(v => v != null && v > cur)
-    .sort((a, b) => a - b);
-  const supportCandidates = [recentLow20, lower[i], swingLow]
-    .filter(v => v != null && v < cur)
-    .sort((a, b) => b - a);
-
+  const resistCandidates = [recentHigh20, upper[i], swingHigh].filter(v => v != null && v > cur).sort((a,b) => a-b);
+  const supportCandidates = [recentLow20, lower[i], swingLow].filter(v => v != null && v < cur).sort((a,b) => b-a);
   return {
-    trend, rsi, ma20: ma20[i], ma60: ma60[i], macdHist: macdH,
-    counterTrend, counterReason,
     r1: resistCandidates[0] ?? null, r2: resistCandidates[1] ?? null,
     s1: supportCandidates[0] ?? null, s2: supportCandidates[1] ?? null
   };
 }
 
+// 멀티 타임프레임 가중 점수로 방향 결정
+function computeMultiTFDirection(tf4h, tf1h, tf15m){
+  let score = 0;
+  const details = [];
+
+  // 4시간봉 (가중치 ±3)
+  if(tf4h.trend === 'up'){ score += 3; details.push('4H 정배열(+3)'); }
+  else if(tf4h.trend === 'down'){ score -= 3; details.push('4H 역배열(-3)'); }
+  else details.push('4H 횡보(0)');
+  if(tf4h.rsi != null){
+    if(tf4h.rsi > 70){ score -= 1; details.push(`4H RSI ${tf4h.rsi.toFixed(0)} 과매수(-1)`); }
+    else if(tf4h.rsi < 30){ score += 1; details.push(`4H RSI ${tf4h.rsi.toFixed(0)} 과매도(+1)`); }
+  }
+
+  // 1시간봉 (가중치 ±2)
+  if(tf1h.trend === 'up'){ score += 2; details.push('1H 정배열(+2)'); }
+  else if(tf1h.trend === 'down'){ score -= 2; details.push('1H 역배열(-2)'); }
+  else details.push('1H 횡보(0)');
+  if(tf1h.rsi != null){
+    if(tf1h.rsi > 70){ score -= 0.5; details.push(`1H RSI ${tf1h.rsi.toFixed(0)} 과매수(-0.5)`); }
+    else if(tf1h.rsi < 30){ score += 0.5; details.push(`1H RSI ${tf1h.rsi.toFixed(0)} 과매도(+0.5)`); }
+  }
+  if(tf1h.macdHist != null && tf1h.macdPrev != null){
+    if(tf1h.macdPrev > 0 && tf1h.macdHist <= 0){ score -= 0.5; details.push('1H MACD 음전환(-0.5)'); }
+    else if(tf1h.macdPrev < 0 && tf1h.macdHist >= 0){ score += 0.5; details.push('1H MACD 양전환(+0.5)'); }
+  }
+
+  // 15분봉 (가중치 ±1)
+  if(tf15m.trend === 'up'){ score += 1; details.push('15M 정배열(+1)'); }
+  else if(tf15m.trend === 'down'){ score -= 1; details.push('15M 역배열(-1)'); }
+  else details.push('15M 횡보(0)');
+  if(tf15m.rsi != null){
+    if(tf15m.rsi > 70){ score -= 0.5; details.push(`15M RSI ${tf15m.rsi.toFixed(0)} 과매수(-0.5)`); }
+    else if(tf15m.rsi < 30){ score += 0.5; details.push(`15M RSI ${tf15m.rsi.toFixed(0)} 과매도(+0.5)`); }
+  }
+  if(tf15m.macdHist != null && tf15m.macdPrev != null){
+    if(tf15m.macdPrev > 0 && tf15m.macdHist <= 0){ score -= 0.5; details.push('15M MACD 음전환(-0.5)'); }
+    else if(tf15m.macdPrev < 0 && tf15m.macdHist >= 0){ score += 0.5; details.push('15M MACD 양전환(+0.5)'); }
+  }
+
+  // 임계값 ±2
+  let direction;
+  if(score >= 2) direction = 'long';
+  else if(score <= -2) direction = 'short';
+  else direction = 'flat';
+
+  return { direction, score: Math.round(score * 10) / 10, details };
+}
+
+// 하위 호환: 기존 computeLevels 호출부가 남아있을 경우 대비
+function computeLevels(candles1h){
+  const sig = computeTFSignals(candles1h);
+  const sr = computeSRLevels(candles1h);
+  return { ...sig, ...sr, counterTrend: false, counterReason: '' };
+}
+
 // 5분봉 마감 기준 트리거 탐지: 마지막 캔들은 진행 중일 수 있어 직전(마감) 캔들을 기준으로 판단
-function detectTrigger(levels, candles5m){
+function detectTrigger(mtfDir, sr, candles5m){
   if(candles5m.length < 3) return null;
   const closedIdx = candles5m.length - 2;
   const prevIdx = closedIdx - 1;
@@ -2046,31 +2086,28 @@ function detectTrigger(levels, candles5m){
   const prev = candles5m[prevIdx];
   if(!closed || !prev) return null;
 
-  const checkLong = (levels.trend === 'up' || levels.trend === 'flat' || levels.counterTrend);
-  const checkShort = (levels.trend === 'down' || levels.trend === 'flat' || levels.counterTrend);
+  const dir = mtfDir.direction; // 'long', 'short', or 'flat'
+  if(dir === 'flat') return null;
 
-  // 롱 트리거 탐색 (정배열 · 횡보 · 역배열+역추세허용)
+  const checkLong = (dir === 'long');
+  const checkShort = (dir === 'short');
+
   if(checkLong){
-    if(levels.r1 && prev.c <= levels.r1 && closed.c > levels.r1){
-      const target2 = levels.r2 ?? (levels.r1 + (levels.r1 - (levels.s1 ?? levels.r1 * 0.98)));
-      const isCounter = (levels.trend !== 'up');
-      return { dir:'long', type: isCounter ? '역추세·저항돌파' : '저항돌파', trigger: levels.r1, stop: closed.l, refTarget: target2, isCounter, counterReason: levels.counterReason };
+    if(sr.r1 && prev.c <= sr.r1 && closed.c > sr.r1){
+      const target2 = sr.r2 ?? (sr.r1 + (sr.r1 - (sr.s1 ?? sr.r1 * 0.98)));
+      return { dir:'long', type:'저항돌파', trigger: sr.r1, stop: closed.l, refTarget: target2 };
     }
-    if(levels.s1 && closed.l <= levels.s1 * 1.003 && closed.c > closed.o && closed.c > levels.s1){
-      const isCounter = (levels.trend !== 'up');
-      return { dir:'long', type: isCounter ? '역추세·눌림목반등' : '눌림목반등', trigger: levels.s1, stop: levels.s1 * 0.998, refTarget: levels.r1, isCounter, counterReason: levels.counterReason };
+    if(sr.s1 && closed.l <= sr.s1 * 1.003 && closed.c > closed.o && closed.c > sr.s1){
+      return { dir:'long', type:'눌림목반등', trigger: sr.s1, stop: sr.s1 * 0.998, refTarget: sr.r1 };
     }
   }
-  // 숏 트리거 탐색 (역배열 · 횡보 · 정배열+역추세허용)
   if(checkShort){
-    if(levels.s1 && prev.c >= levels.s1 && closed.c < levels.s1){
-      const target2 = levels.s2 ?? (levels.s1 - ((levels.r1 ?? levels.s1 * 1.02) - levels.s1));
-      const isCounter = (levels.trend !== 'down');
-      return { dir:'short', type: isCounter ? '역추세·지지이탈' : '지지이탈', trigger: levels.s1, stop: closed.h, refTarget: target2, isCounter, counterReason: levels.counterReason };
+    if(sr.s1 && prev.c >= sr.s1 && closed.c < sr.s1){
+      const target2 = sr.s2 ?? (sr.s1 - ((sr.r1 ?? sr.s1 * 1.02) - sr.s1));
+      return { dir:'short', type:'지지이탈', trigger: sr.s1, stop: closed.h, refTarget: target2 };
     }
-    if(levels.r1 && closed.h >= levels.r1 * 0.997 && closed.c < closed.o && closed.c < levels.r1){
-      const isCounter = (levels.trend !== 'down');
-      return { dir:'short', type: isCounter ? '역추세·눌림목반락' : '눌림목반락', trigger: levels.r1, stop: levels.r1 * 1.002, refTarget: levels.s1, isCounter, counterReason: levels.counterReason };
+    if(sr.r1 && closed.h >= sr.r1 * 0.997 && closed.c < closed.o && closed.c < sr.r1){
+      return { dir:'short', type:'눌림목반락', trigger: sr.r1, stop: sr.r1 * 1.002, refTarget: sr.s1 };
     }
   }
   return null;
@@ -2093,45 +2130,43 @@ function estimateBotPnlKRW(pos, price){
 }
 
 // 진입 근거를 사람이 읽을 수 있는 문장으로 생성
-function buildEntryRationale(symbol, levels, trig, price, leverage, target, stopDistPct, testMode){
-  const trendLabel = levels.trend === 'up' ? '정배열' : (levels.trend === 'down' ? '역배열' : '횡보');
-  const ma20Txt = levels.ma20 != null ? fmtPrice(levels.ma20) : '-';
-  const ma60Txt = levels.ma60 != null ? fmtPrice(levels.ma60) : '-';
-  const rsiTxt = levels.rsi != null ? levels.rsi.toFixed(1) : '-';
-  const macdTxt = levels.macdHist != null ? levels.macdHist.toFixed(4) : '-';
+function buildEntryRationale(symbol, mtfDir, tfSignals, sr, trig, price, leverage, target, stopDistPct, testMode){
   const dirTxt = trig.dir === 'long' ? '롱' : '숏';
+  const scoreTxt = `MTF 점수 ${mtfDir.score >= 0 ? '+' : ''}${mtfDir.score}`;
+  const detailTxt = mtfDir.details.join(', ');
 
-  const indicatorSummary = `1시간봉 ${trendLabel}(MA20 ${ma20Txt} / MA60 ${ma60Txt}), RSI ${rsiTxt}, MACD 히스토그램 ${macdTxt}`;
+  // 각 타임프레임 요약
+  const tfSummary = ['4H','1H','15M'].map((label, idx) => {
+    const tf = tfSignals[idx];
+    if(!tf) return `${label}: 데이터 없음`;
+    const trendTxt = tf.trend === 'up' ? '정배열' : (tf.trend === 'down' ? '역배열' : '횡보');
+    const rsiTxt = tf.rsi != null ? tf.rsi.toFixed(1) : '-';
+    const macdTxt = tf.macdHist != null ? tf.macdHist.toFixed(4) : '-';
+    return `${label} ${trendTxt}(MA20 ${tf.ma20 != null ? fmtPrice(tf.ma20) : '-'} / MA60 ${tf.ma60 != null ? fmtPrice(tf.ma60) : '-'}), RSI ${rsiTxt}, MACD ${macdTxt}`;
+  }).join(' | ');
 
   if(testMode){
-    const stopDesc = `손절은 트리거 구조 없이 진입가 대비 1% 임시 적용 → ${fmtPrice(trig.stop)}(진입가 대비 ${stopDistPct.toFixed(2)}%)`;
-    let dirReason;
-    if(levels.trend === 'up') dirReason = '1시간봉 정배열로 롱 선택';
-    else if(levels.trend === 'down') dirReason = '1시간봉 역배열로 숏 선택';
-    else dirReason = '1시간봉 횡보 → RSI/MACD 보조 판단으로 방향 결정';
-    if(levels.counterTrend) dirReason += ` (역추세 조건: ${levels.counterReason})`;
-    return `[테스트 모드] ${indicatorSummary}. ${dirReason}해 ${dirTxt} 강제 진입. `
+    const stopDesc = `손절은 진입가 대비 1% 임시 적용 → ${fmtPrice(trig.stop)}(${stopDistPct.toFixed(2)}%)`;
+    return `[테스트 모드] ${tfSummary}. ${scoreTxt}(${detailTxt})으로 ${dirTxt} 판단해 강제 진입. `
       + `${stopDesc}, 레버리지 ${leverage}x, 목표가 ${fmtPrice(target)}. 실제 5분봉 트리거 근거는 없습니다(동작 확인용).`;
   }
 
   let triggerDesc;
-  const typeBase = trig.type.replace('역추세·', '');
-  const counterPrefix = trig.isCounter ? `[역추세 진입: ${trig.counterReason}] ` : '';
-  if(typeBase === '저항돌파'){
-    triggerDesc = `${counterPrefix}5분봉 종가가 저항 ${fmtPrice(trig.trigger)}을 마감 기준으로 돌파해 ${dirTxt} 진입.`;
-  } else if(typeBase === '지지이탈'){
-    triggerDesc = `${counterPrefix}5분봉 종가가 지지 ${fmtPrice(trig.trigger)}를 마감 기준으로 이탈해 ${dirTxt} 진입.`;
-  } else if(typeBase === '눌림목반등'){
-    triggerDesc = `${counterPrefix}가격이 지지 ${fmtPrice(trig.trigger)} 부근까지 내려온 뒤 양봉으로 마감해 눌림목 반등 ${dirTxt} 진입.`;
-  } else if(typeBase === '눌림목반락'){
-    triggerDesc = `${counterPrefix}가격이 저항 ${fmtPrice(trig.trigger)} 부근까지 올라온 뒤 음봉으로 마감해 눌림목 반락 ${dirTxt} 진입.`;
+  if(trig.type === '저항돌파'){
+    triggerDesc = `5분봉 종가가 저항 ${fmtPrice(trig.trigger)}을 마감 기준으로 돌파해 ${dirTxt} 진입.`;
+  } else if(trig.type === '지지이탈'){
+    triggerDesc = `5분봉 종가가 지지 ${fmtPrice(trig.trigger)}를 마감 기준으로 이탈해 ${dirTxt} 진입.`;
+  } else if(trig.type === '눌림목반등'){
+    triggerDesc = `가격이 지지 ${fmtPrice(trig.trigger)} 부근까지 내려온 뒤 양봉으로 마감해 눌림목 반등 ${dirTxt} 진입.`;
+  } else if(trig.type === '눌림목반락'){
+    triggerDesc = `가격이 저항 ${fmtPrice(trig.trigger)} 부근까지 올라온 뒤 음봉으로 마감해 눌림목 반락 ${dirTxt} 진입.`;
   } else {
-    triggerDesc = `${counterPrefix}${trig.type} 조건 충족으로 진입.`;
+    triggerDesc = `${trig.type} 조건 충족으로 ${dirTxt} 진입.`;
   }
 
-  return `[${coinLabelOf(symbol)}] ${indicatorSummary}로 ${dirTxt} ${trig.isCounter ? '역추세' : '우세'} 판단. `
-    + `${triggerDesc} 손절은 트리거 구조상 ${fmtPrice(trig.stop)}(진입가 대비 ${stopDistPct.toFixed(2)}%), `
-    + `레버리지는 최대손실 허용%를 손절거리로 나눠 ${leverage}x로 산정, 목표가는 익절 목표액을 레버리지에 맞춰 환산한 ${fmtPrice(target)}로 고정했습니다.`;
+  return `[${coinLabelOf(symbol)}] ${tfSummary}. ${scoreTxt}(${detailTxt})으로 ${dirTxt} 우세 판단. `
+    + `${triggerDesc} 손절 ${fmtPrice(trig.stop)}(진입가 대비 ${stopDistPct.toFixed(2)}%), `
+    + `레버리지 ${leverage}x, 목표가 ${fmtPrice(target)}.`;
 }
 
 function buildExitRationale(pos){
@@ -2164,8 +2199,11 @@ async function tryOpenBotPosition(symbol){
     return;
   }
 
-  const [c1h, c5m] = await Promise.all([
+  // 4개 타임프레임 병렬 fetch
+  const [c4h, c1h, c15m, c5m] = await Promise.all([
+    fetchTimeframeCandles(symbol, '240', 100),
     fetchTimeframeCandles(symbol, '60', 100),
+    fetchTimeframeCandles(symbol, '15', 60),
     fetchTimeframeCandles(symbol, '5', 50)
   ]);
   if(!c1h.length || !c5m.length){
@@ -2174,48 +2212,45 @@ async function tryOpenBotPosition(symbol){
   }
 
   const testMode = document.getElementById('botTestMode').checked;
-  const levels = computeLevels(c1h);
+
+  // 각 타임프레임 시그널 분석
+  const tf4h = c4h.length >= 60 ? computeTFSignals(c4h) : { trend:'flat', rsi:null, ma20:null, ma60:null, macdHist:null, macdPrev:null };
+  const tf1h = computeTFSignals(c1h);
+  const tf15m = c15m.length >= 20 ? computeTFSignals(c15m) : { trend:'flat', rsi:null, ma20:null, ma60:null, macdHist:null, macdPrev:null };
+  const tfSignals = [tf4h, tf1h, tf15m];
+
+  // 멀티 타임프레임 방향 결정
+  const mtfDir = computeMultiTFDirection(tf4h, tf1h, tf15m);
+
+  // 1시간봉 기반 지지/저항
+  const sr = computeSRLevels(c1h);
   const lastClose = c5m[c5m.length - 1].c;
+
+  // 관망 로그용 요약 생성
+  const scoreTxt = `MTF ${mtfDir.score >= 0 ? '+' : ''}${mtfDir.score}`;
+  const tfBrief = `4H ${tf4h.trend === 'up' ? '▲' : (tf4h.trend === 'down' ? '▼' : '—')} · 1H ${tf1h.trend === 'up' ? '▲' : (tf1h.trend === 'down' ? '▼' : '—')} · 15M ${tf15m.trend === 'up' ? '▲' : (tf15m.trend === 'down' ? '▼' : '—')}`;
+  const r1Txt = sr.r1 != null ? `R1 ${fmtPrice(sr.r1)}(${((sr.r1-lastClose)/lastClose*100).toFixed(2)}%)` : 'R1 없음';
+  const s1Txt = sr.s1 != null ? `S1 ${fmtPrice(sr.s1)}(${((sr.s1-lastClose)/lastClose*100).toFixed(2)}%)` : 'S1 없음';
 
   let trig;
   if(testMode){
-    // 테스트 모드: 트리거 조건 무시하고 즉시 진입(진입/청산 로직 동작 확인용).
-    // 방향: 1시간봉 추세 + RSI/MACD 보조 판단. 횡보 시에도 보조 지표로 방향 결정.
-    let dir;
-    if(levels.trend === 'up'){
-      // 정배열이지만 역추세 조건이면 숏
-      dir = levels.counterTrend ? 'short' : 'long';
-    } else if(levels.trend === 'down'){
-      // 역배열이지만 역추세 조건이면 롱
-      dir = levels.counterTrend ? 'long' : 'short';
-    } else {
-      // 횡보: RSI/MACD로 판단, 어느 쪽도 뚜렷하지 않으면 진입 보류
-      const rsi = levels.rsi;
-      const macdH = levels.macdHist;
-      if(rsi != null && rsi > 55 && macdH != null && macdH > 0) dir = 'long';
-      else if(rsi != null && rsi < 45 && macdH != null && macdH < 0) dir = 'short';
-      else dir = null; // 보류
-    }
-    if(dir === null){
-      addWatchLog(symbol, `[테스트] 관망 · 1시간봉 횡보 + RSI/MACD 방향 불분명(RSI ${levels.rsi != null ? levels.rsi.toFixed(1) : '-'}, MACD ${levels.macdHist != null ? levels.macdHist.toFixed(4) : '-'})`, 'watch');
+    if(mtfDir.direction === 'flat'){
+      addWatchLog(symbol, `[테스트] 관망 · ${tfBrief} · ${scoreTxt} → 방향 불분명(임계값 ±2 미달)`, 'watch');
       return;
     }
+    const dir = mtfDir.direction;
     const fallbackStopPct = 1;
     const stop = dir === 'long' ? lastClose * (1 - fallbackStopPct / 100) : lastClose * (1 + fallbackStopPct / 100);
     trig = { dir, type: '테스트강제진입', stop };
   } else {
-    if(levels.trend === 'flat'){
-      addWatchLog(symbol, `관망 · 1시간봉 MA20/MA60 횡보(방향 불분명), RSI ${levels.rsi != null ? levels.rsi.toFixed(1) : '-'}`, 'watch');
+    if(mtfDir.direction === 'flat'){
+      addWatchLog(symbol, `관망 · ${tfBrief} · ${scoreTxt} → 방향 불분명 · 현재가 ${fmtPrice(lastClose)} · ${r1Txt} · ${s1Txt}`, 'watch');
       return;
     }
-    trig = detectTrigger(levels, c5m);
+    trig = detectTrigger(mtfDir, sr, c5m);
     if(!trig){
-      let trendTxt;
-      if(levels.trend === 'up') trendTxt = levels.counterTrend ? `정배열(롱+숏 탐색: ${levels.counterReason})` : '정배열(롱 탐색)';
-      else trendTxt = levels.counterTrend ? `역배열(숏+롱 탐색: ${levels.counterReason})` : '역배열(숏 탐색)';
-      const r1Txt = levels.r1 != null ? `저항1 ${fmtPrice(levels.r1)}(현재 대비 ${((levels.r1-lastClose)/lastClose*100).toFixed(2)}%)` : '저항1 없음';
-      const s1Txt = levels.s1 != null ? `지지1 ${fmtPrice(levels.s1)}(현재 대비 ${((levels.s1-lastClose)/lastClose*100).toFixed(2)}%)` : '지지1 없음';
-      addWatchLog(symbol, `관망 · 1시간봉 ${trendTxt}, RSI ${levels.rsi != null ? levels.rsi.toFixed(1) : '-'}, MACD ${levels.macdHist != null ? levels.macdHist.toFixed(4) : '-'} · 현재가 ${fmtPrice(lastClose)} · ${r1Txt} · ${s1Txt} · 트리거 미충족`, 'watch');
+      const dirTxt = mtfDir.direction === 'long' ? '롱 탐색' : '숏 탐색';
+      addWatchLog(symbol, `관망 · ${tfBrief} · ${scoreTxt} → ${dirTxt} · 현재가 ${fmtPrice(lastClose)} · ${r1Txt} · ${s1Txt} · 트리거 미충족`, 'watch');
       return;
     }
   }
@@ -2229,7 +2264,7 @@ async function tryOpenBotPosition(symbol){
   const { leverage, target, stopDistPct } = computeSizingAndTarget(trig.dir, price, trig.stop, marginKRW, targetKRW, riskPct, levCap);
   const mmRate = (parseFloat(document.getElementById('mmRate').value) || 0.5) / 100;
   const liq = calcLiqPrice(price, leverage, mmRate, trig.dir);
-  const rationale = buildEntryRationale(symbol, levels, trig, price, leverage, target, stopDistPct, testMode);
+  const rationale = buildEntryRationale(symbol, mtfDir, tfSignals, sr, trig, price, leverage, target, stopDistPct, testMode);
 
   const pos = {
     symbol, dir: trig.dir, type: trig.type,
@@ -2251,7 +2286,7 @@ async function tryOpenBotPosition(symbol){
   }
 
   st.position = pos;
-  addWatchLog(symbol, `🟢 진입 체결 · ${dirLabel(trig.dir)} ${fmtPrice(price)} · ${trig.type} · ${leverage}x`, 'enter');
+  addWatchLog(symbol, `🟢 진입 체결 · ${dirLabel(trig.dir)} ${fmtPrice(price)} · ${trig.type} · ${leverage}x · ${scoreTxt}`, 'enter');
   renderBotPanels();
 }
 
