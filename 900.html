@@ -761,6 +761,14 @@
       <span class="result-value big" id="botTotalPnl">0원</span>
     </div>
     <div class="result-line">
+      <span class="result-label">초기 증거금</span>
+      <span class="result-value" id="botInitMargin" style="color:var(--sub);">-</span>
+    </div>
+    <div class="result-line">
+      <span class="result-label">현재 증거금</span>
+      <span class="result-value" id="botCurMargin">-</span>
+    </div>
+    <div class="result-line">
       <span class="result-label">승률</span>
       <span class="result-value" id="botWinRate">- (0건)</span>
     </div>
@@ -2495,7 +2503,8 @@ function renderBotTradeLog(){
           <span class="history-dir ${t.dir === 'long' ? 'val-long' : 'val-short'}">${coinLabelOf(t.symbol)} ${dirLabel(t.dir)} · ${reasonLabel(t.closeReason)}</span>
           <span class="history-pnl ${pnlClass}">${tPnlSign}${fmt(t.pnlKRW, 0)}원 (${tPnlSign}${tPnlPct}%)</span>
         </div>
-        <div class="history-detail">증거금 ${fmt(t.marginKRW,0)}원 · 진입 ${fmtPrice(t.entry)} → 종료 ${fmtPrice(t.closePrice)} · ${new Date(t.openTime).toLocaleString('ko-KR')}</div>
+        <div class="history-detail">증거금 ${fmt(t.marginKRW,0)}원 · 진입 ${fmtPrice(t.entry)} → 종료 ${fmtPrice(t.closePrice)}</div>
+        <div style="font-size:12px; color:var(--accent); margin-top:3px;">${new Date(t.openTime).toLocaleString('ko-KR')}${t.closeTime ? ' → ' + new Date(t.closeTime).toLocaleString('ko-KR') : ''}</div>
         ${(t.rationale || t.exitRationale) ? `<details style="margin-top:6px;">
           <summary style="cursor:pointer; font-size:11px; color:var(--sub);">근거 보기</summary>
           <div class="history-detail" style="margin-top:4px; line-height:1.6;">
@@ -2509,8 +2518,16 @@ function renderBotTradeLog(){
 
   const total = all.reduce((s, t) => s + (t.pnlKRW || 0), 0);
   const totalEl = document.getElementById('botTotalPnl');
-  totalEl.textContent = `${fmt(total, 0)}원`;
+  totalEl.textContent = `${total >= 0 ? '+' : ''}${fmt(total, 0)}원`;
   totalEl.className = 'result-value big ' + (total >= 0 ? 'val-long' : 'val-short');
+
+  // 초기 증거금 = 현재 설정된 증거금, 현재 증거금 = 초기 + 누적 손익
+  const initMargin = parseFloat(document.getElementById('botMargin').value) || 0;
+  const curMargin = initMargin + total;
+  document.getElementById('botInitMargin').textContent = initMargin > 0 ? `${fmt(initMargin, 0)}원` : '-';
+  const curMarginEl = document.getElementById('botCurMargin');
+  curMarginEl.textContent = initMargin > 0 ? `${fmt(curMargin, 0)}원` : '-';
+  curMarginEl.className = 'result-value ' + (curMargin >= initMargin ? 'val-long' : 'val-short');
 
   const wins = all.filter(t => t.pnlKRW > 0).length;
   document.getElementById('botWinRate').textContent = all.length ? `${(wins / all.length * 100).toFixed(0)}% (${all.length}건)` : '- (0건)';
