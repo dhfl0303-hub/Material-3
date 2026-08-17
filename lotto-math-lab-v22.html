@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LOTTO MATH LAB v3.1</title>
+<title>LOTTO MATH LAB v3.1.1</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -123,7 +123,7 @@ p{margin-bottom:6px;line-height:1.6}
 </style>
 </head>
 <body>
-<div class="version-badge">v3.1 · 2026-08-17</div>
+<div class="version-badge">v3.1.1 · 2026-08-17</div>
 <div class="loading-overlay" id="loadingOverlay">
   <h2>🎰 LOTTO MATH LAB</h2>
   <p id="loadingMsg">데이터를 불러오는 중...</p>
@@ -392,7 +392,7 @@ p{margin-bottom:6px;line-height:1.6}
 
 <!-- ═══════════ 탭6: 이번 회차 연구실 ═══════════ -->
 <div id="tab-lab" class="hidden">
-  <div class="card"><div class="card-title">🧪 이번 회차 연구실</div><div class="text-dim mb8" style="font-size:11px">최근 데이터로 추세·반등·균형 후보를 한 화면에 정리합니다. 점수는 과거 데이터 기반 상대평가이며 당첨확률 보장이 아닙니다.</div><button class="btn btn-primary" style="width:100%" onclick="renderLab()">🔄 최신 분석</button><div id="labSummary" class="mt8"></div></div>
+  <div class="card"><div class="card-title">🧪 이번 회차 연구실</div><div class="text-dim mb8" style="font-size:11px">최근 데이터로 추세·반등·균형 후보를 한 화면에 정리합니다. 점수는 과거 데이터 기반 상대평가이며 당첨확률 보장이 아닙니다.</div><button class="btn btn-primary" id="labRefreshBtn" style="width:100%" onclick="refreshLabData()">🔄 최신 분석</button><div id="labRefreshStatus" class="hidden mt8" style="font-size:11px;text-align:center"></div><div id="labSummary" class="mt8"></div></div>
   <div class="card"><div class="card-title">🔎 번호 상세 프로필</div><div class="flex-center gap8 mb8"><select id="profileNum" style="flex:1"></select><button class="btn btn-primary btn-sm" onclick="renderNumberProfile()">조회</button></div><div id="numberProfile"></div></div>
   <div class="card"><div class="card-title">🤝 번호 쌍 · 삼중조합 분석</div><div class="grid2 mb8"><div><span class="text-dim" style="font-size:10px">번호 2~3개 (쉼표)</span><input id="pairInput" placeholder="예: 7,23 또는 7,23,41" style="width:100%;margin-top:4px"></div><div class="flex-center" style="align-items:end"><button class="btn btn-primary btn-sm" style="width:100%" onclick="analyzePairTriple()">분석</button></div></div><div id="pairResult"></div></div>
   <div class="card"><div class="card-title">🩺 데이터 상태 · 이상 검사</div><div id="dataHealth"></div><button class="btn btn-outline btn-sm mt8" onclick="renderDataHealth()">다시 검사</button></div>
@@ -1334,7 +1334,7 @@ function analyzeMyNumbers(){
   document.getElementById('analyzeResult').classList.remove('hidden');
 }
 
-/* ===== v3.1 추가 기능 ===== */
+/* ===== v3.1.1 추가 기능 ===== */
 function calcGapStats(num,draws=getDrawNums()){
   const gaps=[];let last=-1;draws.forEach((d,i)=>{if(d.includes(num)){if(last>=0)gaps.push(i-last-1);last=i}});
   let current=0;for(let i=draws.length-1;i>=0;i--){if(draws[i].includes(num))break;current++}
@@ -1368,6 +1368,85 @@ function runWalkForward(){
   }
   const names={trend:'추세',rebound:'반등',balanced:'균형'};document.getElementById('wfResult').innerHTML='<table><thead><tr><th>전략</th><th class="text-right">평균 일치</th><th class="text-right">3개+</th><th class="text-right">4개+</th><th class="text-right">최고</th></tr></thead><tbody>'+modes.map(m=>{const x=stats[m];return'<tr><td class="fw700">'+names[m]+'</td><td class="text-right">'+(x.matches/x.n).toFixed(3)+'</td><td class="text-right">'+x.h3+'회 ('+(x.h3/x.n*100).toFixed(1)+'%)</td><td class="text-right">'+x.h4+'회</td><td class="text-right text-gold">'+x.best+'개</td></tr>'}).join('')+'</tbody></table><div class="info-neutral">검증 '+stats.trend.n+'회. 각 시점에서 해당 회차 이후 데이터는 사용하지 않았습니다. 무작위 6개 번호의 기대 일치 개수는 0.8개입니다.</div>';
 }
+async function refreshLabData(){
+  const btn=document.getElementById('labRefreshBtn');
+  const status=document.getElementById('labRefreshStatus');
+  if(!btn||!status)return;
+
+  const beforeLast=DRAWS[DRAWS.length-1]?.round||0;
+  const beforeCount=DRAWS.length;
+  btn.disabled=true;
+  btn.textContent='⏳ 최신 데이터 확인 중...';
+  status.className='info-neutral mt8';
+  status.textContent='JSON과 Firestore의 최신 회차를 확인하고 있습니다.';
+
+  let jsonOk=false, firestoreOk=false;
+  let jsonDraws=[];
+  let firestoreDraws=[];
+  const errors=[];
+  const FS_TIMEOUT=5000;
+  const withTimeout=(p)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),FS_TIMEOUT))]);
+
+  try{
+    const res=await fetch('lotto-data.json?refresh='+Date.now(),{cache:'no-store'});
+    if(res.ok){
+      const raw=await res.json();
+      if(Array.isArray(raw)){
+        jsonDraws=raw.filter(d=>d&&Number.isFinite(+d.round)&&Array.isArray(d.nums)).map(d=>({round:+d.round,nums:d.nums.map(Number),bonus:d.bonus==null?null:+d.bonus,date:d.date||''}));
+        jsonDraws.sort((a,b)=>a.round-b.round);
+        DATA_SOURCE_INFO.jsonCount=jsonDraws.length;
+        DATA_SOURCE_INFO.jsonLast=jsonDraws[jsonDraws.length-1]?.round||null;
+        jsonOk=true;
+      }
+    }else errors.push('JSON HTTP '+res.status);
+  }catch(e){errors.push('JSON: '+e.message)}
+
+  try{
+    if(typeof firebase!=='undefined'){
+      if(!db){
+        try{if(!firebase.apps.length)firebase.initializeApp(firebaseConfig)}catch(e){}
+        db=firebase.firestore();
+      }
+      const snap=await withTimeout(db.collection('draws').get());
+      snap.forEach(doc=>{const d=doc.data();firestoreDraws.push({round:+doc.id,nums:[d.no1,d.no2,d.no3,d.no4,d.no5,d.no6].map(Number),bonus:d.bonus==null?null:+d.bonus,date:d.date||''})});
+      firestoreDraws.sort((a,b)=>a.round-b.round);
+      DATA_SOURCE_INFO.firestoreCount=firestoreDraws.length;
+      DATA_SOURCE_INFO.firestoreLast=firestoreDraws[firestoreDraws.length-1]?.round||null;
+      firestoreOk=true;
+    }else errors.push('Firebase SDK 없음');
+  }catch(e){errors.push('Firestore: '+e.message)}
+
+  // 공식 데이터(JSON → Firestore 순으로 최신값 우선)를 병합하고, 아직 공식화되지 않은 수동 회차만 보존한다.
+  const merged=new Map();
+  jsonDraws.forEach(d=>merged.set(d.round,d));
+  firestoreDraws.forEach(d=>merged.set(d.round,d));
+  DRAWS.filter(d=>d._manual&&!merged.has(d.round)).forEach(d=>merged.set(d.round,d));
+
+  if(merged.size>0){
+    DRAWS=[...merged.values()].sort((a,b)=>a.round-b.round);
+    try{localStorage.setItem('lotto_draws',JSON.stringify(DRAWS.filter(d=>!d._manual)))}catch(e){}
+  }
+
+  const afterLast=DRAWS[DRAWS.length-1]?.round||0;
+  const added=Math.max(0,DRAWS.length-beforeCount);
+  updateStatusBar();
+  renderLab();
+  refreshCurrentTab();
+
+  status.className=(afterLast>beforeLast?'info-green info-box mt8':'info-neutral mt8');
+  if(afterLast>beforeLast){
+    status.textContent='✅ '+beforeLast+'회 → '+afterLast+'회 최신 데이터 반영 완료'+(added?' · '+added+'건 추가':'')+' · 연구실 재분석 완료';
+  }else if(jsonOk||firestoreOk){
+    status.textContent='✅ 현재 '+afterLast+'회가 최신 데이터입니다. 연구실 분석을 다시 계산했습니다.';
+  }else{
+    status.className='info-red info-box mt8';
+    status.textContent='⚠ 최신 데이터 확인에 실패했습니다. 현재 '+afterLast+'회 데이터로 다시 분석했습니다.'+(errors.length?' ('+errors.join(' / ')+')':'');
+  }
+
+  btn.disabled=false;
+  btn.textContent='🔄 최신 분석';
+}
+
 function renderLab(){
   ensureProfileOptions();const all=calcSignalScores(),trend=[...all].sort((a,b)=>b.trend-a.trend).slice(0,8),rebound=[...all].sort((a,b)=>b.rebound-a.rebound).slice(0,8),balanced=[...all].sort((a,b)=>b.balanced-a.balanced).slice(0,12);
   const core=balanced.slice(0,6);const sets=[];for(let i=0;i<5;i++){const pool=balanced.slice(0,12).map(x=>x.num),pick=[];while(pick.length<6&&pool.length){const idx=(i*3+pick.length*2)%pool.length;pick.push(pool.splice(idx,1)[0])}sets.push(pick.sort((a,b)=>a-b));}
