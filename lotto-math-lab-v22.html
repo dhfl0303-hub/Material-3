@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LOTTO MATH LAB v3.0</title>
+<title>LOTTO MATH LAB v3.1</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -71,7 +71,7 @@ td{padding:6px 5px;border-bottom:1px solid rgba(30,45,69,.12)}
 .btn-outline:hover{border-color:var(--gold);color:var(--gold)}
 .btn-outline.active{border-color:var(--gold);color:var(--gold);background:rgba(240,192,64,.08)}
 .btn-danger{background:var(--red);color:#fff}
-select,input[type=number]{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px}
+select,input[type=number],input[type=text],input:not([type]){background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px}
 input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 input[type=number]{-moz-appearance:textfield}
 input[type=date]{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px}
@@ -94,6 +94,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;heigh
 .mono{font-family:'Courier New',monospace;font-size:11px}
 .hidden{display:none !important}
 .footer{text-align:center;padding:16px 0 8px;font-size:10px;color:var(--textMuted)}
+.version-badge{position:fixed;top:8px;right:8px;z-index:1000;background:rgba(17,27,46,.94);border:1px solid var(--goldDim);color:var(--gold);font-size:10px;font-weight:800;padding:5px 8px;border-radius:999px;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+.mini-chip{display:inline-block;padding:3px 6px;border-radius:999px;background:var(--bg);border:1px solid var(--border);font-size:10px;margin:2px}.scorebar{height:5px;border-radius:3px;background:var(--border);overflow:hidden;margin-top:3px}.scorebar>span{display:block;height:100%;background:var(--gold)}
 p{margin-bottom:6px;line-height:1.6}
 .loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(11,17,32,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999}
 .loading-overlay h2{color:var(--gold);font-size:20px;margin-bottom:16px}
@@ -121,6 +123,7 @@ p{margin-bottom:6px;line-height:1.6}
 </style>
 </head>
 <body>
+<div class="version-badge">v3.1 · 2026-08-17</div>
 <div class="loading-overlay" id="loadingOverlay">
   <h2>🎰 LOTTO MATH LAB</h2>
   <p id="loadingMsg">데이터를 불러오는 중...</p>
@@ -145,6 +148,7 @@ p{margin-bottom:6px;line-height:1.6}
   <button class="tab" onclick="switchTab('history')">📋 이력</button>
   <button class="tab" onclick="switchTab('indicator')">📉 보조지표</button>
   <button class="tab" onclick="switchTab('analyze')">🔍 분석</button>
+    <button class="tab" onclick="switchTab('lab')">🧪 연구실</button>
 </div>
 
 <!-- ═══════════ 탭1: 통계분석 ═══════════ -->
@@ -183,7 +187,7 @@ p{margin-bottom:6px;line-height:1.6}
     </div>
     <div class="card">
       <div class="card-title">📊 베이즈 번호 신뢰도</div>
-      <div class="text-dim mb8" style="font-size:11px">기본 확률(6/45)을 최근 출현 데이터로 갱신한 사후확률입니다. 높을수록 다음 회차 출현 기대가 높습니다.</div>
+      <div class="text-dim mb8" style="font-size:11px">Beta-Binomial 평활화를 적용한 최근 출현률 추정치입니다. 다음 회차 당첨확률을 의미하지 않으며 번호별 최근 출현 강도를 비교하는 참고값입니다.</div>
       <div class="grid2 mb8">
         <div><span style="font-size:11px;font-weight:600">분석 구간: </span><select id="bayesPeriod" onchange="renderBayes()"><option value="10">최근 10회</option><option value="20" selected>최근 20회</option><option value="50">최근 50회</option></select></div>
       </div>
@@ -196,14 +200,20 @@ p{margin-bottom:6px;line-height:1.6}
 <div id="tab-generate" class="hidden">
   <div class="card"><div class="card-title">🧮 번호 생성 전략</div><div id="strategyList"></div></div>
   <div class="card"><div class="flex-between flex-wrap gap8 mb8"><div><span style="font-size:12px;font-weight:600">세트 수: </span><select id="genCount"><option value="1">1</option><option value="3">3</option><option value="5" selected>5</option><option value="10">10</option></select></div><button class="btn btn-primary" onclick="generateNumbers()">🎲 번호 생성</button></div></div>
+  <div class="card">
+    <div class="card-title">🔒 고정수 · 제외수 · 조합 품질</div>
+    <div class="grid2 mb8"><div><span class="text-dim" style="font-size:10px">고정수 (쉼표)</span><input id="fixedNums" placeholder="예: 7,23" style="width:100%;margin-top:4px"></div><div><span class="text-dim" style="font-size:10px">제외수 (쉼표)</span><input id="excludedNums" placeholder="예: 1,2,44" style="width:100%;margin-top:4px"></div></div>
+    <div class="grid3"><div><span class="text-dim" style="font-size:10px">조합간 최대 중복</span><select id="maxOverlap" style="width:100%;margin-top:4px"><option value="2">2개</option><option value="3" selected>3개</option><option value="4">4개</option><option value="5">5개</option></select></div><div><span class="text-dim" style="font-size:10px">합계 범위</span><select id="sumFilter" style="width:100%;margin-top:4px"><option value="0">제한 없음</option><option value="100-175" selected>100~175</option><option value="120-165">120~165</option></select></div><div><span class="text-dim" style="font-size:10px">홀짝</span><select id="oeFilter" style="width:100%;margin-top:4px"><option value="0">제한 없음</option><option value="2-4" selected>2:4~4:2</option><option value="3">3:3만</option></select></div></div>
+    <div class="info-neutral">필터는 원하는 조합 형태를 만드는 기능이며 한 장의 당첨확률 자체를 높이지 않습니다.</div>
+  </div>
   <div id="genResults" class="hidden"><div class="card"><div class="card-title" id="genResultTitle"></div><div id="genResultBody"></div></div></div>
 
   <div class="card">
     <div class="card-title">🎯 축소조합 (Wheeling System)</div>
-    <div class="text-dim mb8" style="font-size:11px">유망 번호를 선택하면, 그중 3개가 당첨번호에 포함될 경우 최소 1장은 3개 일치(5등)가 보장되는 최소 조합 세트를 실제로 생성합니다. 최대 18개까지 지원합니다(그 이상은 조합 수가 폭증해 계산이 사실상 불가능합니다). 18개 기준으로도 3개 이상 포함 확률은 위 계산기 기준 약 46%이며, 90%를 달성하려면 후보 30개·조합 수백~수천 장이 필요해 이 기능 범위를 벗어납니다.</div>
+    <div class="text-dim mb8" style="font-size:11px">유망 번호를 선택하면, 그중 3개가 당첨번호에 포함될 경우 생성 조합 중 최소 1장은 그 3개를 포함하도록 커버링 조합 세트를 생성합니다. 최대 18개까지 지원합니다(그 이상은 조합 수가 폭증해 계산이 사실상 불가능합니다). 18개 기준으로도 3개 이상 포함 확률은 위 계산기 기준 약 46%이며, 90%를 달성하려면 후보 30개·조합 수백~수천 장이 필요해 이 기능 범위를 벗어납니다.</div>
     <div class="mb8">
       <span style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">유망 번호 선택 (8~18개):</span>
-      <div id="wheelNumSelector" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+      <div class="flex-center gap4 mb8" style="flex-wrap:wrap"><button class="btn btn-sm btn-outline" onclick="autoWheelPool(10)">보수형 10개</button><button class="btn btn-sm btn-outline" onclick="autoWheelPool(12)">균형형 12개</button><button class="btn btn-sm btn-outline" onclick="autoWheelPool(15)">공격형 15개</button><button class="btn btn-sm btn-outline" onclick="clearWheelPool()">초기화</button></div><div id="wheelNumSelector" style="display:flex;flex-wrap:wrap;gap:4px"></div>
       <div class="flex-between mt8"><span class="text-dim" style="font-size:11px">선택: <span id="wheelCount" class="text-gold fw700">0</span>개 (3개 이상 포함 확률: <span id="wheelProb" class="text-gold fw700">0%</span>)</span><button class="btn btn-primary btn-sm" onclick="generateWheel()" id="wheelBtn" disabled>🎯 축소조합 생성</button></div>
       <div id="wheelLoading" class="hidden text-dim mt6" style="font-size:11px">⏳ 조합 계산 중입니다... (번호 수가 많으면 몇 초 걸릴 수 있어요)</div>
     </div>
@@ -228,7 +238,7 @@ p{margin-bottom:6px;line-height:1.6}
     <div id="mcResults" class="hidden mt8"></div>
   </div>
 
-  <div class="card"><div class="card-title">📘 전략별 수학 원리</div><div style="font-size:11px;color:var(--textDim);line-height:1.6"><p><strong class="text-gold">균형 분포</strong> — 5개 구간에서 골고루 추출. 5개 이상 일치 확률을 높이기 위한 분산 전략.</p><p><strong class="text-gold">인기번호 회피</strong> — 게임이론 기반. 당첨 시 분배 인원 최소화로 실질 수익 극대화.</p><p><strong class="text-gold">포아송 보정</strong> — 기대 출현 횟수(λ) 대비 실제 출현이 적은 번호에 가중치 부여.</p><p><strong class="text-gold">갭 분석</strong> — 최근 15회차 미출현 번호 우선 선택. 평균회귀 관점의 전략.</p></div></div>
+  <div class="card"><div class="card-title">📘 전략별 수학 원리</div><div style="font-size:11px;color:var(--textDim);line-height:1.6"><p><strong class="text-gold">균형 분포</strong> — 5개 구간에서 골고루 추출. 당첨확률을 높이는 방식이 아니라 조합 형태의 편중을 줄이는 분산 전략.</p><p><strong class="text-gold">인기번호 회피</strong> — 게임이론 기반. 당첨 시 분배 인원 최소화로 실질 수익 극대화.</p><p><strong class="text-gold">저빈도 가중</strong> — 장기 기대 출현 횟수 대비 실제 출현이 적은 번호에 가중치를 부여하는 휴리스틱.</p><p><strong class="text-gold">갭 분석</strong> — 최근 15회차 미출현 번호 우선 선택. 평균회귀 관점의 전략.</p></div></div>
 </div>
 
 <!-- ═══════════ 탭3: 이력 ═══════════ -->
@@ -236,6 +246,7 @@ p{margin-bottom:6px;line-height:1.6}
   <div class="sub-tabs">
     <button class="sub-tab active" onclick="switchHistSub('backtest')">백테스트</button>
     <button class="sub-tab" onclick="switchHistSub('draws')">당첨 히스토리</button>
+      <button class="sub-tab" onclick="switchHistSub('strategy')">전략 검증</button>
   </div>
 
   <div id="hist-backtest">
@@ -253,6 +264,10 @@ p{margin-bottom:6px;line-height:1.6}
       <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;font-weight:800;border-radius:10px" onclick="runBacktest()">🔍 백테스트 실행</button>
     </div>
     <div id="btResults" class="hidden"></div>
+  </div>
+
+  <div id="hist-strategy" class="hidden">
+    <div class="card"><div class="card-title">🧪 워크포워드 전략 백테스트</div><div class="text-dim mb8" style="font-size:11px">각 회차 직전 데이터만 사용해 추세·반등·균형 상위 6개를 선정하고 다음 실제 회차와 비교합니다. 미래 데이터는 사용하지 않습니다.</div><div class="grid2 mb8"><div><span class="text-dim" style="font-size:10px">검증 회차</span><select id="wfPeriod" style="width:100%;margin-top:4px"><option value="100">최근 100회</option><option value="300" selected>최근 300회</option><option value="500">최근 500회</option></select></div><div class="flex-center" style="align-items:end"><button class="btn btn-primary" style="width:100%" onclick="runWalkForward()">검증 실행</button></div></div><div id="wfResult"></div></div>
   </div>
 
   <div id="hist-draws" class="hidden">
@@ -278,13 +293,13 @@ p{margin-bottom:6px;line-height:1.6}
 <!-- ═══════════ 탭4: 보조지표 ═══════════ -->
 <div id="tab-indicator" class="hidden">
   <div class="card">
-    <div class="card-title">🎯 종합 시그널 스코어</div>
-    <div class="text-dim mb8" style="font-size:11px">5대 보조지표 가중합산 → 번호별 최종 점수. 1등을 조준하되 5개 일치(3등) 안전망을 위한 번호 선별 도구</div>
+    <div class="card-title">🎯 균형 시그널 스코어</div>
+    <div class="text-dim mb8" style="font-size:11px">최근 출현 강도 기반 추세 점수와 미출현 갭 기반 반등 점수를 결합한 상대평가입니다. 균형 점수 = 추세 55% + 반등 45%.</div>
     <div class="flex-between mb8"><div class="text-dim" style="font-size:10px">이번 분석 기준 추천 번호</div><div id="topBalls"></div></div>
     <div class="heatmap" id="signalHeatmap"></div>
   </div>
   <div class="card">
-    <div class="card-title">⚖️ 지표 가중치 조절</div>
+    <div class="card-title">🧭 점수 구조</div>
     <div id="weightSliders"></div>
     <button class="btn btn-primary btn-sm mt8" onclick="recalcSignal()">🔄 재계산</button>
   </div>
@@ -298,8 +313,8 @@ p{margin-bottom:6px;line-height:1.6}
   </div>
 
   <div id="ind-rsi">
-    <div class="card"><div class="card-title">📊 RSI (상대강도지수)</div>
-      <div class="text-dim mb8" style="font-size:11px">최근 N회차 기준 번호별 상대강도지수 (0~100). 30 이하 침체 번호는 반등 가능성, 70 이상 과열 번호는 지속 출현 주의</div>
+    <div class="card"><div class="card-title">📊 출현 모멘텀 RSI</div>
+      <div class="text-dim mb8" style="font-size:11px">출현=1·미출현=0 변화로 계산한 모멘텀 지표(0~100). 주가 RSI와 동일한 예측 의미는 없으며 최근 출현 변화의 방향성을 비교합니다.</div>
       <div class="mb8"><span style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">RSI 기간: </span><select id="rsiPeriod" onchange="renderRSI()"><option value="14">14회</option><option value="20" selected>20회</option><option value="30">30회</option></select></div>
       <div class="chart-wrapper" style="height:220px"><canvas id="rsiChart"></canvas></div>
       <div class="grid2 mt8"><div class="card" style="margin:0;padding:10px"><div class="text-red fw700 mb6" style="font-size:11px">🔴 과열 (RSI > 70)</div><div id="rsiHot" style="font-size:11px"></div></div><div class="card" style="margin:0;padding:10px"><div class="text-cyan fw700 mb6" style="font-size:11px">🔵 침체 (RSI < 30)</div><div id="rsiCold" style="font-size:11px"></div></div></div>
@@ -374,6 +389,15 @@ p{margin-bottom:6px;line-height:1.6}
   <div id="analyzeResult" class="hidden"></div>
 </div>
 
+
+<!-- ═══════════ 탭6: 이번 회차 연구실 ═══════════ -->
+<div id="tab-lab" class="hidden">
+  <div class="card"><div class="card-title">🧪 이번 회차 연구실</div><div class="text-dim mb8" style="font-size:11px">최근 데이터로 추세·반등·균형 후보를 한 화면에 정리합니다. 점수는 과거 데이터 기반 상대평가이며 당첨확률 보장이 아닙니다.</div><button class="btn btn-primary" style="width:100%" onclick="renderLab()">🔄 최신 분석</button><div id="labSummary" class="mt8"></div></div>
+  <div class="card"><div class="card-title">🔎 번호 상세 프로필</div><div class="flex-center gap8 mb8"><select id="profileNum" style="flex:1"></select><button class="btn btn-primary btn-sm" onclick="renderNumberProfile()">조회</button></div><div id="numberProfile"></div></div>
+  <div class="card"><div class="card-title">🤝 번호 쌍 · 삼중조합 분석</div><div class="grid2 mb8"><div><span class="text-dim" style="font-size:10px">번호 2~3개 (쉼표)</span><input id="pairInput" placeholder="예: 7,23 또는 7,23,41" style="width:100%;margin-top:4px"></div><div class="flex-center" style="align-items:end"><button class="btn btn-primary btn-sm" style="width:100%" onclick="analyzePairTriple()">분석</button></div></div><div id="pairResult"></div></div>
+  <div class="card"><div class="card-title">🩺 데이터 상태 · 이상 검사</div><div id="dataHealth"></div><button class="btn btn-outline btn-sm mt8" onclick="renderDataHealth()">다시 검사</button></div>
+</div>
+
 <div class="footer">🎯 본 도구는 1~3등 범위의 일치 확률을 수학적으로 최적화하기 위한 분석 엔진입니다. 로또는 독립시행 확률 게임이며 당첨을 보장하지 않습니다.</div>
 </div>
 
@@ -412,6 +436,7 @@ const firebaseConfig = {
 
 let db = null;
 let DRAWS = [];
+const DATA_SOURCE_INFO={jsonCount:0,jsonLast:null,firestoreCount:0,firestoreLast:null,cacheUsed:false,fallbackUsed:false};
 const N = 45, PICK = 6, COMBOS = 8145060;
 let indSelected = { bb: 1, macd: 1, super: 1 };
 
@@ -428,7 +453,7 @@ async function initApp(){
   try {
     updateLoading('lotto-data.json 로드 중...', 10);
     const res = await fetch('lotto-data.json');
-    if(res.ok){ DRAWS = await res.json(); DRAWS.sort((a,b) => a.round - b.round); updateLoading('JSON에서 ' + DRAWS.length + '회차 로드 완료', 70); }
+    if(res.ok){ DRAWS = await res.json(); DRAWS.sort((a,b) => a.round - b.round); DATA_SOURCE_INFO.jsonCount=DRAWS.length;DATA_SOURCE_INFO.jsonLast=DRAWS[DRAWS.length-1]?.round||null; updateLoading('JSON에서 ' + DRAWS.length + '회차 로드 완료', 70); }
   } catch(e){ console.log('JSON 파일 로드 실패:', e.message); }
 
   try {
@@ -438,12 +463,12 @@ async function initApp(){
       if(DRAWS.length > 0){
         const metaSnap = await withTimeout(db.collection('meta').doc('info').get());
         if(metaSnap.exists){
-          const lastInDB = metaSnap.data().lastDraw;
+          const lastInDB = metaSnap.data().lastDraw; DATA_SOURCE_INFO.firestoreLast=lastInDB;
           const lastInJSON = DRAWS[DRAWS.length-1].round;
           if(lastInDB > lastInJSON){
             updateLoading('Firestore에서 최신 데이터 추가 로드...', 80);
             const snapshot = await withTimeout(db.collection('draws').where(firebase.firestore.FieldPath.documentId(), '>', String(lastInJSON)).get());
-            snapshot.forEach(doc => { const d = doc.data(); DRAWS.push({ round:+doc.id, nums:[d.no1,d.no2,d.no3,d.no4,d.no5,d.no6], bonus:d.bonus, date:d.date }); });
+            DATA_SOURCE_INFO.firestoreCount=snapshot.size; snapshot.forEach(doc => { const d = doc.data(); DRAWS.push({ round:+doc.id, nums:[d.no1,d.no2,d.no3,d.no4,d.no5,d.no6], bonus:d.bonus, date:d.date }); });
             DRAWS.sort((a,b) => a.round - b.round);
           }
         }
@@ -453,10 +478,10 @@ async function initApp(){
 
   if(DRAWS.length === 0){
     const cached = localStorage.getItem('lotto_draws');
-    if(cached){ DRAWS = JSON.parse(cached); updateLoading('캐시에서 ' + DRAWS.length + '회차 로드', 80); }
+    if(cached){ DRAWS = JSON.parse(cached); DATA_SOURCE_INFO.cacheUsed=true; updateLoading('캐시에서 ' + DRAWS.length + '회차 로드', 80); }
   }
   if(DRAWS.length === 0){
-    updateLoading('테스트용 임시 데이터 생성', 90);
+    updateLoading('테스트용 임시 데이터 생성', 90); DATA_SOURCE_INFO.fallbackUsed=true;
     DRAWS = [
       {round:1095,nums:[2,14,25,33,40,42],bonus:18,date:"2023-11-25"},{round:1096,nums:[5,11,16,21,28,36],bonus:2,date:"2023-12-02"},
       {round:1097,nums:[7,10,19,23,31,45],bonus:9,date:"2023-12-09"},{round:1098,nums:[1,8,12,29,34,41],bonus:22,date:"2023-12-16"},
@@ -476,6 +501,7 @@ async function initApp(){
   renderStrategies();
   initIndicatorSelects();
   initWheelSelector();
+  ensureProfileOptions();
 }
 
 async function loadFromFirestore(){
@@ -485,7 +511,7 @@ async function loadFromFirestore(){
     if(snapshot.empty) return;
     DRAWS = [];
     snapshot.forEach(doc => { const d = doc.data(); DRAWS.push({round:+doc.id,nums:[d.no1,d.no2,d.no3,d.no4,d.no5,d.no6],bonus:d.bonus,date:d.date}); });
-    DRAWS.sort((a,b) => a.round - b.round);
+    DRAWS.sort((a,b) => a.round - b.round); DATA_SOURCE_INFO.firestoreCount=DRAWS.length;DATA_SOURCE_INFO.firestoreLast=DRAWS[DRAWS.length-1]?.round||null;
     updateLoading('Firestore에서 ' + DRAWS.length + '회차 로드 완료', 90);
   } catch(e){ console.log('Firestore 읽기 실패:', e.message); }
 }
@@ -521,13 +547,14 @@ function updateStatusBar(){
 /* ===== 탭 전환 ===== */
 let curTab='stats', curSub='freq', curIndSub='rsi', curHistSub='backtest';
 function switchTab(id){
-  const tabs = ['stats','generate','history','indicator','analyze'];
+  const tabs = ['stats','generate','history','indicator','analyze','lab'];
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active', tabs[i]===id));
   tabs.forEach(t=>document.getElementById('tab-'+t).classList.toggle('hidden', t!==id));
   curTab=id;
   if(id==='stats') renderStatsTab();
   if(id==='indicator') renderIndicatorTab();
   if(id==='history' && curHistSub==='draws') initHistoryInputs();
+  if(id==='lab') renderLab();
 }
 function switchSubTab(id){
   document.querySelectorAll('#tab-stats .sub-tab').forEach((t,i)=>t.classList.toggle('active',['freq','zone','pattern'][i]===id));
@@ -535,9 +562,9 @@ function switchSubTab(id){
   curSub=id; renderStatsTab();
 }
 function switchHistSub(id){
-  document.querySelectorAll('#tab-history .sub-tab').forEach((t,i)=>t.classList.toggle('active',['backtest','draws'][i]===id));
-  document.getElementById('hist-backtest').classList.toggle('hidden',id!=='backtest');
-  document.getElementById('hist-draws').classList.toggle('hidden',id!=='draws');
+  const ids=['backtest','draws','strategy'];
+  document.querySelectorAll('#tab-history .sub-tab').forEach((t,i)=>t.classList.toggle('active',ids[i]===id));
+  ids.forEach(x=>document.getElementById('hist-'+x).classList.toggle('hidden',id!==x));
   curHistSub=id;
   if(id==='draws') initHistoryInputs();
 }
@@ -628,29 +655,28 @@ function renderCarryOver(){
 /* ===== 베이즈 신뢰도 ===== */
 function renderBayes(){
   const period = +document.getElementById('bayesPeriod').value;
-  const draws = getDrawNums();
-  const recent = draws.slice(-period);
-  const prior = PICK / N;
-  const results = [];
-  for(let n=1; n<=N; n++){
-    const appeared = recent.filter(d=>d.includes(n)).length;
-    const likelihood = appeared / period;
-    const posterior = (likelihood * prior) / ((likelihood * prior) + ((1 - likelihood) * (1 - prior)));
-    const finalPost = isNaN(posterior) ? prior : posterior;
-    results.push({num:n, prior:+(prior*100).toFixed(1), posterior:+(finalPost*100).toFixed(1), appeared});
+  const recent = getDrawNums().slice(-period);
+  const alpha0 = 6, beta0 = 39; // prior mean 6/45, equivalent sample size 45
+  const prior = alpha0/(alpha0+beta0);
+  const results=[];
+  for(let n=1;n<=N;n++){
+    const appeared=recent.filter(d=>d.includes(n)).length;
+    const alpha=alpha0+appeared, beta=beta0+period-appeared;
+    const posteriorMean=alpha/(alpha+beta);
+    results.push({num:n,prior:prior*100,posterior:posteriorMean*100,appeared});
   }
-  results.sort((a,b)=>b.posterior-a.posterior);
-  const top10 = results.slice(0, 10);
-  const bot5 = results.slice(-5).reverse();
-  let html = '<div class="text-green fw700 mb6" style="font-size:11px">🔺 사후확률 상위 10 (기본 '+results[0].prior+'%)</div>';
-  html += top10.map(d=>'<div class="flex-between" style="padding:3px 0;font-size:11px">'+renderBall(d.num,true)+'<span class="text-green fw700">'+d.posterior+'%</span><span class="text-dim">('+d.appeared+'/'+period+'회 출현)</span></div>').join('');
-  html += '<div class="text-cyan fw700 mb6 mt8" style="font-size:11px">🔻 사후확률 하위 5</div>';
-  html += bot5.map(d=>'<div class="flex-between" style="padding:3px 0;font-size:11px">'+renderBall(d.num,true)+'<span class="text-cyan">'+d.posterior+'%</span><span class="text-dim">('+d.appeared+'/'+period+'회 출현)</span></div>').join('');
-  document.getElementById('bayesResult').innerHTML = html;
+  results.sort((a,b)=>b.posterior-a.posterior||a.num-b.num);
+  const top10=results.slice(0,10),bot5=results.slice(-5).reverse();
+  let html='<div class="text-green fw700 mb6" style="font-size:11px">🔺 평활 출현률 상위 10 (기준 '+(prior*100).toFixed(1)+'%)</div>';
+  html+=top10.map(d=>'<div class="flex-between" style="padding:3px 0;font-size:11px">'+renderBall(d.num,true)+'<span class="text-green fw700">'+d.posterior.toFixed(1)+'%</span><span class="text-dim">('+d.appeared+'/'+period+'회)</span></div>').join('');
+  html+='<div class="text-cyan fw700 mb6 mt8" style="font-size:11px">🔻 평활 출현률 하위 5</div>';
+  html+=bot5.map(d=>'<div class="flex-between" style="padding:3px 0;font-size:11px">'+renderBall(d.num,true)+'<span class="text-cyan">'+d.posterior.toFixed(1)+'%</span><span class="text-dim">('+d.appeared+'/'+period+'회)</span></div>').join('');
+  html+='<div class="info-neutral mt8">Beta(6,39) 사전분포에 최근 관측을 합친 사후평균입니다. 로또 각 번호의 다음 회차 실제 추첨확률은 여전히 동일합니다.</div>';
+  document.getElementById('bayesResult').innerHTML=html;
 }
 
 /* ===== 생성 탭 ===== */
-const strategies=[{id:'balanced',name:'균형 분포',desc:'구간별 균등 배분 — 5개 일치 커버리지 극대화'},{id:'antiPop',name:'인기번호 회피',desc:'당첨금 극대화 — 3등이라도 독식 가능성 ↑'},{id:'poisson',name:'포아송 보정',desc:'기대값 미달 번호 가중 선택'},{id:'gap',name:'갭 분석',desc:'최근 미출현 번호 우선 — 평균회귀 관점'}];
+const strategies=[{id:'balanced',name:'균형 분포',desc:'구간 편중을 줄인 형태 분산'},{id:'antiPop',name:'인기번호 회피',desc:'32~45를 늘려 타인과의 조합 중복 가능성 완화'},{id:'poisson',name:'저빈도 가중',desc:'장기 기대 출현 대비 저빈도 번호 가중'},{id:'gap',name:'갭 분석',desc:'최근 미출현 번호 우선 — 평균회귀 관점'}];
 let selStrat='balanced';
 function renderStrategies(){document.getElementById('strategyList').innerHTML=strategies.map(s=>'<button class="strategy-btn'+(s.id===selStrat?' active':'')+'" onclick="selStrat=\''+s.id+'\';renderStrategies()"><div><div class="name">'+s.name+'</div><div class="desc">'+s.desc+'</div></div>'+(s.id===selStrat?'<span class="text-gold">✓</span>':'')+' </button>').join('')}
 
@@ -674,9 +700,8 @@ function antiPopPick(){
 function poissonPick(){
   const freq=getFreq(),exp=(DRAWS.length*PICK)/N;
   const w=[];for(let i=1;i<=N;i++)w.push({n:i,w:Math.max(.1,exp-freq[i]+5)});
-  const tw=w.reduce((s,x)=>s+x.w,0);
   const r=[],u=new Set();
-  while(r.length<PICK){let rr=Math.random()*tw;for(const x of w){if(u.has(x.n))continue;rr-=x.w;if(rr<=0){r.push(x.n);u.add(x.n);break}}}
+  while(r.length<PICK){const eligible=w.filter(x=>!u.has(x.n));const tw=eligible.reduce((s,x)=>s+x.w,0);let rr=Math.random()*tw;for(const x of eligible){rr-=x.w;if(rr<=0){r.push(x.n);u.add(x.n);break}}}
   return r.sort((a,b)=>a-b);
 }
 function gapPick(){
@@ -689,13 +714,40 @@ function gapPick(){
   return r.sort((a,b)=>a-b);
 }
 const genFns={balanced:balancedPick,antiPop:antiPopPick,poisson:poissonPick,gap:gapPick};
-const stratNames={balanced:'균형 분포',antiPop:'인기번호 회피',poisson:'포아송 보정',gap:'갭 분석'};
+const stratNames={balanced:'균형 분포',antiPop:'인기번호 회피',poisson:'저빈도 가중',gap:'갭 분석'};
+function parseNumList(id){
+  const el=document.getElementById(id);if(!el)return[];
+  return [...new Set(el.value.split(/[,\s]+/).map(Number).filter(n=>Number.isInteger(n)&&n>=1&&n<=45))];
+}
+function passesQuality(nums){
+  const sum=nums.reduce((a,b)=>a+b,0),odd=nums.filter(n=>n%2).length;
+  const sf=document.getElementById('sumFilter')?.value||'0',of=document.getElementById('oeFilter')?.value||'0';
+  if(sf!=='0'){const [lo,hi]=sf.split('-').map(Number);if(sum<lo||sum>hi)return false;}
+  if(of==='3'&&odd!==3)return false;if(of==='2-4'&&(odd<2||odd>4))return false;
+  return true;
+}
+function applyConstraints(base,fixed,excluded){
+  const out=[...fixed.filter(n=>!excluded.includes(n))];
+  for(const n of base){if(out.length>=6)break;if(!excluded.includes(n)&&!out.includes(n))out.push(n)}
+  let guard=0;while(out.length<6&&guard++<300){const n=Math.floor(Math.random()*45)+1;if(!excluded.includes(n)&&!out.includes(n))out.push(n)}
+  return out.sort((a,b)=>a-b);
+}
+function overlapCount(a,b){return a.filter(n=>b.includes(n)).length}
 function generateNumbers(){
   const count=+document.getElementById('genCount').value,fn=genFns[selStrat],results=[];
-  for(let i=0;i<count;i++){const nums=fn();results.push({nums,sum:nums.reduce((a,b)=>a+b,0),oe:nums.filter(n=>n%2===1).length+':'+nums.filter(n=>n%2===0).length,lh:nums.filter(n=>n<=22).length+':'+nums.filter(n=>n>22).length})}
+  const fixed=parseNumList('fixedNums'),excluded=parseNumList('excludedNums');
+  if(fixed.length>6){alert('고정수는 최대 6개입니다.');return} if(fixed.some(n=>excluded.includes(n))){alert('같은 번호를 고정수와 제외수에 동시에 넣을 수 없습니다.');return}
+  const maxOv=+document.getElementById('maxOverlap').value;
+  let attempts=0;
+  while(results.length<count&&attempts++<3000){
+    const nums=applyConstraints(fn(),fixed,excluded);if(nums.length!==6||!passesQuality(nums))continue;
+    if(results.some(r=>overlapCount(r.nums,nums)>maxOv))continue;
+    const detail=getNumberScoreDetails(nums);
+    results.push({nums,sum:nums.reduce((a,b)=>a+b,0),oe:nums.filter(n=>n%2===1).length+':'+nums.filter(n=>n%2===0).length,lh:nums.filter(n=>n<=22).length+':'+nums.filter(n=>n>22).length,score:(detail.reduce((a,b)=>a+b.balanced,0)/6).toFixed(1)});
+  }
   document.getElementById('genResults').classList.remove('hidden');
   document.getElementById('genResultTitle').textContent='🎯 생성 결과 ('+stratNames[selStrat]+')';
-  document.getElementById('genResultBody').innerHTML=results.map((r,i)=>'<div class="result-row"><div class="flex-center gap4"><span style="font-size:10px;color:var(--textDim);width:20px">#'+(i+1)+'</span>'+r.nums.map(n=>renderBall(n)).join('')+'</div><div class="result-meta"><span>합:'+r.sum+'</span><span>홀짝:'+r.oe+'</span><span>고저:'+r.lh+'</span></div></div>').join('');
+  document.getElementById('genResultBody').innerHTML=results.length?results.map((r,i)=>'<div class="result-row"><div class="flex-center gap4"><span style="font-size:10px;color:var(--textDim);width:20px">#'+(i+1)+'</span>'+r.nums.map(n=>renderBall(n)).join('')+'</div><div class="result-meta"><span>합:'+r.sum+'</span><span>홀짝:'+r.oe+'</span><span>균형:'+r.score+'</span></div></div>').join(''):'<div class="info-red info-box">현재 고정/제외/품질/중복 조건을 동시에 만족하는 조합을 만들지 못했습니다. 조건을 조금 완화해주세요.</div>';
 }
 
 /* ===== 적중 확률 계산기 (초기하분포) ===== */
@@ -736,6 +788,12 @@ function initWheelSelector(){
     c.appendChild(btn);
   }
 }
+function autoWheelPool(size){
+  const scores=calcSignalScores();wheelSelected=new Set(scores.slice(0,size).map(x=>x.num));initWheelSelector();
+  document.getElementById('wheelCount').textContent=wheelSelected.size;document.getElementById('wheelBtn').disabled=wheelSelected.size<8;document.getElementById('wheelProb').textContent=(probAtLeast3(wheelSelected.size)*100).toFixed(1)+'%';
+}
+function clearWheelPool(){wheelSelected.clear();initWheelSelector();document.getElementById('wheelCount').textContent='0';document.getElementById('wheelProb').textContent='0%';document.getElementById('wheelBtn').disabled=true;}
+
 /* ===== 몬테카를로 시뮬레이터 ===== */
 const LOTTO_TIER_P = { p1:1/8145060, p2:6/8145060, p3:228/8145060, p4:11115/8145060, p5:182780/8145060 };
 function sampleTier(){
@@ -797,7 +855,7 @@ function renderMonteCarloResult(r){
     '</div>';
   html += '<div class="chart-wrapper" style="height:200px"><canvas id="mcChart"></canvas></div>';
   html += '<div class="info-neutral mt8" style="font-size:10px">시뮬레이션 '+r.numTrials.toLocaleString()+'회 중 최저 '+Math.round(r.netResults[0]).toLocaleString()+'원 ~ 최고 '+Math.round(r.netResults[r.netResults.length-1]).toLocaleString()+'원까지 갈렸습니다. 판매액의 일부만 당첨금으로 환원되는 구조라 장기적으로는 지출보다 덜 돌아오는 쪽이 우세합니다.</div>';
-  html += '<div class="info-neutral mt6" style="font-size:10px">💡 "평균 손익"이 "이론적 기대 회수율"보다 훨씬 나쁘게 나오는 게 정상입니다. 이론값에는 1등(약 815만분의1) 몫이 포함돼 있는데, 실제로는 그 정도 확률의 사건이 거의 안 터지기 때문에 대부분의 시뮬레이션은 이론 평균보다 낮은 결과로 수렴합니다.</div>';
+  html += '<div class="info-neutral mt6" style="font-size:10px">💡 1등처럼 매우 희귀하고 큰 당첨금 때문에 유한한 시뮬레이션의 표본 평균은 이론적 기대값과 크게 벌어질 수 있습니다. 시행 수를 충분히 늘리면 표본 평균은 이론적 기대값에 가까워지는 방향으로 수렴합니다.</div>';
   document.getElementById('mcResults').innerHTML = html;
   document.getElementById('mcResults').classList.remove('hidden');
   renderMcChart(r.netResults);
@@ -862,7 +920,7 @@ function renderWheelResult(needed, K){
   document.getElementById('wheelBtn').disabled = false;
   const cost = needed.length * 1000;
   let html = '<div class="card mt8"><div class="card-title">🎯 축소조합 결과</div>';
-  html += '<div class="grid2 mb8"><div class="stat"><div class="stat-val text-gold">'+needed.length+'장</div><div class="stat-label">최소 조합 수</div></div><div class="stat"><div class="stat-val">'+cost.toLocaleString()+'원</div><div class="stat-label">총 비용</div></div></div>';
+  html += '<div class="grid2 mb8"><div class="stat"><div class="stat-val text-gold">'+needed.length+'장</div><div class="stat-label">생성 조합 수</div></div><div class="stat"><div class="stat-val">'+cost.toLocaleString()+'원</div><div class="stat-label">총 비용</div></div></div>';
   html += '<div class="info-green info-box mb8">✅ 선택한 '+K+'개 번호 중 당첨번호와 <strong>3개 이상 일치</strong>하면 최소 1장은 5등 이상 당첨 보장</div>';
   html += needed.map((c,i)=>'<div class="result-row"><span style="font-size:10px;color:var(--textDim);width:25px">#'+(i+1)+'</span>'+c.map(n=>renderBall(n)).join('')+'</div>').join('');
   html += '</div>';
@@ -984,30 +1042,18 @@ function openAddDrawModal(){
   renderManualList();
 }
 function closeAddDrawModal(){ document.getElementById('addDrawModal').classList.add('hidden'); }
-function addManualDraw(){
-  const round = +document.getElementById('addRound').value;
-  const date = document.getElementById('addDate').value;
-  const nums = [1,2,3,4,5,6].map(i=>+document.getElementById('addN'+i).value);
-  const bonus = +document.getElementById('addBonus').value;
-  if(!round||nums.some(n=>isNaN(n)||n<1||n>45)||new Set(nums).size!==6){ alert('모든 필드를 정확히 입력해주세요.'); return; }
-  if(DRAWS.find(d=>d.round===round)){ alert('이미 존재하는 회차입니다.'); return; }
-  const newDraw = {round, nums:nums.sort((a,b)=>a-b), bonus:bonus||null, date:date||'', _manual:true};
-  DRAWS.push(newDraw);
-  DRAWS.sort((a,b)=>a.round-b.round);
-  saveManualDraws();
-  // Firestore에도 저장 (기기 간 동기화)
-  if(db){try{
-    const n=newDraw.nums;
-    db.collection('draws').doc(String(round)).set({no1:n[0],no2:n[1],no3:n[2],no4:n[3],no5:n[4],no6:n[5],bonus:newDraw.bonus,date:newDraw.date});
-    db.collection('meta').doc('info').set({lastDraw:DRAWS[DRAWS.length-1].round},{merge:true});
-  }catch(e){console.log('Firestore 저장 실패:',e.message)}}
-  updateStatusBar();
-  refreshCurrentTab();
-  renderManualList();
-  [1,2,3,4,5,6].forEach(i=>document.getElementById('addN'+i).value='');
-  document.getElementById('addBonus').value='';
-  document.getElementById('addRound').value = round+1;
-  alert(round+'회차가 추가되었습니다.');
+async function addManualDraw(){
+  const round=+document.getElementById('addRound').value,date=document.getElementById('addDate').value;
+  const nums=[1,2,3,4,5,6].map(i=>+document.getElementById('addN'+i).value),bonus=+document.getElementById('addBonus').value;
+  if(!round||nums.some(n=>!Number.isInteger(n)||n<1||n>45)||new Set(nums).size!==6){alert('회차와 당첨번호 6개를 정확히 입력해주세요.');return}
+  if(bonus&&(!Number.isInteger(bonus)||bonus<1||bonus>45)){alert('보너스번호는 1~45 사이여야 합니다.');return}
+  if(bonus&&nums.includes(bonus)){alert('보너스번호는 당첨번호 6개와 중복될 수 없습니다.');return}
+  if(DRAWS.find(d=>d.round===round)){alert('이미 존재하는 회차입니다.');return}
+  const newDraw={round,nums:nums.sort((a,b)=>a-b),bonus:bonus||null,date:date||'',_manual:true};
+  DRAWS.push(newDraw);DRAWS.sort((a,b)=>a.round-b.round);saveManualDraws();
+  if(db){try{const n=newDraw.nums;await db.collection('draws').doc(String(round)).set({no1:n[0],no2:n[1],no3:n[2],no4:n[3],no5:n[4],no6:n[5],bonus:newDraw.bonus,date:newDraw.date});await db.collection('meta').doc('info').set({lastDraw:DRAWS[DRAWS.length-1].round},{merge:true});}catch(e){console.log('Firestore 저장 실패:',e.message);alert('기기에는 저장됐지만 Firestore 저장에 실패했습니다: '+e.message)}}
+  updateStatusBar();refreshCurrentTab();renderManualList();
+  [1,2,3,4,5,6].forEach(i=>document.getElementById('addN'+i).value='');document.getElementById('addBonus').value='';document.getElementById('addRound').value=(DRAWS[DRAWS.length-1]?.round||round)+1;
 }
 function saveManualDraws(){
   const manual = DRAWS.filter(d=>d._manual);
@@ -1053,10 +1099,7 @@ const WEIGHTS = {rsi:25, bb:20, macd:20, super:20, mom:15};
 const WEIGHT_NAMES = {rsi:'RSI 상대강도',bb:'볼린저밴드',macd:'MACD',super:'슈퍼트렌드',mom:'구간 모멘텀'};
 
 function initIndicatorSelects(){
-  document.getElementById('weightSliders').innerHTML=Object.entries(WEIGHTS).map(([k,v])=>'<div class="flex-between mb6"><span style="font-size:11px">'+WEIGHT_NAMES[k]+'</span><div class="flex-center gap6"><input type="range" min="0" max="50" value="'+v+'" id="w_'+k+'" style="width:120px"><span style="font-size:11px;width:30px;text-align:right" id="wv_'+k+'">'+v+'%</span></div></div>').join('');
-  Object.keys(WEIGHTS).forEach(k=>{
-    document.getElementById('w_'+k).addEventListener('input',e=>{WEIGHTS[k]=+e.target.value;document.getElementById('wv_'+k).textContent=e.target.value+'%';});
-  });
+  document.getElementById('weightSliders').innerHTML='<div class="grid2"><div class="stat"><div class="stat-val text-green">55%</div><div class="stat-label">추세 점수<br>최근 10·20회 출현 강도</div></div><div class="stat"><div class="stat-val text-cyan">45%</div><div class="stat-label">반등 점수<br>현재 미출현 갭 중심</div></div></div><div class="info-neutral">RSI·볼린저·MACD·슈퍼트렌드는 별도 관찰 지표로 유지하며 균형 점수와 혼합하지 않습니다.</div>';
   ['bb','macd','super'].forEach(ind=>{
     const container=document.getElementById(ind+'NumSelector');
     if(!container)return;
@@ -1092,7 +1135,7 @@ function calcRSI(num,period){
   const recent=changes.slice(-period);let gains=0,losses=0;
   recent.forEach(c=>{if(c>0)gains+=c;else losses+=Math.abs(c)});
   const avgGain=gains/period,avgLoss=losses/period;
-  if(avgLoss===0)return 100;return +(100-100/(1+avgGain/avgLoss)).toFixed(1);
+  if(avgGain===0&&avgLoss===0)return 50;if(avgLoss===0)return 100;if(avgGain===0)return 0;return +(100-100/(1+avgGain/avgLoss)).toFixed(1);
 }
 
 function renderRSI(){
@@ -1185,32 +1228,28 @@ function renderRangeInd(){
 }
 
 /* ===== 시그널 스코어 (5개 지표) ===== */
-function calcSignalScores(){
-  const scores=[];const draws=getDrawNums();
-  if(draws.length<50)return Array.from({length:N},(_,i)=>({num:i+1,score:50}));
+function calcScoreDetailsForDraws(drawObjects){
+  const draws=drawObjects.map(d=>d.nums||d),out=[];if(draws.length<20)return Array.from({length:N},(_,i)=>({num:i+1,trend:50,rebound:50,balanced:50,reasons:['데이터 부족']}));
+  const total=draws.length,exp20=20*PICK/N;
   for(let n=1;n<=N;n++){
-    let score=0,totalW=0;
-    const rsi=calcRSI(n,20);score+=(100-rsi)*WEIGHTS.rsi;totalW+=WEIGHTS.rsi;
-    const ts=getNumTimeSeries(n,20);
-    if(ts.length>=20){const lastSlice=ts.slice(-20);const m=mean(lastSlice),sd=stddev(lastSlice);const last=ts[ts.length-1];const bbScore=sd>0?50-((last-m)/(2*sd))*50:50;score+=Math.max(0,Math.min(100,bbScore))*WEIGHTS.bb;totalW+=WEIGHTS.bb}
-    const raw=draws.map(d=>d.includes(n)?1:0);
-    if(raw.length>=30){const ema12=calcEMA(raw,12),ema26=calcEMA(raw,26);const macdVal=ema12[ema12.length-1]-ema26[ema26.length-1];const macdScore=50+macdVal*1000;score+=Math.max(0,Math.min(100,macdScore))*WEIGHTS.macd;totalW+=WEIGHTS.macd}
-    const st=calcSupertrendData(n);
-    if(st.trend.length>0){score+=(st.trend[st.trend.length-1]?85:25)*WEIGHTS.super;totalW+=WEIGHTS.super}
-    const recent10=draws.slice(-10),prev10=draws.slice(-20,-10);
-    const rc=recent10.filter(d=>d.includes(n)).length,pc=prev10.filter(d=>d.includes(n)).length;
-    const momScore=pc>0?Math.min(100,50+((rc-pc)/pc)*100):rc>0?70:50;
-    score+=momScore*WEIGHTS.mom;totalW+=WEIGHTS.mom;
-    scores.push({num:n,score:totalW>0?+(score/totalW).toFixed(1):50});
-  }
-  return scores.sort((a,b)=>b.score-a.score);
+    const recent10=draws.slice(-10),recent20=draws.slice(-20),prev20=draws.slice(-40,-20);
+    const c10=recent10.filter(d=>d.includes(n)).length,c20=recent20.filter(d=>d.includes(n)).length,p20=prev20.filter(d=>d.includes(n)).length;
+    let gap=0;for(let i=draws.length-1;i>=0;i--){if(draws[i].includes(n))break;gap++}
+    const avgGap=(N/PICK)-1;
+    const trend=Math.max(0,Math.min(100,50+(c10-exp20/2)*11+(c20-p20)*5));
+    const rebound=Math.max(0,Math.min(100,50+(gap-avgGap)*4-(c10-exp20/2)*5));
+    const balanced=+(trend*.55+rebound*.45).toFixed(1);
+    const reasons=[];if(c10>=2)reasons.push('최근10회 '+c10+'회 출현');if(c10===0)reasons.push('최근10회 미출현');if(gap>=8)reasons.push('갭 '+gap+'회');if(c20>p20)reasons.push('20회 추세↑');if(c20<p20)reasons.push('20회 추세↓');
+    out.push({num:n,trend:+trend.toFixed(1),rebound:+rebound.toFixed(1),balanced,reasons:reasons.slice(0,3),gap,c10,c20});
+  }return out;
 }
+function calcSignalScores(){return calcScoreDetailsForDraws(DRAWS).sort((a,b)=>b.balanced-a.balanced||a.num-b.num).map(x=>({...x,score:x.balanced}));}
+function getNumberScoreDetails(nums){const all=calcScoreDetailsForDraws(DRAWS);return nums.map(n=>all.find(x=>x.num===n));}
 function renderSignalHeatmap(){
-  const scores=calcSignalScores();
-  const max=Math.max(...scores.map(s=>s.score)),min=Math.min(...scores.map(s=>s.score)),range=max-min||1;
+  const scores=calcSignalScores();const max=Math.max(...scores.map(s=>s.score)),min=Math.min(...scores.map(s=>s.score)),range=max-min||1;
   document.getElementById('topBalls').innerHTML=scores.slice(0,6).map(s=>renderBall(s.num)).join('');
   const byNum=[...scores].sort((a,b)=>a.num-b.num);
-  document.getElementById('signalHeatmap').innerHTML=byNum.map(s=>{const pct=(s.score-min)/range;const r=Math.round(255*pct),g=Math.round(100+155*(1-pct)),b_=Math.round(60*(1-pct));return'<div class="hm-cell" style="background:rgba('+r+','+g+','+b_+',.7);color:'+(pct>.5?'#000':'#fff')+'" title="'+s.num+'번: '+s.score+'점">'+s.num+'</div>'}).join('');
+  document.getElementById('signalHeatmap').innerHTML=byNum.map(s=>{const pct=(s.score-min)/range;const r=Math.round(255*pct),g=Math.round(100+155*(1-pct)),b_=Math.round(60*(1-pct));return'<div class="hm-cell" onclick="openNumberFromHeatmap('+s.num+')" style="background:rgba('+r+','+g+','+b_+',.7);color:'+(pct>.5?'#000':'#fff')+'" title="'+s.num+'번 · 균형 '+s.balanced+' · 추세 '+s.trend+' · 반등 '+s.rebound+'">'+s.num+'</div>'}).join('');
 }
 function recalcSignal(){renderSignalHeatmap()}
 function renderIndicatorTab(){renderSignalHeatmap();renderIndicatorSub()}
@@ -1230,7 +1269,7 @@ function analyzeMyNumbers(){
     const scoreObj=allScores.find(x=>x.num===n);const score=scoreObj?scoreObj.score:50;
     const rsi=calcRSI(n,20);const st=calcSupertrendData(n);
     totalScore+=score;
-    return{num:n,score,rsi,isSuperUp:st.trend.length>0?st.trend[st.trend.length-1]:true};
+    return{num:n,score,trend:scoreObj?.trend||50,rebound:scoreObj?.rebound||50,rsi,isSuperUp:st.trend.length>0?st.trend[st.trend.length-1]:true,reasons:scoreObj?.reasons||[]};
   });
   const avgScore=(totalScore/6).toFixed(1);
 
@@ -1259,7 +1298,7 @@ function analyzeMyNumbers(){
     if(item.rsi<30)rsiText='<span class="text-cyan fw700">침체 ('+item.rsi+')</span>';
     const superText=item.isSuperUp?'<span class="text-green fw700">🟢 상승</span>':'<span class="text-red">🔴 하락</span>';
     let scoreColor='';if(item.score>58)scoreColor='text-green';else if(item.score<42)scoreColor='text-red';
-    return'<tr><td>'+renderBall(item.num,true)+'</td><td class="text-right fw700 '+scoreColor+'">'+item.score+'점</td><td class="text-right">'+rsiText+'</td><td class="text-center">'+superText+'</td></tr>';
+    return'<tr><td>'+renderBall(item.num,true)+'</td><td class="text-right fw700 '+scoreColor+'">'+item.score+'점</td><td class="text-right">'+item.trend+'</td><td class="text-right">'+item.rebound+'</td><td class="text-dim" style="font-size:9px">'+item.reasons.join(' · ')+'</td></tr>';
   }).join('');
 
   let html='<div class="card mt8"><div class="card-title">📝 기초 패턴 분석</div>'+
@@ -1269,10 +1308,10 @@ function analyzeMyNumbers(){
     '<div class="stat"><div class="stat-val '+(low>=2&&low<=4?'text-green':'text-red')+'">'+low+':'+high+'</div><div class="stat-label">저:고</div></div></div></div>'+
     '<div class="card mt8"><div class="card-title">🎯 보조지표 정밀 평가 (5종 가중치 융합)</div>'+
     '<div class="stat mb8" style="background:rgba(240,192,64,.08);border:1px solid rgba(240,192,64,.2)"><div class="stat-val text-gold">'+avgScore+'점</div><div class="stat-label">조합 평균 시그널 스코어 (기준점: 50점)</div></div>'+
-    '<table style="line-height:1.8"><thead><tr><th>번호</th><th class="text-right">종합 점수</th><th class="text-right">RSI 강도</th><th class="text-center">슈퍼트렌드</th></tr></thead><tbody>'+rowsHtml+'</tbody></table>'+
+    '<table style="line-height:1.8"><thead><tr><th>번호</th><th class="text-right">균형</th><th class="text-right">추세</th><th class="text-right">반등</th><th>근거</th></tr></thead><tbody>'+rowsHtml+'</tbody></table>'+
     '<div class="info-neutral mt8">💡 <strong>1~3등 분석 가이드:</strong><br>'+
-    '• 점수가 높은 번호(초록색)는 출현 모멘텀이 강한 <strong>핫 번호</strong>입니다. 조합의 핵심 축으로 활용하세요.<br>'+
-    '• 침체(RSI < 30) 번호를 1~2개 섞으면 평균회귀 관점에서 <strong>3등 안전망</strong>이 넓어집니다.</div></div>'+
+    '• <strong>추세 점수</strong>는 최근 출현 강도, <strong>반등 점수</strong>는 미출현 갭을 중심으로 봅니다.<br>'+
+    '• <strong>균형 점수</strong>는 두 관점을 결합한 상대평가이며 당첨확률 자체를 의미하지 않습니다.</div></div>'+
     '<div class="card mt8"><div class="card-title">📋 과거 성적 요약</div>'+
     '<div class="grid3"><div class="stat"><div class="stat-val text-cyan">'+bt3plus+'회</div><div class="stat-label">3개+ 일치</div></div>'+
     '<div class="stat"><div class="stat-val text-green">'+bt4plus+'회</div><div class="stat-label">4개+ 일치</div></div>'+
@@ -1293,6 +1332,47 @@ function analyzeMyNumbers(){
 
   document.getElementById('analyzeResult').innerHTML=html;
   document.getElementById('analyzeResult').classList.remove('hidden');
+}
+
+/* ===== v3.1 추가 기능 ===== */
+function calcGapStats(num,draws=getDrawNums()){
+  const gaps=[];let last=-1;draws.forEach((d,i)=>{if(d.includes(num)){if(last>=0)gaps.push(i-last-1);last=i}});
+  let current=0;for(let i=draws.length-1;i>=0;i--){if(draws[i].includes(num))break;current++}
+  return{current,avg:gaps.length?mean(gaps):0,max:gaps.length?Math.max(...gaps):0,lastIndex:last};
+}
+function ensureProfileOptions(){const sel=document.getElementById('profileNum');if(!sel||sel.options.length)return;for(let i=1;i<=45;i++)sel.add(new Option(i+'번',i));}
+function renderNumberProfile(){
+  ensureProfileOptions();const n=+document.getElementById('profileNum').value||1,draws=getDrawNums(),freq=getFreq(),g=calcGapStats(n,draws),d=calcScoreDetailsForDraws(DRAWS).find(x=>x.num===n);
+  const c=k=>draws.slice(-k).filter(x=>x.includes(n)).length;const lastDraw=g.lastIndex>=0?DRAWS[g.lastIndex]:null;
+  document.getElementById('numberProfile').innerHTML='<div class="grid3 mb8"><div class="stat"><div class="stat-val">'+freq[n]+'</div><div class="stat-label">전체 출현</div></div><div class="stat"><div class="stat-val">'+g.current+'</div><div class="stat-label">현재 갭</div></div><div class="stat"><div class="stat-val">'+g.max+'</div><div class="stat-label">역대 최대 갭</div></div></div><div class="grid3 mb8"><div class="stat"><div class="stat-val">'+c(10)+'</div><div class="stat-label">최근10회</div></div><div class="stat"><div class="stat-val">'+c(20)+'</div><div class="stat-label">최근20회</div></div><div class="stat"><div class="stat-val">'+c(50)+'</div><div class="stat-label">최근50회</div></div></div><div class="info-neutral">평균 갭 '+g.avg.toFixed(1)+'회 · 최근 출현 '+(lastDraw?lastDraw.round+'회':'없음')+' · 추세 '+d.trend+' / 반등 '+d.rebound+' / 균형 '+d.balanced+'<br>근거: '+(d.reasons.join(' · ')||'중립')+'</div>';
+}
+function openNumberFromHeatmap(n){switchTab('lab');ensureProfileOptions();document.getElementById('profileNum').value=n;renderNumberProfile();}
+function analyzePairTriple(){
+  const nums=[...new Set(document.getElementById('pairInput').value.split(/[,\s]+/).map(Number).filter(n=>n>=1&&n<=45))];if(nums.length<2||nums.length>3){document.getElementById('pairResult').innerHTML='<div class="info-red info-box">2개 또는 3개 번호를 입력해주세요.</div>';return}
+  const hits=DRAWS.filter(d=>nums.every(n=>d.nums.includes(n)));const pct=DRAWS.length?hits.length/DRAWS.length*100:0;
+  document.getElementById('pairResult').innerHTML='<div class="grid2"><div class="stat"><div class="stat-val">'+hits.length+'회</div><div class="stat-label">동시 출현</div></div><div class="stat"><div class="stat-val">'+pct.toFixed(2)+'%</div><div class="stat-label">과거 비율</div></div></div><div class="info-neutral">최근 동시출현: '+(hits.slice(-10).reverse().map(d=>d.round+'회').join(', ')||'없음')+'<br>과거 동시출현 빈도이며 다음 회차 확률 상승을 뜻하지 않습니다.</div>';
+}
+function validateDrawData(){
+  const issues=[],seen=new Set();let prevRound=null,prevDate=null;
+  DRAWS.forEach(d=>{if(seen.has(d.round))issues.push(d.round+'회 중복');seen.add(d.round);if(!Array.isArray(d.nums)||d.nums.length!==6||new Set(d.nums).size!==6||d.nums.some(n=>!Number.isInteger(+n)||n<1||n>45))issues.push(d.round+'회 당첨번호 이상');if(d.bonus!=null&&(d.bonus<1||d.bonus>45||d.nums.includes(d.bonus)))issues.push(d.round+'회 보너스번호 이상');if(prevRound!=null&&d.round>prevRound+1)issues.push((prevRound+1)+'~'+(d.round-1)+'회 누락');if(prevDate&&d.date&&new Date(d.date)<new Date(prevDate))issues.push(d.round+'회 날짜 역전');prevRound=d.round;if(d.date)prevDate=d.date});return issues;
+}
+function renderDataHealth(){
+  const issues=validateDrawData(),first=DRAWS[0]?.round||'-',last=DRAWS[DRAWS.length-1]?.round||'-',manual=DRAWS.filter(d=>d._manual).length;
+  document.getElementById('dataHealth').innerHTML='<div class="grid3 mb8"><div class="stat"><div class="stat-val">'+DRAWS.length+'</div><div class="stat-label">총 회차</div></div><div class="stat"><div class="stat-val">'+first+'~'+last+'</div><div class="stat-label">회차 범위</div></div><div class="stat"><div class="stat-val">'+manual+'</div><div class="stat-label">수동 데이터</div></div></div><div class="info-neutral mb8">JSON '+(DATA_SOURCE_INFO.jsonCount||0)+'건 / 최신 '+(DATA_SOURCE_INFO.jsonLast||'-')+'회 · Firestore 추가/로드 '+(DATA_SOURCE_INFO.firestoreCount||0)+'건 / 최신 '+(DATA_SOURCE_INFO.firestoreLast||'-')+'회 · 캐시 '+(DATA_SOURCE_INFO.cacheUsed?'사용':'미사용')+(DATA_SOURCE_INFO.fallbackUsed?' · ⚠ 임시데이터 사용':'')+'</div>'+(issues.length?'<div class="info-red info-box">⚠ '+issues.slice(0,20).join('<br>')+(issues.length>20?'<br>...외 '+(issues.length-20)+'건':'')+'</div>':'<div class="info-green info-box">✅ 중복·범위·보너스 중복·회차 누락·날짜 역전 이상이 발견되지 않았습니다.</div>');
+}
+function runWalkForward(){
+  const requested=+document.getElementById('wfPeriod').value||300,minTrain=60;const start=Math.max(minTrain,DRAWS.length-requested);const modes=['trend','rebound','balanced'];const stats=Object.fromEntries(modes.map(m=>[m,{matches:0,h3:0,h4:0,h5:0,best:0,n:0}]));
+  for(let i=start;i<DRAWS.length;i++){
+    const train=DRAWS.slice(0,i),actual=DRAWS[i].nums,details=calcScoreDetailsForDraws(train);
+    for(const m of modes){const pred=[...details].sort((a,b)=>b[m]-a[m]||a.num-b.num).slice(0,6).map(x=>x.num);const hit=pred.filter(n=>actual.includes(n)).length,s=stats[m];s.matches+=hit;s.h3+=hit>=3;s.h4+=hit>=4;s.h5+=hit>=5;s.best=Math.max(s.best,hit);s.n++;}
+  }
+  const names={trend:'추세',rebound:'반등',balanced:'균형'};document.getElementById('wfResult').innerHTML='<table><thead><tr><th>전략</th><th class="text-right">평균 일치</th><th class="text-right">3개+</th><th class="text-right">4개+</th><th class="text-right">최고</th></tr></thead><tbody>'+modes.map(m=>{const x=stats[m];return'<tr><td class="fw700">'+names[m]+'</td><td class="text-right">'+(x.matches/x.n).toFixed(3)+'</td><td class="text-right">'+x.h3+'회 ('+(x.h3/x.n*100).toFixed(1)+'%)</td><td class="text-right">'+x.h4+'회</td><td class="text-right text-gold">'+x.best+'개</td></tr>'}).join('')+'</tbody></table><div class="info-neutral">검증 '+stats.trend.n+'회. 각 시점에서 해당 회차 이후 데이터는 사용하지 않았습니다. 무작위 6개 번호의 기대 일치 개수는 0.8개입니다.</div>';
+}
+function renderLab(){
+  ensureProfileOptions();const all=calcSignalScores(),trend=[...all].sort((a,b)=>b.trend-a.trend).slice(0,8),rebound=[...all].sort((a,b)=>b.rebound-a.rebound).slice(0,8),balanced=[...all].sort((a,b)=>b.balanced-a.balanced).slice(0,12);
+  const core=balanced.slice(0,6);const sets=[];for(let i=0;i<5;i++){const pool=balanced.slice(0,12).map(x=>x.num),pick=[];while(pick.length<6&&pool.length){const idx=(i*3+pick.length*2)%pool.length;pick.push(pool.splice(idx,1)[0])}sets.push(pick.sort((a,b)=>a-b));}
+  document.getElementById('labSummary').innerHTML='<div class="mb8"><span class="text-gold fw700" style="font-size:11px">핵심 6개</span><div>'+core.map(x=>renderBall(x.num)).join('')+'</div></div><div class="grid2 mb8"><div><div class="text-green fw700 mb6" style="font-size:11px">추세 후보</div>'+trend.map(x=>'<span class="mini-chip">'+x.num+' · '+x.trend+'</span>').join('')+'</div><div><div class="text-cyan fw700 mb6" style="font-size:11px">반등 후보</div>'+rebound.map(x=>'<span class="mini-chip">'+x.num+' · '+x.rebound+'</span>').join('')+'</div></div><div class="text-gold fw700 mb6" style="font-size:11px">추천 근거 TOP 12</div>'+balanced.map(x=>'<div class="flex-between" style="padding:4px 0;border-bottom:1px solid rgba(30,45,69,.12);font-size:10px"><span>'+renderBall(x.num,true)+'</span><span>균형 '+x.balanced+' / 추세 '+x.trend+' / 반등 '+x.rebound+'</span><span class="text-dim">'+(x.reasons.join(' · ')||'중립')+'</span></div>').join('')+'<div class="text-gold fw700 mt10 mb6" style="font-size:11px">추천 조합 5세트</div>'+sets.map((a,i)=>'<div class="result-row"><span class="text-dim" style="font-size:10px">#'+(i+1)+'</span><div>'+a.map(n=>renderBall(n,true)).join('')+'</div></div>').join('');
+  renderDataHealth();if(!document.getElementById('numberProfile').innerHTML)renderNumberProfile();
 }
 
 initApp();
