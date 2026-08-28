@@ -453,6 +453,30 @@
     padding-top:8px;
     margin-top:4px;
   }
+  .trade-day{
+    border:1px solid var(--border);
+    border-radius:9px;
+    margin-bottom:8px;
+    overflow:hidden;
+    background:var(--panel2);
+  }
+  .trade-day > summary{
+    cursor:pointer;
+    list-style:none;
+    padding:11px 12px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    color:var(--text);
+    font-size:13px;
+    font-weight:600;
+  }
+  .trade-day > summary::-webkit-details-marker{display:none;}
+  .trade-day > summary::before{content:'▶'; color:var(--sub); font-size:10px; margin-right:7px;}
+  .trade-day[open] > summary::before{content:'▼';}
+  .trade-day-summary{margin-left:auto; font-size:12px; font-weight:600;}
+  .trade-day-body{padding:0 10px 8px; border-top:1px solid var(--border);}
   input[readonly]{
     opacity:0.65;
     cursor:not-allowed;
@@ -630,6 +654,7 @@
       <div class="chart-header">
         <span class="chart-title" id="chartTitle">BTCUSDT 캔들차트</span>
         <div class="tf-buttons">
+          <button type="button" class="tf-btn" id="tfBtn-1" onclick="setTimeframe('1')">1분</button>
           <button type="button" class="tf-btn" id="tfBtn-5" onclick="setTimeframe('5')">5분</button>
           <button type="button" class="tf-btn" id="tfBtn-15" onclick="setTimeframe('15')">15분</button>
           <button type="button" class="tf-btn" id="tfBtn-60" onclick="setTimeframe('60')">1시간</button>
@@ -654,7 +679,7 @@
         <canvas id="macdChart"></canvas>
       </div>
       <div class="chart-loading" id="chartLoading" style="display:none;">캔들 데이터 불러오는 중...</div>
-      <button type="button" class="analysis-btn" id="analysisBtn" onclick="generateAnalysisText()">📋 전체 타임프레임(5분·15분·1시간·4시간·1일) 분석 텍스트 생성</button>
+      <button type="button" class="analysis-btn" id="analysisBtn" onclick="generateAnalysisText()">📋 전체 타임프레임(1분·5분·15분·1시간·4시간·1일) 분석 텍스트 생성</button>
       <div class="analysis-box" id="analysisBox">
         <textarea id="analysisOutput" readonly></textarea>
         <button type="button" class="analysis-copy-btn" id="analysisCopyBtn" onclick="copyAnalysisText()">복사하기</button>
@@ -922,6 +947,7 @@ function changeCoin(symbol){
   resetLiveDisplayForSymbolChange();
   scheduleSaveSettings();
   fetchLivePrice(true);
+  connectPriceStream();
   if(typeof loadChartData === 'function') loadChartData();
 }
 
@@ -1189,12 +1215,70 @@ function clearTargetPrice(){
 
 fetchBtcPrice(true);
 fetchLivePrice(true);
-let livePriceTimer = setInterval(() => {
-  if(document.visibilityState === 'visible'){
-    fetchBtcPrice(false);
-    fetchLivePrice(false);
+let priceSocket = null;
+let priceSocketReconnectTimer = null;
+let priceSocketPingTimer = null;
+let priceSocketGeneration = 0;
+
+function connectPriceStream(){
+  const generation = ++priceSocketGeneration;
+  clearTimeout(priceSocketReconnectTimer);
+  clearInterval(priceSocketPingTimer);
+  if(priceSocket){
+    priceSocket.onclose = null;
+    priceSocket.close();
   }
-}, 1000);
+  const symbols = [...new Set([currentSymbol, 'BTCUSDT'])];
+  try{
+    priceSocket = new WebSocket('wss://stream.bybit.com/v5/public/linear');
+    const socket = priceSocket;
+    socket.onopen = () => {
+      if(generation !== priceSocketGeneration) return;
+      socket.send(JSON.stringify({ op:'subscribe', args:symbols.map(s => `tickers.${s}`) }));
+      priceSocketPingTimer = setInterval(() => {
+        if(socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ op:'ping' }));
+      }, 20000);
+    };
+    socket.onmessage = (event) => {
+      if(generation !== priceSocketGeneration) return;
+      try{
+        const msg = JSON.parse(event.data);
+        if(!msg.topic?.startsWith('tickers.') || !msg.data) return;
+        const symbol = msg.topic.slice(8);
+        const price = parseFloat(msg.data.lastPrice);
+        if(!Number.isFinite(price) || price <= 0) return;
+        if(symbol === 'BTCUSDT'){
+          lastBtcPrice = price;
+          document.getElementById('btcPriceValue').textContent = `${fmtPrice(price)} USDT`;
+        }
+        if(symbol === currentSymbol){
+          lastLivePrice = price;
+          document.getElementById('livePriceValue').textContent = `${fmtPrice(price)} USDT`;
+          document.getElementById('applyToEntryBtn').disabled = false;
+          document.getElementById('applyToTargetBtn').disabled = false;
+          updateLivePnl();
+          updatePageTitle(price);
+        }
+      }catch(e){ console.error('실시간 시세 메시지 처리 실패', e); }
+    };
+    socket.onclose = () => {
+      clearInterval(priceSocketPingTimer);
+      if(generation === priceSocketGeneration){
+        priceSocketReconnectTimer = setTimeout(connectPriceStream, 3000);
+      }
+    };
+    socket.onerror = () => socket.close();
+  }catch(e){
+    console.error('실시간 시세 연결 실패', e);
+    priceSocketReconnectTimer = setTimeout(connectPriceStream, 3000);
+  }
+}
+connectPriceStream();
+let livePriceTimer = setInterval(() => {
+  // WebSocket 장애에 대비한 저빈도 보조 조회. 최소화 상태에서도 중단하지 않는다.
+  fetchBtcPrice(false);
+  fetchLivePrice(false);
+}, 15000);
 
 function setDirection(d, skipSave){
   direction = d;
@@ -1290,12 +1374,12 @@ function updateSplitEntries(){
   }
 
   let totalMarginKRW = 0;
-  let weightedSum = 0;
   valid.forEach(r => {
     totalMarginKRW += r.marginKRW;
-    weightedSum += r.price * r.marginKRW;
   });
-  const avgEntry = weightedSum / totalMarginKRW;
+  // 동일 레버리지 분할 진입의 실제 보유 수량을 반영한 평균가(조화 가중평균)
+  const totalQtyWeight = valid.reduce((sum, r) => sum + r.marginKRW / r.price, 0);
+  const avgEntry = totalQtyWeight > 0 ? totalMarginKRW / totalQtyWeight : 0;
 
   document.getElementById('entryPrice').value = avgEntry.toFixed(2);
   document.getElementById('margin').value = Math.round(totalMarginKRW);
@@ -1323,6 +1407,11 @@ function fmtPrice(n){
 function fmtSigned(n, digits=2){
   const s = n>=0 ? '+' : '';
   return s + fmt(n, digits);
+}
+function escapeHtml(value){
+  return String(value ?? '').replace(/[&<>'"]/g, ch => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;'
+  })[ch]);
 }
 
 function getInputs(){
@@ -1440,7 +1529,7 @@ document.querySelectorAll('input[type=number]').forEach(el=>{
 
 // ===== 캔들 차트 + 보조지표 =====
 let currentTimeframe = '15';
-const TF_LABELS = { '5':'5분','15':'15분','60':'1시간','240':'4시간','D':'1일' };
+const TF_LABELS = { '1':'1분','5':'5분','15':'15분','60':'1시간','240':'4시간','D':'1일' };
 let candleChartInstance = null;
 let rsiChartInstance = null;
 let macdChartInstance = null;
@@ -1473,6 +1562,17 @@ function calcBollinger(closes, ma, period=20, mult=2){
     lower[i] = ma[i] - mult*stdDev;
   }
   return { upper, lower };
+}
+
+function calcATR(candles, period=14){
+  if(candles.length < period + 1) return null;
+  const tr = [];
+  for(let i=1;i<candles.length;i++){
+    const c = candles[i], prevClose = candles[i-1].c;
+    tr.push(Math.max(c.h-c.l, Math.abs(c.h-prevClose), Math.abs(c.l-prevClose)));
+  }
+  const recent = tr.slice(-period);
+  return recent.reduce((sum, v) => sum + v, 0) / recent.length;
 }
 
 function calcEMA(values, period){
@@ -1571,7 +1671,9 @@ async function loadChartData(){
   try{
     const url = `https://api.bybit.com/v5/market/kline?category=linear&symbol=${currentSymbol}&interval=${currentTimeframe}&limit=200`;
     const res = await fetch(url);
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
+    if(data?.retCode !== 0) throw new Error(data?.retMsg || `Bybit 오류 ${data?.retCode}`);
     const list = data?.result?.list || [];
     const rows = [...list].sort((a,b) => Number(a[0]) - Number(b[0]));
     const candles = rows.map(r => ({
@@ -1754,7 +1856,9 @@ function formatCandleTime(ts){
 async function fetchTimeframeCandles(symbol, interval, limit){
   const url = `https://api.bybit.com/v5/market/kline?category=linear&symbol=${symbol}&interval=${interval}&limit=${limit}`;
   const res = await fetch(url);
+  if(!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
+  if(data?.retCode !== 0) throw new Error(data?.retMsg || `Bybit 오류 ${data?.retCode}`);
   const list = data?.result?.list || [];
   const rows = [...list].sort((a,b) => Number(a[0]) - Number(b[0]));
   return rows.map(r => ({
@@ -1775,7 +1879,7 @@ async function fetchFundingInfo(symbol){
   };
 }
 
-const TF_TO_RATIO_PERIOD = { '5':'5min', '15':'15min', '60':'1h', '240':'4h', 'D':'1d' };
+const TF_TO_RATIO_PERIOD = { '1':'5min', '5':'5min', '15':'15min', '60':'1h', '240':'4h', 'D':'1d' };
 async function fetchLongShortRatio(symbol, period, limit){
   const url = `https://api.bybit.com/v5/market/account-ratio?category=linear&symbol=${symbol}&period=${period}&limit=${limit}`;
   const res = await fetch(url);
@@ -1788,9 +1892,9 @@ async function generateAnalysisText(){
   const btn = document.getElementById('analysisBtn');
   const originalLabel = btn.textContent;
   btn.disabled = true;
-  btn.textContent = '불러오는 중... (5개 타임프레임)';
+  btn.textContent = '불러오는 중... (6개 타임프레임)';
 
-  const timeframes = ['5','15','60','240','D'];
+  const timeframes = ['1','5','15','60','240','D'];
   const [candleResults, ratioResults, fundingInfo] = await Promise.all([
     Promise.allSettled(timeframes.map(tf => fetchTimeframeCandles(currentSymbol, tf, 100))),
     Promise.allSettled(timeframes.map(tf => fetchLongShortRatio(currentSymbol, TF_TO_RATIO_PERIOD[tf], 6))),
@@ -1802,7 +1906,8 @@ async function generateAnalysisText(){
     if(r.status !== 'fulfilled' || !r.value.length){
       return `[${TF_LABELS[tf]}]\n데이터 조회 실패`;
     }
-    const candles = r.value;
+    // 분석 텍스트도 진행 중인 마지막 봉을 제외한다.
+    const candles = r.value.length > 1 ? r.value.slice(0, -1) : r.value;
     const closes = candles.map(c => c.c);
     const ma20 = calcSMA(closes, 20);
     const ma60 = calcSMA(closes, 60);
@@ -1936,6 +2041,7 @@ async function copyAnalysisText(){
 
 // ================= 모의매매 봇 =================
 let botRunning = false;
+const botRunnerId = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
 let botTimer = null;
 let botFastTimer = null;
 let botTickInFlight = false;
@@ -1960,8 +2066,8 @@ function renderWatchLog(){
     const timeTxt = new Date(item.time).toLocaleTimeString('ko-KR', { hour12:false });
     return `<div style="padding:6px 0; border-bottom:1px solid #1f1f1f; font-size:12px; line-height:1.6;">
       <span style="color:var(--sub);">${timeTxt}</span>
-      <span style="color:var(--accent); font-weight:600; margin:0 6px;">${coinLabelOf(item.symbol)}</span>
-      <span style="color:${colorOf(item.kind)};">${item.message}</span>
+      <span style="color:var(--accent); font-weight:600; margin:0 6px;">${escapeHtml(coinLabelOf(item.symbol))}</span>
+      <span style="color:${colorOf(item.kind)};">${escapeHtml(item.message)}</span>
     </div>`;
   }).join('');
 }
@@ -1986,12 +2092,14 @@ async function fetchLivePriceOnce(symbol){
 
 // 범용 타임프레임 시그널 분석 (MA추세, RSI, MACD)
 function computeTFSignals(candles){
-  const closes = candles.map(c => c.c);
+  // 마지막 원소는 아직 진행 중인 봉일 수 있으므로 확정봉만 분석한다.
+  const confirmed = candles.length > 1 ? candles.slice(0, -1) : candles;
+  const closes = confirmed.map(c => c.c);
   const ma20 = calcSMA(closes, 20);
   const ma60 = calcSMA(closes, 60);
   const rsiArr = calcRSI(closes, 14);
   const { histogram } = calcMACD(closes, 12, 26, 9);
-  const i = candles.length - 1;
+  const i = confirmed.length - 1;
   if(ma20[i] == null || ma60[i] == null) return { trend:'flat', rsi:null, ma20:null, ma60:null, macdHist:null, macdPrev:null };
   const trend = ma20[i] > ma60[i] ? 'up' : (ma20[i] < ma60[i] ? 'down' : 'flat');
   return {
@@ -2002,12 +2110,13 @@ function computeTFSignals(candles){
 
 // 1시간봉 기반 지지/저항 레벨 (S/R)
 function computeSRLevels(candles1h){
-  const closes = candles1h.map(c => c.c);
+  const confirmed = candles1h.length > 1 ? candles1h.slice(0, -1) : candles1h;
+  const closes = confirmed.map(c => c.c);
   const ma20 = calcSMA(closes, 20);
   const { upper, lower } = calcBollinger(closes, ma20, 20, 2);
-  const i = candles1h.length - 1;
-  const last100 = candles1h.slice(-100);
-  const last20 = candles1h.slice(-20);
+  const i = confirmed.length - 1;
+  const last100 = confirmed.slice(-100);
+  const last20 = confirmed.slice(-20);
   const swingHigh = Math.max(...last100.map(c => c.h));
   const swingLow = Math.min(...last100.map(c => c.l));
   const recentHigh20 = Math.max(...last20.map(c => c.h));
@@ -2085,6 +2194,10 @@ function detectTrigger(mtfDir, sr, candles5m){
   const closed = candles5m[closedIdx];
   const prev = candles5m[prevIdx];
   if(!closed || !prev) return null;
+  const priorVolumes = candles5m.slice(Math.max(0, closedIdx-20), closedIdx).map(c => c.v).filter(Number.isFinite);
+  const avgVolume = priorVolumes.length ? priorVolumes.reduce((s,v) => s+v, 0) / priorVolumes.length : 0;
+  const volumeRatio = avgVolume > 0 ? closed.v / avgVolume : 0;
+  if(volumeRatio < 1.3) return null;
 
   const dir = mtfDir.direction; // 'long', 'short', or 'flat'
   if(dir === 'flat') return null;
@@ -2095,38 +2208,42 @@ function detectTrigger(mtfDir, sr, candles5m){
   if(checkLong){
     if(sr.r1 && prev.c <= sr.r1 && closed.c > sr.r1){
       const target2 = sr.r2 ?? (sr.r1 + (sr.r1 - (sr.s1 ?? sr.r1 * 0.98)));
-      return { dir:'long', type:'저항돌파', trigger: sr.r1, stop: closed.l, refTarget: target2 };
+      return { dir:'long', type:'저항돌파', trigger: sr.r1, stop: closed.l, refTarget: target2, volumeRatio };
     }
     if(sr.s1 && closed.l <= sr.s1 * 1.003 && closed.c > closed.o && closed.c > sr.s1){
-      return { dir:'long', type:'눌림목반등', trigger: sr.s1, stop: sr.s1 * 0.998, refTarget: sr.r1 };
+      return { dir:'long', type:'눌림목반등', trigger: sr.s1, stop: sr.s1 * 0.998, refTarget: sr.r1, volumeRatio };
     }
   }
   if(checkShort){
     if(sr.s1 && prev.c >= sr.s1 && closed.c < sr.s1){
       const target2 = sr.s2 ?? (sr.s1 - ((sr.r1 ?? sr.s1 * 1.02) - sr.s1));
-      return { dir:'short', type:'지지이탈', trigger: sr.s1, stop: closed.h, refTarget: target2 };
+      return { dir:'short', type:'지지이탈', trigger: sr.s1, stop: closed.h, refTarget: target2, volumeRatio };
     }
     if(sr.r1 && closed.h >= sr.r1 * 0.997 && closed.c < closed.o && closed.c < sr.r1){
-      return { dir:'short', type:'눌림목반락', trigger: sr.r1, stop: sr.r1 * 1.002, refTarget: sr.s1 };
+      return { dir:'short', type:'눌림목반락', trigger: sr.r1, stop: sr.r1 * 1.002, refTarget: sr.s1, volumeRatio };
     }
   }
   return null;
 }
 
 // 증거금 대비 최대손실%와 손절 거리로 레버리지 자동 산출, 목표액(원)을 가격으로 환산
-function computeSizingAndTarget(dir, entry, stop, marginKRW, targetKRW, riskPct, levCap){
+function computeSizingAndTarget(dir, entry, stop, marginKRW, targetKRW, riskPct, levCap, feeRate){
   const stopDistPct = Math.abs(entry - stop) / entry * 100;
   let lev = stopDistPct > 0 ? (riskPct / stopDistPct) : levCap;
   lev = Math.max(1, Math.min(levCap, lev));
   lev = Math.round(lev * 10) / 10;
-  const moveNeededFrac = (targetKRW / marginKRW) / lev;
+  // 왕복 체결 수수료를 낸 뒤에도 설정한 순목표액이 남도록 목표가를 계산한다.
+  const moveNeededFrac = (targetKRW / marginKRW) / lev + (2 * feeRate);
   const target = dir === 'long' ? entry * (1 + moveNeededFrac) : entry * (1 - moveNeededFrac);
   return { leverage: lev, target, stopDistPct };
 }
 
 function estimateBotPnlKRW(pos, price){
   const moveFrac = pos.dir === 'long' ? (price - pos.entry) / pos.entry : (pos.entry - price) / pos.entry;
-  return Math.round(moveFrac * pos.leverage * pos.marginKRW);
+  const gross = moveFrac * pos.leverage * pos.marginKRW;
+  const feeRate = pos.feeRate || 0;
+  const fees = pos.marginKRW * pos.leverage * feeRate * (1 + price / pos.entry);
+  return Math.round(gross - fees);
 }
 
 // 진입 근거를 사람이 읽을 수 있는 문장으로 생성
@@ -2194,6 +2311,7 @@ async function tryOpenBotPosition(symbol){
   const targetKRW = parseFloat(document.getElementById('botTargetKRW').value) || 0;
   const riskPct = parseFloat(document.getElementById('botRiskPct').value) || 20;
   const levCap = parseFloat(document.getElementById('botLevCap').value) || 50;
+  const feeRate = (parseFloat(document.getElementById('feeRate').value) || 0) / 100;
   if(marginKRW <= 0 || targetKRW <= 0){
     addWatchLog(symbol, '증거금·익절목표가 입력되지 않아 스킵', 'skip');
     return;
@@ -2241,7 +2359,7 @@ async function tryOpenBotPosition(symbol){
     const dir = mtfDir.direction;
     const fallbackStopPct = 1;
     const stop = dir === 'long' ? lastClose * (1 - fallbackStopPct / 100) : lastClose * (1 + fallbackStopPct / 100);
-    trig = { dir, type: '테스트강제진입', stop };
+    trig = { dir, type: '테스트강제진입', stop, volumeRatio: null };
   } else {
     if(mtfDir.direction === 'flat'){
       addWatchLog(symbol, `관망 · ${tfBrief} · ${scoreTxt} → 방향 불분명 · 현재가 ${fmtPrice(lastClose)} · ${r1Txt} · ${s1Txt}`, 'watch');
@@ -2261,14 +2379,22 @@ async function tryOpenBotPosition(symbol){
     return;
   }
 
-  const { leverage, target, stopDistPct } = computeSizingAndTarget(trig.dir, price, trig.stop, marginKRW, targetKRW, riskPct, levCap);
+  // 5분 확정봉 ATR의 1.5배보다 손절폭이 좁지 않도록 조정한다.
+  const confirmed5m = c5m.length > 1 ? c5m.slice(0, -1) : c5m;
+  const atr5m = calcATR(confirmed5m, 14);
+  if(atr5m){
+    trig.stop = trig.dir === 'long'
+      ? Math.min(trig.stop, price - atr5m * 1.5)
+      : Math.max(trig.stop, price + atr5m * 1.5);
+  }
+  const { leverage, target, stopDistPct } = computeSizingAndTarget(trig.dir, price, trig.stop, marginKRW, targetKRW, riskPct, levCap, feeRate);
   const mmRate = (parseFloat(document.getElementById('mmRate').value) || 0.5) / 100;
   const liq = calcLiqPrice(price, leverage, mmRate, trig.dir);
   const rationale = buildEntryRationale(symbol, mtfDir, tfSignals, sr, trig, price, leverage, target, stopDistPct, testMode);
 
   const pos = {
     symbol, dir: trig.dir, type: trig.type,
-    entry: price, stop: trig.stop, target, liq, leverage, marginKRW,
+    entry: price, stop: trig.stop, target, liq, leverage, marginKRW, feeRate,
     openTime: Date.now(), lastPrice: price, pnlKRW: 0, rationale
   };
 
@@ -2277,7 +2403,7 @@ async function tryOpenBotPosition(symbol){
       pos.docId = await window.fbAddBotTrade({
         symbol: pos.symbol, dir: pos.dir, type: pos.type,
         entry: pos.entry, stop: pos.stop, target: pos.target, liq: pos.liq,
-        leverage: pos.leverage, marginKRW: pos.marginKRW, rationale: pos.rationale,
+        leverage: pos.leverage, marginKRW: pos.marginKRW, feeRate: pos.feeRate, rationale: pos.rationale,
         status: 'open', openTime: pos.openTime
       });
     }
@@ -2435,7 +2561,8 @@ function collectBotSettings(){
     riskPct: document.getElementById('botRiskPct').value,
     levCap: document.getElementById('botLevCap').value,
     testMode: document.getElementById('botTestMode').checked,
-    running: botRunning
+    running: botRunning,
+    runnerId: botRunning ? botRunnerId : null
   };
 }
 
@@ -2464,7 +2591,8 @@ window.onBotSettingsSnapshot = function(data){
   if(data.levCap !== undefined && data.levCap !== '') document.getElementById('botLevCap').value = data.levCap;
   if(typeof data.testMode === 'boolean') document.getElementById('botTestMode').checked = data.testMode;
 
-  const remoteRunning = !!data.running;
+  // 실행권을 가진 한 화면만 타이머를 돌린다. 다른 탭/기기는 상태만 확인한다.
+  const remoteRunning = !!data.running && data.runnerId === botRunnerId;
   if(remoteRunning !== botRunning){
     setBotRunningLocal(remoteRunning);
   }
@@ -2473,8 +2601,8 @@ window.onBotSettingsSnapshot = function(data){
   const syncHint = document.getElementById('botSyncHint');
   if(syncHint){
     syncHint.textContent = remoteRunning
-      ? '설정 동기화됨 · 다른 기기에서도 켜짐으로 표시됩니다.'
-      : '설정 동기화됨';
+      ? '이 화면에서 봇 실행 중'
+      : (data.running ? '다른 화면에서 봇 실행 중 · 이 화면은 중복 실행하지 않습니다.' : '설정 동기화됨');
   }
 };
 
@@ -2499,7 +2627,7 @@ function renderBotPanels(){
     if(!p){
       return `<div class="history-item">
         <div class="history-top">
-          <span class="history-dir">${coinLabelOf(sym)}</span>
+          <span class="history-dir">${escapeHtml(coinLabelOf(sym))}</span>
           <span class="history-detail">관망 중 (트리거 대기)</span>
         </div>
       </div>`;
@@ -2509,7 +2637,7 @@ function renderBotPanels(){
     const pnlSign = (p.pnlKRW || 0) >= 0 ? '+' : '';
     return `<div class="history-item">
       <div class="history-top">
-        <span class="history-dir ${p.dir === 'long' ? 'val-long' : 'val-short'}">${coinLabelOf(sym)} ${dirLabel(p.dir)} · ${p.type}</span>
+        <span class="history-dir ${p.dir === 'long' ? 'val-long' : 'val-short'}">${escapeHtml(coinLabelOf(sym))} ${dirLabel(p.dir)} · ${escapeHtml(p.type)}</span>
         <span class="history-pnl ${pnlClass}">${pnlSign}${fmt(p.pnlKRW || 0, 0)}원 (${pnlSign}${pnlPct}%)</span>
       </div>
       <div class="history-detail">
@@ -2517,7 +2645,7 @@ function renderBotPanels(){
         진입 ${fmtPrice(p.entry)} · 손절 ${fmtPrice(p.stop)} · 목표 ${fmtPrice(p.target)} · 청산가 ${p.liq ? fmtPrice(p.liq) : '-'}
         <span style="color:var(--sub);"> · 마지막 확인 ${p.lastCheckedAt ? new Date(p.lastCheckedAt).toLocaleTimeString('ko-KR', { hour12:false }) : '-'}</span>
       </div>
-      ${p.rationale ? `<div class="history-detail" style="margin-top:6px; padding-top:6px; border-top:1px dashed var(--border); line-height:1.6;">${p.rationale}</div>` : ''}
+      ${p.rationale ? `<div class="history-detail" style="margin-top:6px; padding-top:6px; border-top:1px dashed var(--border); line-height:1.6;">${escapeHtml(p.rationale)}</div>` : ''}
     </div>`;
   }).join('');
 }
@@ -2529,13 +2657,20 @@ function renderBotTradeLog(){
   if(!all.length){
     wrap.innerHTML = '<div class="empty">거래 내역 없음</div>';
   } else {
-    wrap.innerHTML = all.slice(0, 30).map(t => {
+    const groups = new Map();
+    all.forEach(t => {
+      const timestamp = t.closeTime || t.openTime || Date.now();
+      const key = new Date(timestamp).toLocaleDateString('sv-SE', { timeZone:'Asia/Seoul' });
+      if(!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(t);
+    });
+    const renderTrade = (t) => {
       const pnlClass = t.pnlKRW >= 0 ? 'val-long' : 'val-short';
       const tPnlPct = t.marginKRW ? (t.pnlKRW / t.marginKRW * 100).toFixed(2) : '?';
       const tPnlSign = t.pnlKRW >= 0 ? '+' : '';
       return `<div class="history-item">
         <div class="history-top">
-          <span class="history-dir ${t.dir === 'long' ? 'val-long' : 'val-short'}">${coinLabelOf(t.symbol)} ${dirLabel(t.dir)} · ${reasonLabel(t.closeReason)}</span>
+          <span class="history-dir ${t.dir === 'long' ? 'val-long' : 'val-short'}">${escapeHtml(coinLabelOf(t.symbol))} ${dirLabel(t.dir)} · ${reasonLabel(t.closeReason)}</span>
           <span class="history-pnl ${pnlClass}">${tPnlSign}${fmt(t.pnlKRW, 0)}원 (${tPnlSign}${tPnlPct}%)</span>
         </div>
         <div class="history-detail">증거금 ${fmt(t.marginKRW,0)}원 · 진입 ${fmtPrice(t.entry)} → 종료 ${fmtPrice(t.closePrice)}</div>
@@ -2543,11 +2678,25 @@ function renderBotTradeLog(){
         ${(t.rationale || t.exitRationale) ? `<details style="margin-top:6px;">
           <summary style="cursor:pointer; font-size:11px; color:var(--sub);">근거 보기</summary>
           <div class="history-detail" style="margin-top:4px; line-height:1.6;">
-            ${t.rationale ? `<div>${t.rationale}</div>` : ''}
-            ${t.exitRationale ? `<div style="margin-top:4px;">${t.exitRationale}</div>` : ''}
+            ${t.rationale ? `<div>${escapeHtml(t.rationale)}</div>` : ''}
+            ${t.exitRationale ? `<div style="margin-top:4px;">${escapeHtml(t.exitRationale)}</div>` : ''}
           </div>
         </details>` : ''}
       </div>`;
+    };
+    wrap.innerHTML = [...groups.entries()].map(([date, trades], index) => {
+      const dailyPnl = trades.reduce((sum, t) => sum + (t.pnlKRW || 0), 0);
+      const dailyWins = trades.filter(t => t.pnlKRW > 0).length;
+      const dailyWinRate = trades.length ? Math.round(dailyWins / trades.length * 100) : 0;
+      const sign = dailyPnl >= 0 ? '+' : '';
+      const colorClass = dailyPnl >= 0 ? 'val-long' : 'val-short';
+      return `<details class="trade-day" ${index === 0 ? 'open' : ''}>
+        <summary>
+          <span>${escapeHtml(date)} · ${trades.length}건</span>
+          <span class="trade-day-summary ${colorClass}">${sign}${fmt(dailyPnl,0)}원 · 승률 ${dailyWinRate}%</span>
+        </summary>
+        <div class="trade-day-body">${trades.map(renderTrade).join('')}</div>
+      </details>`;
     }).join('');
   }
 
@@ -2597,7 +2746,7 @@ window.loadBotTrades = async function(){
       st.position = {
         docId: r.id, symbol: r.symbol, dir: r.dir, type: r.type,
         entry: r.entry, stop: r.stop, target: r.target, liq: r.liq,
-        leverage: r.leverage, marginKRW: r.marginKRW, rationale: r.rationale,
+        leverage: r.leverage, marginKRW: r.marginKRW, feeRate: r.feeRate || 0, rationale: r.rationale,
         openTime: r.openTime, lastPrice: r.entry, pnlKRW: 0
       };
     });
