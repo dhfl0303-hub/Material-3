@@ -565,7 +565,7 @@
     <div class="row" id="singleEntryRow">
       <div class="field">
         <label>진입가 (USDT)</label>
-        <input type="number" id="entryPrice" value="65780" step="0.1" oninput="calc()">
+        <input type="number" id="entryPrice" value="65780" step="0.1" oninput="syncPositionInputs(); calc()">
       </div>
     </div>
 
@@ -591,12 +591,17 @@
     <div class="row">
       <div class="field">
         <label>배율 (x)</label>
-        <input type="number" id="leverage" value="10" step="1" oninput="calc(); if(entryMode==='split') updateSplitEntries();">
+        <input type="number" id="leverage" value="10" step="1" oninput="syncPositionInputs(); calc(); if(entryMode==='split') updateSplitEntries();">
       </div>
       <div class="field">
         <label>증거금 (원화)<span id="marginAutoNote" style="display:none; color:var(--sub); font-weight:normal;"> · 분할매매 자동계산</span></label>
-        <input type="number" id="margin" value="138000" step="1000" oninput="calc(); updateFundsUsdt();">
+        <input type="number" id="margin" value="138000" step="1000" oninput="quantityInputSource='margin'; syncQuantityFromMargin(); calc(); updateFundsUsdt();">
         <div id="marginUsdt" style="font-size:11px;color:var(--sub);margin-top:4px;"></div>
+      </div>
+      <div class="field">
+        <label>수량 (<span id="positionQtySymbol">BTC</span>)</label>
+        <input type="number" id="positionQty" value="" step="0.00000001" min="0" placeholder="코인 수량" oninput="quantityInputSource='quantity'; syncMarginFromQuantity(); calc(); updateFundsUsdt();">
+        <div id="positionQtyNote" style="font-size:11px;color:var(--sub);margin-top:4px;">증거금과 자동 연동</div>
       </div>
     </div>
 
@@ -623,7 +628,7 @@
     <div class="row">
       <div class="field">
         <label>원/달러 환율</label>
-        <input type="number" id="fxRate" value="1380" step="1" oninput="calc(); updateFundsUsdt();">
+        <input type="number" id="fxRate" value="1380" step="1" oninput="syncPositionInputs(); calc(); updateFundsUsdt();">
       </div>
     </div>
     <div class="fx-status-row">
@@ -912,6 +917,7 @@ let liveFetchInFlight = false;
 let lastBtcPrice = null;
 let btcFetchInFlight = false;
 let currentSymbol = 'BTCUSDT';
+let quantityInputSource = 'margin';
 
 const COIN_LABELS = {
   BTCUSDT:'BTC', ETHUSDT:'ETH', XRPUSDT:'XRP', SOLUSDT:'SOL', UBUSDT:'UB', LABUSDT:'LAB'
@@ -944,6 +950,8 @@ function resetLiveDisplayForSymbolChange(){
 
 function changeCoin(symbol){
   currentSymbol = symbol;
+  updatePositionQtyLabel();
+  syncPositionInputs();
   resetLiveDisplayForSymbolChange();
   scheduleSaveSettings();
   fetchLivePrice(true);
@@ -1008,10 +1016,10 @@ async function loadSymbolList(){
 loadSymbolList();
 
 // ===== 입력값(설정) 저장/불러오기 =====
-const SETTINGS_FIELDS = ['entryPrice','priceInput','leverage','margin','totalFunds','mmRate','fxRate','feeRate','coinInput'];
+const SETTINGS_FIELDS = ['entryPrice','priceInput','leverage','margin','positionQty','totalFunds','mmRate','fxRate','feeRate','coinInput'];
 
 function collectSettings(){
-  const obj = { direction, entryMode };
+  const obj = { direction, entryMode, quantityInputSource };
   SETTINGS_FIELDS.forEach(id => {
     obj[id] = document.getElementById(id).value;
   });
@@ -1028,6 +1036,9 @@ function applySettings(data){
       document.getElementById(id).value = data[id];
     }
   });
+  if(data.quantityInputSource === 'quantity' || data.quantityInputSource === 'margin'){
+    quantityInputSource = data.quantityInputSource;
+  }
   if(data.direction === 'long' || data.direction === 'short' || data.direction === 'none'){
     setDirection(data.direction, true);
   }
@@ -1073,12 +1084,15 @@ window.loadAndApplySettings = async function(){
   document.getElementById('coinInput').value = resolved;
   if(resolved !== currentSymbol){
     currentSymbol = resolved;
+    updatePositionQtyLabel();
     resetLiveDisplayForSymbolChange();
     fetchLivePrice(true);
     if(typeof loadChartData === 'function') loadChartData();
   } else {
     updateLivePriceLabel();
+    updatePositionQtyLabel();
   }
+  syncPositionInputs();
   calc();
   fetchExchangeRate(false);
 };
@@ -1312,8 +1326,10 @@ function setEntryMode(mode, skipSave){
   document.getElementById('marginAutoNote').style.display = mode==='split' ? 'inline' : 'none';
   document.getElementById('entryPrice').readOnly = (mode==='split');
   document.getElementById('margin').readOnly = (mode==='split');
+  document.getElementById('positionQty').readOnly = (mode==='split');
 
   if(mode==='split'){
+    quantityInputSource = 'margin';
     if(document.querySelectorAll('#splitEntryRows .split-entry-row').length === 0){
       const curEntry = document.getElementById('entryPrice').value;
       const curMarginKRW = document.getElementById('margin').value;
@@ -1383,6 +1399,8 @@ function updateSplitEntries(){
 
   document.getElementById('entryPrice').value = avgEntry.toFixed(2);
   document.getElementById('margin').value = Math.round(totalMarginKRW);
+  quantityInputSource = 'margin';
+  syncQuantityFromMargin();
 
   summaryEl.textContent = `${valid.length}회 진입 · 평균 진입가 ${fmtPrice(avgEntry)} USDT · 총 증거금 ${fmt(totalMarginKRW,0)}원`;
 
@@ -1439,6 +1457,53 @@ function calcLiqPrice(entry, lev, mm, dir){
   } else {
     return entry * (1 + 1/lev - mm);
   }
+}
+
+function updatePositionQtyLabel(){
+  const el = document.getElementById('positionQtySymbol');
+  if(el) el.textContent = coinLabelOf(currentSymbol);
+}
+
+function formatQuantityInput(value){
+  if(!Number.isFinite(value) || value < 0) return '';
+  return Number(value.toFixed(8)).toString();
+}
+
+function syncQuantityFromMargin(){
+  const entry = parseFloat(document.getElementById('entryPrice').value);
+  const lev = parseFloat(document.getElementById('leverage').value);
+  const marginKRW = parseFloat(document.getElementById('margin').value);
+  const fx = parseFloat(document.getElementById('fxRate').value);
+  const qtyEl = document.getElementById('positionQty');
+  const noteEl = document.getElementById('positionQtyNote');
+  if(!entry || !lev || !marginKRW || !fx){
+    qtyEl.value = '';
+    noteEl.textContent = '증거금과 자동 연동';
+    return;
+  }
+  const quantity = (marginKRW / fx * lev) / entry;
+  qtyEl.value = formatQuantityInput(quantity);
+  noteEl.textContent = `포지션 가치 ≈ ${fmt(marginKRW / fx * lev)} USDT`;
+}
+
+function syncMarginFromQuantity(){
+  const entry = parseFloat(document.getElementById('entryPrice').value);
+  const lev = parseFloat(document.getElementById('leverage').value);
+  const quantity = parseFloat(document.getElementById('positionQty').value);
+  const fx = parseFloat(document.getElementById('fxRate').value);
+  const noteEl = document.getElementById('positionQtyNote');
+  if(!entry || !lev || !quantity || !fx){
+    noteEl.textContent = '진입가·배율·환율을 확인하세요.';
+    return;
+  }
+  const marginKRW = quantity * entry / lev * fx;
+  document.getElementById('margin').value = Math.round(marginKRW);
+  noteEl.textContent = `포지션 가치 ≈ ${fmt(quantity * entry)} USDT`;
+}
+
+function syncPositionInputs(){
+  if(entryMode === 'split' || quantityInputSource === 'margin') syncQuantityFromMargin();
+  else syncMarginFromQuantity();
 }
 
 // 원화 → USDT 실시간 환산 표시
@@ -2760,6 +2825,8 @@ window.loadBotTrades = async function(){
 };
 
 // 초기 실행
+updatePositionQtyLabel();
+syncPositionInputs();
 calc();
 setTimeframe('15');
 </script>
