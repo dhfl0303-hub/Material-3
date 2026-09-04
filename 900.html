@@ -1099,6 +1099,7 @@ window.loadAndApplySettings = async function(){
     updatePositionQtyLabel();
     resetLiveDisplayForSymbolChange();
     fetchLivePrice(true);
+    connectPriceStream();
     if(typeof loadChartData === 'function') loadChartData();
   } else {
     updateLivePriceLabel();
@@ -1302,10 +1303,10 @@ function connectPriceStream(){
 }
 connectPriceStream();
 let livePriceTimer = setInterval(() => {
-  // WebSocket 장애에 대비한 저빈도 보조 조회. 최소화 상태에서도 중단하지 않는다.
-  fetchBtcPrice(false);
+  // 웹소켓 수신 여부와 관계없이 표시값을 실제 1초마다 보정한다.
+  if(currentSymbol !== 'BTCUSDT') fetchBtcPrice(false);
   fetchLivePrice(false);
-}, 15000);
+}, 1000);
 
 function setDirection(d, skipSave){
   direction = d;
