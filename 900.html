@@ -228,6 +228,18 @@
   .live-price-value{font-size:16px;font-weight:700;color:var(--accent);}
   .live-price-pnl{font-size:12px;font-weight:600;color:var(--sub);}
   .live-price-total{font-size:13px;font-weight:700;color:var(--text);}
+  .position-live-box .live-price-info{width:100%;min-width:0;}
+  .position-live-box .live-price-pnl,
+  .position-live-box .live-price-total{
+    display:block;
+    max-width:100%;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:clip;
+    font-variant-numeric:tabular-nums;
+  }
+  .position-live-box .live-price-pnl{font-size:clamp(10px,3.1vw,12px);letter-spacing:-0.02em;}
+  .position-live-box .live-price-actions{margin-top:6px;}
 
   .fx-status-row{
     display:flex;
@@ -527,7 +539,7 @@
       </div>
     </div>
 
-    <div class="live-price-box">
+    <div class="live-price-box position-live-box">
       <div class="live-price-info">
         <span class="live-price-label" id="livePriceLabel">BTCUSDT 실시간가 (1초 자동 갱신)</span>
         <span class="live-price-value" id="livePriceValue">-</span>
@@ -1182,7 +1194,8 @@ function updateLivePnl(){
   const pnlAmt = margin * pnlPct / 100;
   const pnlKRW = pnlAmt * fx;
 
-  pnlEl.textContent = `진입가 대비 ${fmtSigned(pct,2)}% · ${fmtSigned(pnlPct,1)}% · ${fmtSigned(pnlAmt)} USDT (${fmtSigned(pnlKRW,0)}원)`;
+  pnlEl.textContent = `손익 ${fmtSigned(pnlPct,1)}% · ${fmtSigned(pnlAmt)} USDT · ${fmtSigned(pnlKRW,0)}원`;
+  pnlEl.title = `진입가 대비 ${fmtSigned(pct,2)}% · 손익률 ${fmtSigned(pnlPct,1)}% · ${fmtSigned(pnlAmt)} USDT (${fmtSigned(pnlKRW,0)}원)`;
   pnlEl.className = 'live-price-pnl ' + (pnlAmt >= 0 ? 'val-long' : 'val-short');
 
   // 교차마진: 총 자금 기준 합계 / 격리: 증거금 기준 합계
