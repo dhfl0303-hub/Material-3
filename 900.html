@@ -156,27 +156,7 @@
     font-weight:700;
     cursor:pointer;
   }
-  .btn-save{background:var(--accent);color:#1a1400;margin-top:4px;}
-  .btn-save:active{opacity:0.85;}
-  .btn-clear{background:transparent;color:var(--sub);border:1px solid var(--border);font-size:12px;padding:8px;margin-top:8px;}
 
-  .history-item{
-    background:var(--panel2);
-    border:1px solid var(--border);
-    border-radius:8px;
-    padding:10px 12px;
-    margin-bottom:8px;
-    font-size:12px;
-  }
-  .history-top{display:flex;justify-content:space-between;margin-bottom:6px;}
-  .history-dir{font-weight:700;}
-  .history-pnl{font-weight:700;}
-  .history-detail{color:var(--sub);font-size:11px;line-height:1.6;}
-  .history-del{
-    background:none;border:none;color:var(--sub);
-    font-size:11px;text-decoration:underline;cursor:pointer;padding:0;margin-top:6px;
-  }
-  .empty{color:var(--sub);font-size:12px;text-align:center;padding:14px 0;}
 
   .note{
     font-size:11px;
@@ -465,30 +445,6 @@
     padding-top:8px;
     margin-top:4px;
   }
-  .trade-day{
-    border:1px solid var(--border);
-    border-radius:9px;
-    margin-bottom:8px;
-    overflow:hidden;
-    background:var(--panel2);
-  }
-  .trade-day > summary{
-    cursor:pointer;
-    list-style:none;
-    padding:11px 12px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:10px;
-    color:var(--text);
-    font-size:13px;
-    font-weight:600;
-  }
-  .trade-day > summary::-webkit-details-marker{display:none;}
-  .trade-day > summary::before{content:'▶'; color:var(--sub); font-size:10px; margin-right:7px;}
-  .trade-day[open] > summary::before{content:'▼';}
-  .trade-day-summary{margin-left:auto; font-size:12px; font-weight:600;}
-  .trade-day-body{padding:0 10px 8px; border-top:1px solid var(--border);}
   input[readonly]{
     opacity:0.65;
     cursor:not-allowed;
@@ -744,88 +700,11 @@
     </div>
   </div>
 
-  <!-- 모의매매 봇 -->
   </div>
-  </div>
-
-  <div class="card" id="botCard">
-    <div class="card-title">모의매매 봇 (지침서 자동화) · 베타</div>
-    <div class="hint" style="margin-top:-4px; margin-bottom:12px;">
-      4시간/1시간/15분봉을 종합 분석(가중 점수제)해 롱·숏 방향을 정하고, 5분봉 마감 기준 저항 돌파·지지 이탈 또는 눌림목 반등/반락이 확인되면 자동 진입합니다. 점수가 ±2 미만이면 방향 불분명으로 관망합니다. 손절은 트리거 구조(돌파 캔들 저/고가, 지지·저항 이탈)로 정하고, 레버리지는 아래 "최대손실 허용%"와 손절 거리로 자동 계산합니다. 목표가는 "거래당 익절 목표"를 레버리지에 맞춰 가격으로 환산해 고정합니다. 실제 주문은 나가지 않는 시뮬레이션입니다.
-    </div>
-
-    <div class="row">
-      <div class="field">
-        <label>감시 심볼</label>
-        <input type="text" id="botSymbolA" value="UBUSDT" list="coinList" autocomplete="off" oninput="scheduleSaveBotSettings()">
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="field">
-        <label>거래당 증거금 (원)</label>
-        <input type="number" id="botMargin" value="250000" step="10000" oninput="scheduleSaveBotSettings()">
-      </div>
-      <div class="field">
-        <label>거래당 익절 목표 (원)</label>
-        <input type="number" id="botTargetKRW" value="100000" step="10000" oninput="scheduleSaveBotSettings()">
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="field">
-        <label>증거금 대비 최대손실 허용 (%)</label>
-        <input type="number" id="botRiskPct" value="20" step="1" oninput="scheduleSaveBotSettings()">
-      </div>
-      <div class="field">
-        <label>레버리지 상한 (x)</label>
-        <input type="number" id="botLevCap" value="50" step="1" oninput="scheduleSaveBotSettings()">
-      </div>
-    </div>
-
-    <div class="row" style="align-items:center;">
-      <div class="field" style="display:flex; align-items:center; gap:8px;">
-        <input type="checkbox" id="botTestMode" style="width:16px;height:16px;" onchange="scheduleSaveBotSettings()">
-        <label for="botTestMode" style="margin-bottom:0; color:var(--sub); font-size:12px;">테스트 모드 (트리거 무시하고 강제 진입 — 진입/청산 동작 확인용)</label>
-      </div>
-    </div>
-
-    <button type="button" class="btn btn-save" id="botToggleBtn" onclick="toggleBot()">봇 시작</button>
-    <div class="hint" id="botStatusHint" style="margin-top:8px;">정지 상태 · 시작을 누르면 진입 탐색은 1분마다, 보유 포지션 감시는 1초마다 돕니다.</div>
-    <div class="hint" id="botSyncHint" style="margin-top:4px;"></div>
-
-    <div id="botSymbolPanels" style="margin-top:14px;">
-      <div class="empty">봇을 시작하면 여기에 심볼별 상태가 표시됩니다.</div>
-    </div>
-
-    <div class="card-title" style="margin-top:18px;">실시간 감시 로그 (진입탐색 1분·보유중 체결감시 1초)</div>
-    <div id="botWatchLog" style="max-height:280px; overflow-y:auto; background:var(--panel2); border:1px solid var(--border); border-radius:8px; padding:10px 12px;">
-      <div class="empty">봇을 시작하면 판단 내용이 여기 쌓입니다.</div>
-    </div>
-
-    <div class="card-title" style="margin-top:18px;">봇 거래 로그</div>
-    <div id="botTradeLog"><div class="empty">불러오는 중...</div></div>
-    <div class="result-line" style="margin-top:6px;">
-      <span class="result-label">누적 손익</span>
-      <span class="result-value big" id="botTotalPnl">0원</span>
-    </div>
-    <div class="result-line">
-      <span class="result-label">초기 증거금</span>
-      <span class="result-value" id="botInitMargin" style="color:var(--sub);">-</span>
-    </div>
-    <div class="result-line">
-      <span class="result-label">현재 증거금</span>
-      <span class="result-value" id="botCurMargin">-</span>
-    </div>
-    <div class="result-line">
-      <span class="result-label">승률</span>
-      <span class="result-value" id="botWinRate">- (0건)</span>
-    </div>
-    <button class="btn btn-clear" onclick="clearBotLog()">봇 로그 전체 삭제</button>
   </div>
 
   <div class="note">
-    이 계산기는 참고용 산술 도구이며, 실제 거래소 청산가·수수료·펀딩비와 차이가 있을 수 있습니다. 투자 판단과 책임은 본인에게 있습니다. 모의매매 봇 결과 역시 시뮬레이션이며 실제 체결·슬리피지와 다를 수 있습니다.
+    이 계산기는 참고용 산술 도구이며, 실제 거래소 청산가·수수료·펀딩비와 차이가 있을 수 있습니다. 투자 판단과 책임은 본인에게 있습니다.
   </div>
 
 </div>
@@ -834,8 +713,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import {
-    getFirestore, collection, addDoc, getDocs, deleteDoc, doc,
-    query, orderBy, serverTimestamp, writeBatch, setDoc, getDoc, onSnapshot
+    getFirestore, doc, setDoc, getDoc
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -852,8 +730,6 @@
   const db = getFirestore(app);
 
   const SETTINGS_DOC = doc(db, 'leverage_settings', 'current');
-  const BOT_TRADES_COLLECTION = 'bot_trades';
-  const BOT_SETTINGS_DOC = doc(db, 'bot_settings', 'current');
 
   const authReady = signInAnonymously(auth).catch(e => {
     console.error('익명 로그인 실패', e);
@@ -870,54 +746,11 @@
     return snap.exists() ? snap.data() : null;
   };
 
-  window.fbSaveBotSettings = async function(data){
-    await authReady;
-    await setDoc(BOT_SETTINGS_DOC, data, { merge: true });
-  };
-
-  authReady.then(() => {
-    // 봇 설정(심볼·증거금·목표액·ON/OFF 등) 실시간 구독: 다른 기기에서 바꾸면 이 기기 화면도 즉시 반영
-    onSnapshot(BOT_SETTINGS_DOC, (snap) => {
-      if(snap.exists() && typeof window.onBotSettingsSnapshot === 'function'){
-        window.onBotSettingsSnapshot(snap.data());
-      }
-    }, (e) => console.error('봇 설정 구독 실패', e));
-  });
-
-  window.fbAddBotTrade = async function(item){
-    await authReady;
-    const ref = await addDoc(collection(db, BOT_TRADES_COLLECTION), { ...item, createdAt: serverTimestamp() });
-    return ref.id;
-  };
-
-  window.fbUpdateBotTrade = async function(id, patch){
-    await authReady;
-    await setDoc(doc(db, BOT_TRADES_COLLECTION, id), patch, { merge: true });
-  };
-
-  window.fbLoadBotTrades = async function(){
-    await authReady;
-    const q = query(collection(db, BOT_TRADES_COLLECTION), orderBy('createdAt', 'asc'));
-    const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  };
-
-  window.fbClearBotTrades = async function(){
-    await authReady;
-    const snap = await getDocs(collection(db, BOT_TRADES_COLLECTION));
-    const batch = writeBatch(db);
-    snap.docs.forEach(d => batch.delete(d.ref));
-    await batch.commit();
-  };
-
   window.fbReady = authReady;
 
   authReady.then(async () => {
     if(typeof window.loadAndApplySettings === 'function'){
       await window.loadAndApplySettings();
-    }
-    if(typeof window.loadBotTrades === 'function'){
-      window.loadBotTrades();
     }
   });
 </script>
@@ -1967,6 +1800,41 @@ async function fetchLongShortRatio(symbol, period, limit){
   return [...list].sort((a,b) => Number(a.timestamp) - Number(b.timestamp));
 }
 
+async function buildBtcContext(){
+  const timeframes = ['5','15','60','240'];
+  const [results, funding] = await Promise.all([
+    Promise.allSettled(timeframes.map(tf => fetchTimeframeCandles('BTCUSDT', tf, 100))),
+    fetchFundingInfo('BTCUSDT').catch(() => null)
+  ]);
+  const sections = results.map((r, i) => {
+    const title = `[BTCUSDT ${TF_LABELS[timeframes[i]]}]`;
+    if(r.status !== 'fulfilled') return `${title}\n데이터 조회 실패`;
+    const duration = Number(timeframes[i]) * 60000;
+    const candles = r.value.filter(c => c.x + duration <= Date.now()).slice(-99);
+    if(!candles.length) return `${title}\n확정봉 데이터 없음`;
+    const closes = candles.map(c => c.c);
+    const ma20 = calcSMA(closes, 20), ma60 = calcSMA(closes, 60);
+    const rsi = calcRSI(closes, 14);
+    const {macdLine, signalLine, histogram} = calcMACD(closes, 12, 26, 9);
+    const idx = candles.length - 1, last = candles[idx];
+    const value = n => Number.isFinite(n) ? fmtPrice(n) : '-';
+    const volumes = candles.map(c => c.v).filter(Number.isFinite);
+    const avg = volumes.length ? volumes.reduce((a,b) => a+b,0)/volumes.length : 0;
+    const trend = ma20[idx] == null || ma60[idx] == null ? '데이터 부족'
+      : last.c > ma20[idx] && ma20[idx] > ma60[idx] ? '상승 정렬'
+      : last.c < ma20[idx] && ma20[idx] < ma60[idx] ? '하락 정렬' : '혼조';
+    return `${title}
+최근 확정봉(최대 8개, 오래된순):
+${candles.slice(-8).map(c => `${formatCandleTime(c.x)} O${value(c.o)} H${value(c.h)} L${value(c.l)} C${value(c.c)}`).join('\n')}
+추세(MA 기준): ${trend} / MA20 ${value(ma20[idx])} / MA60 ${value(ma60[idx])} / RSI ${rsi[idx] != null ? rsi[idx].toFixed(1) : '-'}
+MACD ${value(macdLine[idx])} Signal ${value(signalLine[idx])} Hist ${value(histogram[idx])}
+거래량: ${fmt(last.v,0)} (조회 구간 평균 대비 ${avg > 0 ? (last.v/avg*100).toFixed(0)+'%' : '데이터 없음'})
+구간 내 고점/저점(최근 ${candles.length}개 확정봉): 고점 ${value(Math.max(...candles.map(c=>c.h)))} / 저점 ${value(Math.min(...candles.map(c=>c.l)))}`;
+  }).join('\n\n');
+  const fundingLine = funding ? `펀딩비: ${Number.isFinite(funding.fundingRate) ? (funding.fundingRate*100).toFixed(4)+'%' : '데이터 없음'} / 미결제약정(OI): ${Number.isFinite(funding.openInterest) ? fmt(funding.openInterest,0) : '데이터 없음'}` : '펀딩비/미결제약정: 조회 실패';
+  return `[BTCUSDT 시장 컨텍스트 · 5분/15분/1시간/4시간 확정봉]\n${fundingLine}\n\n${sections}\n\nBTC 흐름과 거래량, 주요 고점·저점을 함께 고려하고 급변 징후 및 현재 종목/포지션에 유리하거나 불리한 영향을 구분해 분석해줘. 단순 동행이나 인과관계를 단정하지 말아줘.`;
+}
+
 async function generateAnalysisText(){
   const btn = document.getElementById('analysisBtn');
   const originalLabel = btn.textContent;
@@ -1974,10 +1842,11 @@ async function generateAnalysisText(){
   btn.textContent = '불러오는 중... (6개 타임프레임)';
 
   const timeframes = ['1','5','15','60','240','D'];
-  const [candleResults, ratioResults, fundingInfo] = await Promise.all([
+  const [candleResults, ratioResults, fundingInfo, btcContext] = await Promise.all([
     Promise.allSettled(timeframes.map(tf => fetchTimeframeCandles(currentSymbol, tf, 100))),
     Promise.allSettled(timeframes.map(tf => fetchLongShortRatio(currentSymbol, TF_TO_RATIO_PERIOD[tf], 6))),
-    fetchFundingInfo(currentSymbol).catch(() => null)
+    fetchFundingInfo(currentSymbol).catch(() => null),
+    buildBtcContext().catch(() => "[BTCUSDT 컨텍스트] 조회 실패")
   ]);
 
   const sections = timeframes.map((tf, i) => {
@@ -2091,6 +1960,8 @@ ${fundingLine}
 
 ${sections}
 
+${btcContext}
+
 ${positionSection}`;
 
   document.getElementById('analysisOutput').value = text;
@@ -2119,724 +1990,6 @@ async function copyAnalysisText(){
     btn.classList.remove('copied');
   }, 1500);
 }
-
-// ================= 모의매매 봇 =================
-let botRunning = false;
-const botRunnerId = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
-let botTimer = null;
-let botFastTimer = null;
-let botTickInFlight = false;
-const botState = {}; // { SYMBOL: { position: null|{...}, trades: [...] } }
-const botWatchLog = []; // 매 틱마다 판단 근거를 남기는 실시간 감시 로그 (최근 60개 유지)
-
-function addWatchLog(symbol, message, kind){
-  botWatchLog.unshift({ time: Date.now(), symbol, message, kind: kind || 'watch' });
-  if(botWatchLog.length > 60) botWatchLog.length = 60;
-  renderWatchLog();
-}
-
-function renderWatchLog(){
-  const wrap = document.getElementById('botWatchLog');
-  if(!wrap) return;
-  if(!botWatchLog.length){
-    wrap.innerHTML = '<div class="empty">봇을 시작하면 1분마다(보유 중엔 1초마다) 판단 내용이 여기 쌓입니다.</div>';
-    return;
-  }
-  const colorOf = (kind) => kind === 'enter' ? 'var(--long)' : (kind === 'exit' ? 'var(--short)' : 'var(--sub)');
-  wrap.innerHTML = botWatchLog.map(item => {
-    const timeTxt = new Date(item.time).toLocaleTimeString('ko-KR', { hour12:false });
-    return `<div style="padding:6px 0; border-bottom:1px solid #1f1f1f; font-size:12px; line-height:1.6;">
-      <span style="color:var(--sub);">${timeTxt}</span>
-      <span style="color:var(--accent); font-weight:600; margin:0 6px;">${escapeHtml(coinLabelOf(item.symbol))}</span>
-      <span style="color:${colorOf(item.kind)};">${escapeHtml(item.message)}</span>
-    </div>`;
-  }).join('');
-}
-
-function getBotState(symbol){
-  if(!botState[symbol]) botState[symbol] = { position: null, trades: [] };
-  return botState[symbol];
-}
-
-async function fetchLivePriceOnce(symbol){
-  try{
-    const url = `https://api.bybit.com/v5/market/tickers?category=linear&symbol=${symbol}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    const t = data?.result?.list?.[0];
-    return t ? parseFloat(t.lastPrice) : null;
-  }catch(e){
-    console.error('봇 시세 조회 실패', symbol, e);
-    return null;
-  }
-}
-
-// 범용 타임프레임 시그널 분석 (MA추세, RSI, MACD)
-function computeTFSignals(candles){
-  // 마지막 원소는 아직 진행 중인 봉일 수 있으므로 확정봉만 분석한다.
-  const confirmed = candles.length > 1 ? candles.slice(0, -1) : candles;
-  const closes = confirmed.map(c => c.c);
-  const ma20 = calcSMA(closes, 20);
-  const ma60 = calcSMA(closes, 60);
-  const rsiArr = calcRSI(closes, 14);
-  const { histogram } = calcMACD(closes, 12, 26, 9);
-  const i = confirmed.length - 1;
-  if(ma20[i] == null || ma60[i] == null) return { trend:'flat', rsi:null, ma20:null, ma60:null, macdHist:null, macdPrev:null };
-  const trend = ma20[i] > ma60[i] ? 'up' : (ma20[i] < ma60[i] ? 'down' : 'flat');
-  return {
-    trend, rsi: rsiArr[i], ma20: ma20[i], ma60: ma60[i],
-    macdHist: histogram[i], macdPrev: i > 0 ? histogram[i-1] : null
-  };
-}
-
-// 1시간봉 기반 지지/저항 레벨 (S/R)
-function computeSRLevels(candles1h){
-  const confirmed = candles1h.length > 1 ? candles1h.slice(0, -1) : candles1h;
-  const closes = confirmed.map(c => c.c);
-  const ma20 = calcSMA(closes, 20);
-  const { upper, lower } = calcBollinger(closes, ma20, 20, 2);
-  const i = confirmed.length - 1;
-  const last100 = confirmed.slice(-100);
-  const last20 = confirmed.slice(-20);
-  const swingHigh = Math.max(...last100.map(c => c.h));
-  const swingLow = Math.min(...last100.map(c => c.l));
-  const recentHigh20 = Math.max(...last20.map(c => c.h));
-  const recentLow20 = Math.min(...last20.map(c => c.l));
-  const cur = closes[i];
-  const resistCandidates = [recentHigh20, upper[i], swingHigh].filter(v => v != null && v > cur).sort((a,b) => a-b);
-  const supportCandidates = [recentLow20, lower[i], swingLow].filter(v => v != null && v < cur).sort((a,b) => b-a);
-  return {
-    r1: resistCandidates[0] ?? null, r2: resistCandidates[1] ?? null,
-    s1: supportCandidates[0] ?? null, s2: supportCandidates[1] ?? null
-  };
-}
-
-// 멀티 타임프레임 가중 점수로 방향 결정
-function computeMultiTFDirection(tf4h, tf1h, tf15m){
-  let score = 0;
-  const details = [];
-
-  // 4시간봉 (가중치 ±3)
-  if(tf4h.trend === 'up'){ score += 3; details.push('4H 정배열(+3)'); }
-  else if(tf4h.trend === 'down'){ score -= 3; details.push('4H 역배열(-3)'); }
-  else details.push('4H 횡보(0)');
-  if(tf4h.rsi != null){
-    if(tf4h.rsi > 70){ score -= 1; details.push(`4H RSI ${tf4h.rsi.toFixed(0)} 과매수(-1)`); }
-    else if(tf4h.rsi < 30){ score += 1; details.push(`4H RSI ${tf4h.rsi.toFixed(0)} 과매도(+1)`); }
-  }
-
-  // 1시간봉 (가중치 ±2)
-  if(tf1h.trend === 'up'){ score += 2; details.push('1H 정배열(+2)'); }
-  else if(tf1h.trend === 'down'){ score -= 2; details.push('1H 역배열(-2)'); }
-  else details.push('1H 횡보(0)');
-  if(tf1h.rsi != null){
-    if(tf1h.rsi > 70){ score -= 0.5; details.push(`1H RSI ${tf1h.rsi.toFixed(0)} 과매수(-0.5)`); }
-    else if(tf1h.rsi < 30){ score += 0.5; details.push(`1H RSI ${tf1h.rsi.toFixed(0)} 과매도(+0.5)`); }
-  }
-  if(tf1h.macdHist != null && tf1h.macdPrev != null){
-    if(tf1h.macdPrev > 0 && tf1h.macdHist <= 0){ score -= 0.5; details.push('1H MACD 음전환(-0.5)'); }
-    else if(tf1h.macdPrev < 0 && tf1h.macdHist >= 0){ score += 0.5; details.push('1H MACD 양전환(+0.5)'); }
-  }
-
-  // 15분봉 (가중치 ±1)
-  if(tf15m.trend === 'up'){ score += 1; details.push('15M 정배열(+1)'); }
-  else if(tf15m.trend === 'down'){ score -= 1; details.push('15M 역배열(-1)'); }
-  else details.push('15M 횡보(0)');
-  if(tf15m.rsi != null){
-    if(tf15m.rsi > 70){ score -= 0.5; details.push(`15M RSI ${tf15m.rsi.toFixed(0)} 과매수(-0.5)`); }
-    else if(tf15m.rsi < 30){ score += 0.5; details.push(`15M RSI ${tf15m.rsi.toFixed(0)} 과매도(+0.5)`); }
-  }
-  if(tf15m.macdHist != null && tf15m.macdPrev != null){
-    if(tf15m.macdPrev > 0 && tf15m.macdHist <= 0){ score -= 0.5; details.push('15M MACD 음전환(-0.5)'); }
-    else if(tf15m.macdPrev < 0 && tf15m.macdHist >= 0){ score += 0.5; details.push('15M MACD 양전환(+0.5)'); }
-  }
-
-  // 임계값 ±2
-  let direction;
-  if(score >= 2) direction = 'long';
-  else if(score <= -2) direction = 'short';
-  else direction = 'flat';
-
-  return { direction, score: Math.round(score * 10) / 10, details };
-}
-
-// 하위 호환: 기존 computeLevels 호출부가 남아있을 경우 대비
-function computeLevels(candles1h){
-  const sig = computeTFSignals(candles1h);
-  const sr = computeSRLevels(candles1h);
-  return { ...sig, ...sr, counterTrend: false, counterReason: '' };
-}
-
-// 5분봉 마감 기준 트리거 탐지: 마지막 캔들은 진행 중일 수 있어 직전(마감) 캔들을 기준으로 판단
-function detectTrigger(mtfDir, sr, candles5m){
-  if(candles5m.length < 3) return null;
-  const closedIdx = candles5m.length - 2;
-  const prevIdx = closedIdx - 1;
-  const closed = candles5m[closedIdx];
-  const prev = candles5m[prevIdx];
-  if(!closed || !prev) return null;
-  const priorVolumes = candles5m.slice(Math.max(0, closedIdx-20), closedIdx).map(c => c.v).filter(Number.isFinite);
-  const avgVolume = priorVolumes.length ? priorVolumes.reduce((s,v) => s+v, 0) / priorVolumes.length : 0;
-  const volumeRatio = avgVolume > 0 ? closed.v / avgVolume : 0;
-  if(volumeRatio < 1.3) return null;
-
-  const dir = mtfDir.direction; // 'long', 'short', or 'flat'
-  if(dir === 'flat') return null;
-
-  const checkLong = (dir === 'long');
-  const checkShort = (dir === 'short');
-
-  if(checkLong){
-    if(sr.r1 && prev.c <= sr.r1 && closed.c > sr.r1){
-      const target2 = sr.r2 ?? (sr.r1 + (sr.r1 - (sr.s1 ?? sr.r1 * 0.98)));
-      return { dir:'long', type:'저항돌파', trigger: sr.r1, stop: closed.l, refTarget: target2, volumeRatio };
-    }
-    if(sr.s1 && closed.l <= sr.s1 * 1.003 && closed.c > closed.o && closed.c > sr.s1){
-      return { dir:'long', type:'눌림목반등', trigger: sr.s1, stop: sr.s1 * 0.998, refTarget: sr.r1, volumeRatio };
-    }
-  }
-  if(checkShort){
-    if(sr.s1 && prev.c >= sr.s1 && closed.c < sr.s1){
-      const target2 = sr.s2 ?? (sr.s1 - ((sr.r1 ?? sr.s1 * 1.02) - sr.s1));
-      return { dir:'short', type:'지지이탈', trigger: sr.s1, stop: closed.h, refTarget: target2, volumeRatio };
-    }
-    if(sr.r1 && closed.h >= sr.r1 * 0.997 && closed.c < closed.o && closed.c < sr.r1){
-      return { dir:'short', type:'눌림목반락', trigger: sr.r1, stop: sr.r1 * 1.002, refTarget: sr.s1, volumeRatio };
-    }
-  }
-  return null;
-}
-
-// 증거금 대비 최대손실%와 손절 거리로 레버리지 자동 산출, 목표액(원)을 가격으로 환산
-function computeSizingAndTarget(dir, entry, stop, marginKRW, targetKRW, riskPct, levCap, feeRate){
-  const stopDistPct = Math.abs(entry - stop) / entry * 100;
-  let lev = stopDistPct > 0 ? (riskPct / stopDistPct) : levCap;
-  lev = Math.max(1, Math.min(levCap, lev));
-  lev = Math.round(lev * 10) / 10;
-  // 왕복 체결 수수료를 낸 뒤에도 설정한 순목표액이 남도록 목표가를 계산한다.
-  const moveNeededFrac = (targetKRW / marginKRW) / lev + (2 * feeRate);
-  const target = dir === 'long' ? entry * (1 + moveNeededFrac) : entry * (1 - moveNeededFrac);
-  return { leverage: lev, target, stopDistPct };
-}
-
-function estimateBotPnlKRW(pos, price){
-  const moveFrac = pos.dir === 'long' ? (price - pos.entry) / pos.entry : (pos.entry - price) / pos.entry;
-  const gross = moveFrac * pos.leverage * pos.marginKRW;
-  const feeRate = pos.feeRate || 0;
-  const fees = pos.marginKRW * pos.leverage * feeRate * (1 + price / pos.entry);
-  return Math.round(gross - fees);
-}
-
-// 진입 근거를 사람이 읽을 수 있는 문장으로 생성
-function buildEntryRationale(symbol, mtfDir, tfSignals, sr, trig, price, leverage, target, stopDistPct, testMode){
-  const dirTxt = trig.dir === 'long' ? '롱' : '숏';
-  const scoreTxt = `MTF 점수 ${mtfDir.score >= 0 ? '+' : ''}${mtfDir.score}`;
-  const detailTxt = mtfDir.details.join(', ');
-
-  // 각 타임프레임 요약
-  const tfSummary = ['4H','1H','15M'].map((label, idx) => {
-    const tf = tfSignals[idx];
-    if(!tf) return `${label}: 데이터 없음`;
-    const trendTxt = tf.trend === 'up' ? '정배열' : (tf.trend === 'down' ? '역배열' : '횡보');
-    const rsiTxt = tf.rsi != null ? tf.rsi.toFixed(1) : '-';
-    const macdTxt = tf.macdHist != null ? tf.macdHist.toFixed(4) : '-';
-    return `${label} ${trendTxt}(MA20 ${tf.ma20 != null ? fmtPrice(tf.ma20) : '-'} / MA60 ${tf.ma60 != null ? fmtPrice(tf.ma60) : '-'}), RSI ${rsiTxt}, MACD ${macdTxt}`;
-  }).join(' | ');
-
-  if(testMode){
-    const stopDesc = `손절은 진입가 대비 1% 임시 적용 → ${fmtPrice(trig.stop)}(${stopDistPct.toFixed(2)}%)`;
-    return `[테스트 모드] ${tfSummary}. ${scoreTxt}(${detailTxt})으로 ${dirTxt} 판단해 강제 진입. `
-      + `${stopDesc}, 레버리지 ${leverage}x, 목표가 ${fmtPrice(target)}. 실제 5분봉 트리거 근거는 없습니다(동작 확인용).`;
-  }
-
-  let triggerDesc;
-  if(trig.type === '저항돌파'){
-    triggerDesc = `5분봉 종가가 저항 ${fmtPrice(trig.trigger)}을 마감 기준으로 돌파해 ${dirTxt} 진입.`;
-  } else if(trig.type === '지지이탈'){
-    triggerDesc = `5분봉 종가가 지지 ${fmtPrice(trig.trigger)}를 마감 기준으로 이탈해 ${dirTxt} 진입.`;
-  } else if(trig.type === '눌림목반등'){
-    triggerDesc = `가격이 지지 ${fmtPrice(trig.trigger)} 부근까지 내려온 뒤 양봉으로 마감해 눌림목 반등 ${dirTxt} 진입.`;
-  } else if(trig.type === '눌림목반락'){
-    triggerDesc = `가격이 저항 ${fmtPrice(trig.trigger)} 부근까지 올라온 뒤 음봉으로 마감해 눌림목 반락 ${dirTxt} 진입.`;
-  } else {
-    triggerDesc = `${trig.type} 조건 충족으로 ${dirTxt} 진입.`;
-  }
-
-  return `[${coinLabelOf(symbol)}] ${tfSummary}. ${scoreTxt}(${detailTxt})으로 ${dirTxt} 우세 판단. `
-    + `${triggerDesc} 손절 ${fmtPrice(trig.stop)}(진입가 대비 ${stopDistPct.toFixed(2)}%), `
-    + `레버리지 ${leverage}x, 목표가 ${fmtPrice(target)}.`;
-}
-
-function buildExitRationale(pos){
-  const pnlPct = pos.marginKRW ? (pos.pnlKRW / pos.marginKRW * 100).toFixed(2) : '?';
-  const pnlSign = pos.pnlKRW >= 0 ? '+' : '';
-  const marginTxt = `증거금 ${fmt(pos.marginKRW,0)}원 대비 ${pnlSign}${pnlPct}% (${pnlSign}${fmt(pos.pnlKRW,0)}원)`;
-  const dirTxt = pos.dir === 'long' ? '롱' : '숏';
-  const stopDistTxt = pos.entry ? `(진입가 ${fmtPrice(pos.entry)} 대비 ${(Math.abs(pos.entry - pos.stop) / pos.entry * 100).toFixed(2)}%)` : '';
-  const targetDistTxt = pos.entry ? `(진입가 대비 ${(Math.abs(pos.target - pos.entry) / pos.entry * 100).toFixed(2)}%)` : '';
-
-  if(pos.closeReason === 'target'){
-    return `${dirTxt} 포지션 목표가 ${fmtPrice(pos.target)}${targetDistTxt} 도달로 익절 종료. ${marginTxt}.`;
-  }
-  if(pos.closeReason === 'stop'){
-    return `${dirTxt} 포지션 손절가 ${fmtPrice(pos.stop)}${stopDistTxt} 도달로 손절 종료. ${marginTxt}.`;
-  }
-  return `${dirTxt} 포지션 청산가 ${fmtPrice(pos.liq)} 도달로 강제 청산. ${marginTxt}.`;
-}
-
-async function tryOpenBotPosition(symbol){
-  const st = getBotState(symbol);
-  if(st.position) return;
-
-  const marginKRW = parseFloat(document.getElementById('botMargin').value) || 0;
-  const targetKRW = parseFloat(document.getElementById('botTargetKRW').value) || 0;
-  const riskPct = parseFloat(document.getElementById('botRiskPct').value) || 20;
-  const levCap = parseFloat(document.getElementById('botLevCap').value) || 50;
-  const feeRate = (parseFloat(document.getElementById('feeRate').value) || 0) / 100;
-  if(marginKRW <= 0 || targetKRW <= 0){
-    addWatchLog(symbol, '증거금·익절목표가 입력되지 않아 스킵', 'skip');
-    return;
-  }
-
-  // 4개 타임프레임 병렬 fetch
-  const [c4h, c1h, c15m, c5m] = await Promise.all([
-    fetchTimeframeCandles(symbol, '240', 100),
-    fetchTimeframeCandles(symbol, '60', 100),
-    fetchTimeframeCandles(symbol, '15', 60),
-    fetchTimeframeCandles(symbol, '5', 50)
-  ]);
-  if(!c1h.length || !c5m.length){
-    addWatchLog(symbol, '캔들 데이터 조회 실패', 'skip');
-    return;
-  }
-
-  const testMode = document.getElementById('botTestMode').checked;
-
-  // 각 타임프레임 시그널 분석
-  const tf4h = c4h.length >= 60 ? computeTFSignals(c4h) : { trend:'flat', rsi:null, ma20:null, ma60:null, macdHist:null, macdPrev:null };
-  const tf1h = computeTFSignals(c1h);
-  const tf15m = c15m.length >= 20 ? computeTFSignals(c15m) : { trend:'flat', rsi:null, ma20:null, ma60:null, macdHist:null, macdPrev:null };
-  const tfSignals = [tf4h, tf1h, tf15m];
-
-  // 멀티 타임프레임 방향 결정
-  const mtfDir = computeMultiTFDirection(tf4h, tf1h, tf15m);
-
-  // 1시간봉 기반 지지/저항
-  const sr = computeSRLevels(c1h);
-  const lastClose = c5m[c5m.length - 1].c;
-
-  // 관망 로그용 요약 생성
-  const scoreTxt = `MTF ${mtfDir.score >= 0 ? '+' : ''}${mtfDir.score}`;
-  const tfBrief = `4H ${tf4h.trend === 'up' ? '▲' : (tf4h.trend === 'down' ? '▼' : '—')} · 1H ${tf1h.trend === 'up' ? '▲' : (tf1h.trend === 'down' ? '▼' : '—')} · 15M ${tf15m.trend === 'up' ? '▲' : (tf15m.trend === 'down' ? '▼' : '—')}`;
-  const r1Txt = sr.r1 != null ? `R1 ${fmtPrice(sr.r1)}(${((sr.r1-lastClose)/lastClose*100).toFixed(2)}%)` : 'R1 없음';
-  const s1Txt = sr.s1 != null ? `S1 ${fmtPrice(sr.s1)}(${((sr.s1-lastClose)/lastClose*100).toFixed(2)}%)` : 'S1 없음';
-
-  let trig;
-  if(testMode){
-    if(mtfDir.direction === 'flat'){
-      addWatchLog(symbol, `[테스트] 관망 · ${tfBrief} · ${scoreTxt} → 방향 불분명(임계값 ±2 미달)`, 'watch');
-      return;
-    }
-    const dir = mtfDir.direction;
-    const fallbackStopPct = 1;
-    const stop = dir === 'long' ? lastClose * (1 - fallbackStopPct / 100) : lastClose * (1 + fallbackStopPct / 100);
-    trig = { dir, type: '테스트강제진입', stop, volumeRatio: null };
-  } else {
-    if(mtfDir.direction === 'flat'){
-      addWatchLog(symbol, `관망 · ${tfBrief} · ${scoreTxt} → 방향 불분명 · 현재가 ${fmtPrice(lastClose)} · ${r1Txt} · ${s1Txt}`, 'watch');
-      return;
-    }
-    trig = detectTrigger(mtfDir, sr, c5m);
-    if(!trig){
-      const dirTxt = mtfDir.direction === 'long' ? '롱 탐색' : '숏 탐색';
-      addWatchLog(symbol, `관망 · ${tfBrief} · ${scoreTxt} → ${dirTxt} · 현재가 ${fmtPrice(lastClose)} · ${r1Txt} · ${s1Txt} · 트리거 미충족`, 'watch');
-      return;
-    }
-  }
-
-  const price = await fetchLivePriceOnce(symbol);
-  if(!price){
-    addWatchLog(symbol, '실시간 시세 조회 실패로 진입 보류', 'skip');
-    return;
-  }
-
-  // 5분 확정봉 ATR의 1.5배보다 손절폭이 좁지 않도록 조정한다.
-  const confirmed5m = c5m.length > 1 ? c5m.slice(0, -1) : c5m;
-  const atr5m = calcATR(confirmed5m, 14);
-  if(atr5m){
-    trig.stop = trig.dir === 'long'
-      ? Math.min(trig.stop, price - atr5m * 1.5)
-      : Math.max(trig.stop, price + atr5m * 1.5);
-  }
-  const { leverage, target, stopDistPct } = computeSizingAndTarget(trig.dir, price, trig.stop, marginKRW, targetKRW, riskPct, levCap, feeRate);
-  const mmRate = (parseFloat(document.getElementById('mmRate').value) || 0.5) / 100;
-  const liq = calcLiqPrice(price, leverage, mmRate, trig.dir);
-  const rationale = buildEntryRationale(symbol, mtfDir, tfSignals, sr, trig, price, leverage, target, stopDistPct, testMode);
-
-  const pos = {
-    symbol, dir: trig.dir, type: trig.type,
-    entry: price, stop: trig.stop, target, liq, leverage, marginKRW, feeRate,
-    openTime: Date.now(), lastPrice: price, pnlKRW: 0, rationale
-  };
-
-  try{
-    if(typeof window.fbAddBotTrade === 'function'){
-      pos.docId = await window.fbAddBotTrade({
-        symbol: pos.symbol, dir: pos.dir, type: pos.type,
-        entry: pos.entry, stop: pos.stop, target: pos.target, liq: pos.liq,
-        leverage: pos.leverage, marginKRW: pos.marginKRW, feeRate: pos.feeRate, rationale: pos.rationale,
-        status: 'open', openTime: pos.openTime
-      });
-    }
-  }catch(e){
-    console.error('봇 거래 저장 실패', e);
-  }
-
-  st.position = pos;
-  addWatchLog(symbol, `🟢 진입 체결 · ${dirLabel(trig.dir)} ${fmtPrice(price)} · ${trig.type} · ${leverage}x · ${scoreTxt}`, 'enter');
-  renderBotPanels();
-}
-
-// 보유 중인 포지션을 현재가와 비교해 종료 여부를 판단. logPeriodic=true일 때만
-// (1분 탐색 틱에서) 종료가 아니어도 상태 로그를 남기고, 1초 체결감시 틱에서는
-// 종료됐을 때만 로그를 남겨 로그가 도배되지 않게 한다.
-async function evaluateOpenPosition(symbol, logPeriodic){
-  const st = getBotState(symbol);
-  const pos = st.position;
-  if(!pos) return;
-
-  const price = await fetchLivePriceOnce(symbol);
-  if(!price){
-    if(logPeriodic) addWatchLog(symbol, '실시간 시세 조회 실패(보유 포지션 점검 스킵)', 'skip');
-    return;
-  }
-
-  let closeReason = null;
-  if(pos.dir === 'long'){
-    if(pos.liq && price <= pos.liq) closeReason = 'liquidation';
-    else if(price <= pos.stop) closeReason = 'stop';
-    else if(price >= pos.target) closeReason = 'target';
-  } else {
-    if(pos.liq && price >= pos.liq) closeReason = 'liquidation';
-    else if(price >= pos.stop) closeReason = 'stop';
-    else if(price <= pos.target) closeReason = 'target';
-  }
-
-  pos.lastPrice = price;
-  pos.pnlKRW = estimateBotPnlKRW(pos, price);
-  pos.lastCheckedAt = Date.now();
-
-  if(closeReason){
-    const closePrice = closeReason === 'stop' ? pos.stop : (closeReason === 'target' ? pos.target : pos.liq);
-    pos.closeReason = closeReason;
-    pos.closePrice = closePrice;
-    pos.closeTime = Date.now();
-    pos.pnlKRW = estimateBotPnlKRW(pos, closePrice);
-    pos.exitRationale = buildExitRationale(pos);
-
-    st.trades.unshift({ ...pos });
-    st.position = null;
-
-    if(typeof window.fbUpdateBotTrade === 'function' && pos.docId){
-      try{
-        await window.fbUpdateBotTrade(pos.docId, {
-          status: 'closed', closeReason, closePrice, pnlKRW: pos.pnlKRW, closeTime: pos.closeTime,
-          exitRationale: pos.exitRationale
-        });
-      }catch(e){
-        console.error('봇 거래 종료 저장 실패', e);
-      }
-    }
-
-    const exitPnlPct = pos.marginKRW ? (pos.pnlKRW / pos.marginKRW * 100).toFixed(2) : '?';
-    const exitPnlSign = pos.pnlKRW >= 0 ? '+' : '';
-    addWatchLog(symbol, `🔴 ${reasonLabel(closeReason)} 종료 · 종료가 ${fmtPrice(closePrice)} · 손익 ${exitPnlSign}${fmt(pos.pnlKRW,0)}원 (증거금 대비 ${exitPnlSign}${exitPnlPct}%)`, 'exit');
-    renderBotTradeLog();
-  } else if(logPeriodic){
-    const distStopPct = Math.abs((price - pos.stop) / price * 100);
-    const distTargetPct = Math.abs((pos.target - price) / price * 100);
-    const holdPnlPct = pos.marginKRW ? (pos.pnlKRW / pos.marginKRW * 100).toFixed(2) : '?';
-    const holdPnlSign = pos.pnlKRW >= 0 ? '+' : '';
-    addWatchLog(symbol, `보유 중 · 현재가 ${fmtPrice(price)} · 손절까지 ${distStopPct.toFixed(2)}% · 목표까지 ${distTargetPct.toFixed(2)}% · 평가손익 ${holdPnlSign}${fmt(pos.pnlKRW,0)}원 (${holdPnlSign}${holdPnlPct}%)`, 'watch');
-  }
-
-  renderBotPanels();
-}
-
-function getBotSymbols(){
-  const a = document.getElementById('botSymbolA').value.trim().toUpperCase();
-  return a ? [a] : [];
-}
-
-async function botTick(){
-  if(botTickInFlight) return;
-  botTickInFlight = true;
-  try{
-    const symbols = getBotSymbols();
-    for(const sym of symbols){
-      const st = getBotState(sym);
-      try{
-        if(st.position){
-          await evaluateOpenPosition(sym, true); // 1분 틱: 보유 중이어도 상태 로그 남김
-        } else {
-          await tryOpenBotPosition(sym);
-        }
-      }catch(e){
-        console.error('봇 처리 오류', sym, e);
-      }
-    }
-  } finally {
-    botTickInFlight = false;
-  }
-}
-
-let botFastTickInFlight = false;
-async function botFastTick(){
-  if(botFastTickInFlight) return;
-  botFastTickInFlight = true;
-  try{
-    const symbols = getBotSymbols();
-    for(const sym of symbols){
-      const st = getBotState(sym);
-      if(!st.position) continue; // 무포 상태 진입 탐색은 1분 틱(캔들 마감 기준)에서만 수행
-      try{
-        await evaluateOpenPosition(sym, false); // 1초 틱: 종료됐을 때만 로그, 화면 숫자는 매초 갱신
-      }catch(e){
-        console.error('봇 체결감시 오류', sym, e);
-      }
-    }
-  } finally {
-    botFastTickInFlight = false;
-  }
-}
-
-function setBotRunningLocal(running){
-  botRunning = running;
-  const btn = document.getElementById('botToggleBtn');
-  const hint = document.getElementById('botStatusHint');
-  if(botRunning){
-    btn.textContent = '봇 정지';
-    hint.textContent = '실행 중 · 진입 탐색 1분마다 · 보유 포지션 체결 감시 1초마다';
-    if(!botTimer){
-      botTick();
-      botTimer = setInterval(botTick, 60000);
-    }
-    if(!botFastTimer){
-      botFastTimer = setInterval(botFastTick, 1000);
-    }
-  } else {
-    btn.textContent = '봇 시작';
-    hint.textContent = '정지 상태 · 시작을 누르면 진입 탐색은 1분마다, 보유 포지션 감시는 1초마다 돕니다.';
-    clearInterval(botTimer);
-    botTimer = null;
-    clearInterval(botFastTimer);
-    botFastTimer = null;
-  }
-}
-
-function collectBotSettings(){
-  return {
-    symbol: document.getElementById('botSymbolA').value.trim().toUpperCase(),
-    marginKRW: document.getElementById('botMargin').value,
-    targetKRW: document.getElementById('botTargetKRW').value,
-    riskPct: document.getElementById('botRiskPct').value,
-    levCap: document.getElementById('botLevCap').value,
-    testMode: document.getElementById('botTestMode').checked,
-    running: botRunning,
-    runnerId: botRunning ? botRunnerId : null
-  };
-}
-
-async function saveBotSettingsNow(){
-  if(typeof window.fbSaveBotSettings !== 'function') return;
-  try{
-    await window.fbSaveBotSettings(collectBotSettings());
-  }catch(e){
-    console.error('봇 설정 저장 실패', e);
-  }
-}
-
-let botSettingsSaveTimer = null;
-function scheduleSaveBotSettings(){
-  clearTimeout(botSettingsSaveTimer);
-  botSettingsSaveTimer = setTimeout(saveBotSettingsNow, 600);
-}
-
-// 다른 기기에서 설정을 바꾸거나 봇을 켜고/껐을 때 이 기기 화면에도 즉시 반영
-window.onBotSettingsSnapshot = function(data){
-  if(!data) return;
-  if(data.symbol) document.getElementById('botSymbolA').value = data.symbol;
-  if(data.marginKRW !== undefined && data.marginKRW !== '') document.getElementById('botMargin').value = data.marginKRW;
-  if(data.targetKRW !== undefined && data.targetKRW !== '') document.getElementById('botTargetKRW').value = data.targetKRW;
-  if(data.riskPct !== undefined && data.riskPct !== '') document.getElementById('botRiskPct').value = data.riskPct;
-  if(data.levCap !== undefined && data.levCap !== '') document.getElementById('botLevCap').value = data.levCap;
-  if(typeof data.testMode === 'boolean') document.getElementById('botTestMode').checked = data.testMode;
-
-  // 실행권을 가진 한 화면만 타이머를 돌린다. 다른 탭/기기는 상태만 확인한다.
-  const remoteRunning = !!data.running && data.runnerId === botRunnerId;
-  if(remoteRunning !== botRunning){
-    setBotRunningLocal(remoteRunning);
-  }
-  renderBotPanels();
-
-  const syncHint = document.getElementById('botSyncHint');
-  if(syncHint){
-    syncHint.textContent = remoteRunning
-      ? '이 화면에서 봇 실행 중'
-      : (data.running ? '다른 화면에서 봇 실행 중 · 이 화면은 중복 실행하지 않습니다.' : '설정 동기화됨');
-  }
-};
-
-function toggleBot(){
-  setBotRunningLocal(!botRunning);
-  saveBotSettingsNow();
-}
-
-function dirLabel(dir){ return dir === 'long' ? '롱' : '숏'; }
-function reasonLabel(r){ return r === 'target' ? '익절' : (r === 'stop' ? '손절' : '청산'); }
-
-function renderBotPanels(){
-  const wrap = document.getElementById('botSymbolPanels');
-  const symbols = getBotSymbols();
-  if(!symbols.length){
-    wrap.innerHTML = '<div class="empty">감시 심볼을 입력하세요.</div>';
-    return;
-  }
-  wrap.innerHTML = symbols.map(sym => {
-    const st = getBotState(sym);
-    const p = st.position;
-    if(!p){
-      return `<div class="history-item">
-        <div class="history-top">
-          <span class="history-dir">${escapeHtml(coinLabelOf(sym))}</span>
-          <span class="history-detail">관망 중 (트리거 대기)</span>
-        </div>
-      </div>`;
-    }
-    const pnlClass = p.pnlKRW >= 0 ? 'val-long' : 'val-short';
-    const pnlPct = p.marginKRW ? ((p.pnlKRW || 0) / p.marginKRW * 100).toFixed(2) : '?';
-    const pnlSign = (p.pnlKRW || 0) >= 0 ? '+' : '';
-    return `<div class="history-item">
-      <div class="history-top">
-        <span class="history-dir ${p.dir === 'long' ? 'val-long' : 'val-short'}">${escapeHtml(coinLabelOf(sym))} ${dirLabel(p.dir)} · ${escapeHtml(p.type)}</span>
-        <span class="history-pnl ${pnlClass}">${pnlSign}${fmt(p.pnlKRW || 0, 0)}원 (${pnlSign}${pnlPct}%)</span>
-      </div>
-      <div class="history-detail">
-        증거금 ${fmt(p.marginKRW,0)}원 · 레버리지 ${p.leverage}x · 현재가 ${p.lastPrice ? fmtPrice(p.lastPrice) : '-'}<br>
-        진입 ${fmtPrice(p.entry)} · 손절 ${fmtPrice(p.stop)} · 목표 ${fmtPrice(p.target)} · 청산가 ${p.liq ? fmtPrice(p.liq) : '-'}
-        <span style="color:var(--sub);"> · 마지막 확인 ${p.lastCheckedAt ? new Date(p.lastCheckedAt).toLocaleTimeString('ko-KR', { hour12:false }) : '-'}</span>
-      </div>
-      ${p.rationale ? `<div class="history-detail" style="margin-top:6px; padding-top:6px; border-top:1px dashed var(--border); line-height:1.6;">${escapeHtml(p.rationale)}</div>` : ''}
-    </div>`;
-  }).join('');
-}
-
-function renderBotTradeLog(){
-  const wrap = document.getElementById('botTradeLog');
-  const all = Object.values(botState).flatMap(st => st.trades).sort((a, b) => b.closeTime - a.closeTime);
-
-  if(!all.length){
-    wrap.innerHTML = '<div class="empty">거래 내역 없음</div>';
-  } else {
-    const groups = new Map();
-    all.forEach(t => {
-      const timestamp = t.closeTime || t.openTime || Date.now();
-      const key = new Date(timestamp).toLocaleDateString('sv-SE', { timeZone:'Asia/Seoul' });
-      if(!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(t);
-    });
-    const renderTrade = (t) => {
-      const pnlClass = t.pnlKRW >= 0 ? 'val-long' : 'val-short';
-      const tPnlPct = t.marginKRW ? (t.pnlKRW / t.marginKRW * 100).toFixed(2) : '?';
-      const tPnlSign = t.pnlKRW >= 0 ? '+' : '';
-      return `<div class="history-item">
-        <div class="history-top">
-          <span class="history-dir ${t.dir === 'long' ? 'val-long' : 'val-short'}">${escapeHtml(coinLabelOf(t.symbol))} ${dirLabel(t.dir)} · ${reasonLabel(t.closeReason)}</span>
-          <span class="history-pnl ${pnlClass}">${tPnlSign}${fmt(t.pnlKRW, 0)}원 (${tPnlSign}${tPnlPct}%)</span>
-        </div>
-        <div class="history-detail">증거금 ${fmt(t.marginKRW,0)}원 · 진입 ${fmtPrice(t.entry)} → 종료 ${fmtPrice(t.closePrice)}</div>
-        <div style="font-size:12px; color:var(--accent); margin-top:3px;">${new Date(t.openTime).toLocaleString('ko-KR')}${t.closeTime ? ' → ' + new Date(t.closeTime).toLocaleString('ko-KR') : ''}</div>
-        ${(t.rationale || t.exitRationale) ? `<details style="margin-top:6px;">
-          <summary style="cursor:pointer; font-size:11px; color:var(--sub);">근거 보기</summary>
-          <div class="history-detail" style="margin-top:4px; line-height:1.6;">
-            ${t.rationale ? `<div>${escapeHtml(t.rationale)}</div>` : ''}
-            ${t.exitRationale ? `<div style="margin-top:4px;">${escapeHtml(t.exitRationale)}</div>` : ''}
-          </div>
-        </details>` : ''}
-      </div>`;
-    };
-    wrap.innerHTML = [...groups.entries()].map(([date, trades], index) => {
-      const dailyPnl = trades.reduce((sum, t) => sum + (t.pnlKRW || 0), 0);
-      const dailyWins = trades.filter(t => t.pnlKRW > 0).length;
-      const dailyWinRate = trades.length ? Math.round(dailyWins / trades.length * 100) : 0;
-      const sign = dailyPnl >= 0 ? '+' : '';
-      const colorClass = dailyPnl >= 0 ? 'val-long' : 'val-short';
-      return `<details class="trade-day" ${index === 0 ? 'open' : ''}>
-        <summary>
-          <span>${escapeHtml(date)} · ${trades.length}건</span>
-          <span class="trade-day-summary ${colorClass}">${sign}${fmt(dailyPnl,0)}원 · 승률 ${dailyWinRate}%</span>
-        </summary>
-        <div class="trade-day-body">${trades.map(renderTrade).join('')}</div>
-      </details>`;
-    }).join('');
-  }
-
-  const total = all.reduce((s, t) => s + (t.pnlKRW || 0), 0);
-  const totalEl = document.getElementById('botTotalPnl');
-  totalEl.textContent = `${total >= 0 ? '+' : ''}${fmt(total, 0)}원`;
-  totalEl.className = 'result-value big ' + (total >= 0 ? 'val-long' : 'val-short');
-
-  // 초기 증거금 = 현재 설정된 증거금, 현재 증거금 = 초기 + 누적 손익
-  const initMargin = parseFloat(document.getElementById('botMargin').value) || 0;
-  const curMargin = initMargin + total;
-  document.getElementById('botInitMargin').textContent = initMargin > 0 ? `${fmt(initMargin, 0)}원` : '-';
-  const curMarginEl = document.getElementById('botCurMargin');
-  curMarginEl.textContent = initMargin > 0 ? `${fmt(curMargin, 0)}원` : '-';
-  curMarginEl.className = 'result-value ' + (curMargin >= initMargin ? 'val-long' : 'val-short');
-
-  const wins = all.filter(t => t.pnlKRW > 0).length;
-  document.getElementById('botWinRate').textContent = all.length ? `${(wins / all.length * 100).toFixed(0)}% (${all.length}건)` : '- (0건)';
-}
-
-async function clearBotLog(){
-  if(!confirm('봇 거래 로그를 전체 삭제할까요? 되돌릴 수 없습니다.')) return;
-  Object.values(botState).forEach(st => { st.trades = []; });
-  renderBotTradeLog();
-  if(typeof window.fbClearBotTrades === 'function'){
-    try{ await window.fbClearBotTrades(); }catch(e){ console.error('봇 로그 삭제 실패', e); }
-  }
-}
-
-window.loadBotTrades = async function(){
-  if(typeof window.fbLoadBotTrades !== 'function') return;
-  try{
-    const rows = await window.fbLoadBotTrades();
-    rows.filter(r => r.status === 'closed').forEach(r => {
-      const st = getBotState(r.symbol);
-      st.trades.push(r);
-    });
-    Object.values(botState).forEach(st => st.trades.sort((a, b) => (b.closeTime || 0) - (a.closeTime || 0)));
-
-    // 열려있던 포지션 복원(심볼당 가장 최근 open 1건). 새로고침으로 사라지지 않도록.
-    const openRows = rows.filter(r => r.status === 'open').sort((a, b) => (b.openTime || 0) - (a.openTime || 0));
-    const seenOpenSymbols = new Set();
-    openRows.forEach(r => {
-      if(seenOpenSymbols.has(r.symbol)) return;
-      seenOpenSymbols.add(r.symbol);
-      const st = getBotState(r.symbol);
-      st.position = {
-        docId: r.id, symbol: r.symbol, dir: r.dir, type: r.type,
-        entry: r.entry, stop: r.stop, target: r.target, liq: r.liq,
-        leverage: r.leverage, marginKRW: r.marginKRW, feeRate: r.feeRate || 0, rationale: r.rationale,
-        openTime: r.openTime, lastPrice: r.entry, pnlKRW: 0
-      };
-    });
-  }catch(e){
-    console.error('봇 로그 불러오기 실패', e);
-  }
-  renderBotPanels();
-  renderBotTradeLog();
-};
 
 // 초기 실행
 updatePositionQtyLabel();
