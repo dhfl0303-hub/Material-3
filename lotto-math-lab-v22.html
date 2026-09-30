@@ -1549,7 +1549,7 @@ function saveFailure(e){return e?.code==='permission-denied'?'저장 권한이 �
 async function confirmGenerated(index){
   const user=currentUser,item=pendingGeneration[index],snapshot=generationSnapshot;
   if(!user||!item||!snapshot||item.busy)return;
-  if(item.savedId){switchTab('vault');return;}
+  if(item.savedId){$('genSaveStatus').textContent='이미 내 보관함에 저장된 조합입니다.';return;}
   if(!validNumbers(item.nums)||!snapshot.sourceCount||snapshot.dataSource==='sample'){$('genSaveStatus').textContent='실제 회차 데이터를 불러온 뒤 생성해주세요.';return;}
   const epoch=authEpoch;item.busy=true;const button=$('confirmGen'+index);if(button){button.disabled=true;button.textContent='확정 중…';}
   $('genSaveStatus').textContent='서버에 저장하고 있습니다…';
@@ -1560,7 +1560,7 @@ async function confirmGenerated(index){
     await db.runTransaction(async tx=>{const existing=await tx.get(item.ref);if(!existing.exists)tx.set(item.ref,item.payload);});
     if(epoch!==authEpoch||currentUser?.uid!==user.uid)return;
     item.savedId=item.ref.id;if(button)button.textContent='저장 완료';
-    switchTab('vault');$('vaultStatus').textContent='조합을 확정했습니다. 저장 내역을 불러오고 있습니다.';
+    $('genSaveStatus').textContent='내 보관함에 저장했습니다. 이 페이지에서 계속 번호를 확인하거나 생성할 수 있습니다.';
   }catch(e){if(epoch===authEpoch){$('genSaveStatus').textContent=saveFailure(e);if(button){button.disabled=false;button.textContent='확정·보관함 저장';}}}
   finally{item.busy=false;}
 }
@@ -1586,9 +1586,27 @@ function renderVault(){
   vaultTickets.forEach(t=>{
     const row=document.createElement('div');row.className='vault-ticket';
     row.innerHTML='<div class="flex-between flex-wrap gap8"><strong>'+t.targetRound+'회 대상</strong><span class="text-dim" style="font-size:11px">'+escapeHtml(ticketTime(t))+'</span></div><div class="mt8">'+t.nums.map(n=>renderBall(n)).join('')+'</div><p class="text-dim" style="font-size:11px">'+escapeHtml(stratNames[t.strategy]||t.strategy)+' · '+(t.period?'최근 '+t.period+'주':'전체')+' · 생성 기준 '+t.sourceStart+'~'+t.sourceEnd+'회</p>';
-    const button=document.createElement('button');button.className='btn btn-outline';button.textContent='이 조합 비교·분석';button.onclick=()=>selectVaultTicket(t.id);row.appendChild(button);container.appendChild(row);
+    const actions=document.createElement('div');actions.className='flex gap8 flex-wrap';
+    const button=document.createElement('button');button.className='btn btn-outline';button.textContent='이 조합 비교·분석';button.onclick=()=>selectVaultTicket(t.id);actions.appendChild(button);
+    const del=document.createElement('button');del.className='btn btn-danger';del.textContent='삭제';del.onclick=()=>deleteVaultTicket(t.id);actions.appendChild(del);
+    row.appendChild(actions);container.appendChild(row);
   });
   if(selectedTicketId&&!vaultTickets.some(t=>t.id===selectedTicketId)){selectedTicketId=null;$('vaultDetail').classList.add('hidden');clearVaultAnalysis();}
+}
+async function deleteVaultTicket(id){
+  const user=currentUser,t=vaultTickets.find(x=>x.id===id);if(!user||!t)return;
+  if(!confirm(t.nums.join(', ')+' 조합을 내 보관함에서 삭제하시겠습니까?'))return;
+  const epoch=authEpoch;$('vaultStatus').textContent='삭제 중…';
+  try{
+    await ticketCollection(user.uid).doc(id).delete();
+    if(epoch!==authEpoch||currentUser?.uid!==user.uid)return;
+    vaultTickets=vaultTickets.filter(x=>x.id!==id);
+    if(selectedTicketId===id){selectedTicketId=null;$('vaultDetail').classList.add('hidden');clearVaultAnalysis();}
+    renderVault();
+    $('vaultStatus').textContent=vaultTickets.length?'삭제했습니다. 내 조합 '+vaultTickets.length+'개':'삭제했습니다. 아직 저장한 조합이 없습니다.';
+  }catch(e){
+    if(epoch===authEpoch)$('vaultStatus').textContent=e?.code==='permission-denied'?'삭제 권한이 설정되지 않았습니다. 운영자에게 문의해주세요.':'삭제하지 못했습니다. 인터넷 연결을 확인하고 다시 시도해주세요.';
+  }
 }
 function clearVaultAnalysis(){$('vaultAnalysis').replaceChildren();$('vaultPrompt').value='';$('vaultCopyArea').classList.add('hidden');$('vaultCopyStatus').textContent='';}
 function selectVaultTicket(id){
