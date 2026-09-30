@@ -124,11 +124,11 @@ p{margin-bottom:6px;line-height:1.6}
 
 .auth-shell{max-width:440px;margin:7vh auto 30px}.auth-card{padding:24px}.auth-card label{display:block;margin:12px 0 6px;font-size:12px;color:var(--textDim)}.auth-card input{width:100%;padding:12px;background:var(--bg);color:var(--text);border:1px solid var(--borderL);border-radius:7px}.auth-card form>.btn{width:100%;margin-top:20px}.auth-card p{line-height:1.6;overflow-wrap:anywhere}
 .account-bar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:10px 0;flex-wrap:wrap}.account-bar span{overflow-wrap:anywhere;font-size:12px;color:var(--textDim)}
-.vault-ticket{padding:16px 0;border-top:1px solid var(--border)}#vaultPrompt{display:block;width:100%;margin:8px 0;padding:12px;background:var(--bg);color:var(--text);border:1px solid var(--borderL);border-radius:8px;font:12px/1.6 sans-serif;resize:vertical}.btn:disabled{opacity:.5;cursor:default}#vaultAnalysis .stat-val{font-size:17px}.tabs{overflow-x:auto}.tab{white-space:nowrap}#vaultRound{max-width:100%}#vaultStatus,#genSaveStatus{font-size:12px;color:var(--textDim);line-height:1.6;margin:8px 0}
+.vault-ticket{padding:16px 0;border-top:1px solid var(--border)}.vault-ticket-row{display:flex;align-items:flex-start;gap:10px}.vault-check{width:18px;height:18px;margin-top:3px;accent-color:var(--gold);cursor:pointer;flex-shrink:0}.vault-ticket-main{flex:1;min-width:0}.vault-bulk-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:8px 0 4px}.vault-bulk-select{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--textDim);cursor:pointer}.vault-bulk-select input{width:18px;height:18px;accent-color:var(--gold);cursor:pointer}#vaultPrompt{display:block;width:100%;margin:8px 0;padding:12px;background:var(--bg);color:var(--text);border:1px solid var(--borderL);border-radius:8px;font:12px/1.6 sans-serif;resize:vertical}.btn:disabled{opacity:.5;cursor:default}#vaultAnalysis .stat-val{font-size:17px}.tabs{overflow-x:auto}.tab{white-space:nowrap}#vaultRound{max-width:100%}#vaultStatus,#genSaveStatus{font-size:12px;color:var(--textDim);line-height:1.6;margin:8px 0}
 </style>
 </head>
 <body>
-<div class="version-badge">개인 보관함 · v3.2</div><section id="authScreen" class="auth-shell">
+<div class="version-badge">v3.2</div><section id="authScreen" class="auth-shell">
   <div class="header"><h1>LOTTO MATH LAB</h1><p>내 조합을 기록하고, 원하는 회차와 비교하세요.</p></div>
   <div class="card auth-card">
     <h2 id="authTitle" class="card-title">로그인</h2>
@@ -176,7 +176,7 @@ p{margin-bottom:6px;line-height:1.6}
   <div class="card">
     <div class="flex-between flex-wrap gap8"><h2 class="card-title">🔐 내 보관함</h2><div class="flex gap8"><button class="btn btn-outline" onclick="loadVault()">새로고침</button><button class="btn btn-primary" onclick="switchTab('generate')">새 번호 생성</button></div></div>
     <p class="text-dim" style="font-size:12px">확정한 조합을 선택하고 비교할 회차를 직접 골라 분석하세요. 저장은 실제 복권 구매를 의미하지 않습니다.</p>
-    <div id="vaultStatus" role="status" aria-live="polite"></div><div id="vaultList"></div>
+    <div id="vaultStatus" role="status" aria-live="polite"></div><div id="vaultBulkBar" class="vault-bulk-bar hidden"><label class="vault-bulk-select"><input id="vaultSelectAll" type="checkbox" onchange="toggleVaultSelectAll(this.checked)">전체 선택</label><button id="vaultDeleteSelected" class="btn btn-danger btn-sm" onclick="deleteSelectedVaultTickets()" disabled>선택 삭제</button></div><div id="vaultList"></div>
     <button id="vaultMore" class="btn btn-outline hidden mt8" onclick="loadVault(true)">이전 저장 내역 더 보기</button>
   </div>
   <div id="vaultDetail" class="card hidden">
@@ -1454,7 +1454,7 @@ function renderLab(){
 let auth=null,currentUser=null,authMode='login',authBusy=false,authEpoch=0;
 let appInitPromise=null,appReady=false,isDrawAdmin=false;
 let pendingGeneration=[],generationSnapshot=null;
-let vaultTickets=[],vaultCursor=null,vaultHasMore=false,vaultRequest=0,selectedTicketId=null;
+let vaultTickets=[],vaultCursor=null,vaultHasMore=false,vaultRequest=0,selectedTicketId=null,vaultDeleteSelection=new Set();
 const $=id=>document.getElementById(id);
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function validNumbers(nums){return Array.isArray(nums)&&nums.length===6&&new Set(nums).size===6&&nums.every(n=>Number.isInteger(n)&&n>=1&&n<=45);}
@@ -1487,7 +1487,7 @@ async function submitAuth(event){
   finally{authBusy=false;$('authSubmit').disabled=false;$('authPassword').value='';$('authConfirm').value='';}
 }
 function clearPrivateState(){
-  vaultRequest++;vaultTickets=[];vaultCursor=null;vaultHasMore=false;selectedTicketId=null;pendingGeneration=[];generationSnapshot=null;
+  vaultRequest++;vaultTickets=[];vaultCursor=null;vaultHasMore=false;selectedTicketId=null;vaultDeleteSelection.clear();pendingGeneration=[];generationSnapshot=null;
   $('vaultList').replaceChildren();$('vaultStatus').textContent='';$('vaultDetail').classList.add('hidden');$('vaultMore').classList.add('hidden');
   $('vaultSelected').replaceChildren();$('vaultRound').replaceChildren();clearVaultAnalysis();
   $('genResults').classList.add('hidden');$('genResultBody').replaceChildren();$('genSaveStatus').textContent='';
@@ -1581,31 +1581,57 @@ async function loadVault(more=false){
   }catch(e){if(epoch===authEpoch&&request===vaultRequest)$('vaultStatus').textContent=e.code==='permission-denied'?'보관함 접근 권한이 설정되지 않았습니다. 운영자에게 문의해주세요.':'보관함을 불러오지 못했습니다. 인터넷 연결을 확인하고 새로고침해주세요.';}
   finally{if(epoch===authEpoch&&request===vaultRequest){$('vaultMore').disabled=false;$('vaultMore').classList.toggle('hidden',!vaultHasMore);}}
 }
+function updateVaultBulkControls(){
+  const bar=$('vaultBulkBar'),all=$('vaultSelectAll'),del=$('vaultDeleteSelected');if(!bar||!all||!del)return;
+  const visibleIds=vaultTickets.map(t=>t.id),selectedVisible=visibleIds.filter(id=>vaultDeleteSelection.has(id)).length;
+  bar.classList.toggle('hidden',visibleIds.length===0);
+  all.checked=visibleIds.length>0&&selectedVisible===visibleIds.length;
+  all.indeterminate=selectedVisible>0&&selectedVisible<visibleIds.length;
+  del.disabled=vaultDeleteSelection.size===0;
+  del.textContent=vaultDeleteSelection.size?'선택 삭제 ('+vaultDeleteSelection.size+')':'선택 삭제';
+}
+function toggleVaultDeleteSelection(id,checked){
+  if(checked)vaultDeleteSelection.add(id);else vaultDeleteSelection.delete(id);
+  updateVaultBulkControls();
+}
+function toggleVaultSelectAll(checked){
+  vaultTickets.forEach(t=>checked?vaultDeleteSelection.add(t.id):vaultDeleteSelection.delete(t.id));
+  document.querySelectorAll('.vault-check').forEach(c=>{c.checked=checked;});
+  updateVaultBulkControls();
+}
 function renderVault(){
   const container=$('vaultList');container.replaceChildren();
+  const validIds=new Set(vaultTickets.map(t=>t.id));
+  [...vaultDeleteSelection].forEach(id=>{if(!validIds.has(id))vaultDeleteSelection.delete(id);});
   vaultTickets.forEach(t=>{
     const row=document.createElement('div');row.className='vault-ticket';
-    row.innerHTML='<div class="flex-between flex-wrap gap8"><strong>'+t.targetRound+'회 대상</strong><span class="text-dim" style="font-size:11px">'+escapeHtml(ticketTime(t))+'</span></div><div class="mt8">'+t.nums.map(n=>renderBall(n)).join('')+'</div><p class="text-dim" style="font-size:11px">'+escapeHtml(stratNames[t.strategy]||t.strategy)+' · '+(t.period?'최근 '+t.period+'주':'전체')+' · 생성 기준 '+t.sourceStart+'~'+t.sourceEnd+'회</p>';
+    const wrap=document.createElement('div');wrap.className='vault-ticket-row';
+    const check=document.createElement('input');check.type='checkbox';check.className='vault-check';check.checked=vaultDeleteSelection.has(t.id);check.setAttribute('aria-label',t.targetRound+'회 조합 선택');check.onchange=()=>toggleVaultDeleteSelection(t.id,check.checked);
+    const main=document.createElement('div');main.className='vault-ticket-main';
+    main.innerHTML='<div class="flex-between flex-wrap gap8"><strong>'+t.targetRound+'회 대상</strong><span class="text-dim" style="font-size:11px">'+escapeHtml(ticketTime(t))+'</span></div><div class="mt8">'+t.nums.map(n=>renderBall(n)).join('')+'</div><p class="text-dim" style="font-size:11px">'+escapeHtml(stratNames[t.strategy]||t.strategy)+' · '+(t.period?'최근 '+t.period+'주':'전체')+' · 생성 기준 '+t.sourceStart+'~'+t.sourceEnd+'회</p>';
     const actions=document.createElement('div');actions.className='flex gap8 flex-wrap';
     const button=document.createElement('button');button.className='btn btn-outline';button.textContent='이 조합 비교·분석';button.onclick=()=>selectVaultTicket(t.id);actions.appendChild(button);
-    const del=document.createElement('button');del.className='btn btn-danger';del.textContent='삭제';del.onclick=()=>deleteVaultTicket(t.id);actions.appendChild(del);
-    row.appendChild(actions);container.appendChild(row);
+    main.appendChild(actions);wrap.appendChild(check);wrap.appendChild(main);row.appendChild(wrap);container.appendChild(row);
   });
+  updateVaultBulkControls();
   if(selectedTicketId&&!vaultTickets.some(t=>t.id===selectedTicketId)){selectedTicketId=null;$('vaultDetail').classList.add('hidden');clearVaultAnalysis();}
 }
-async function deleteVaultTicket(id){
-  const user=currentUser,t=vaultTickets.find(x=>x.id===id);if(!user||!t)return;
-  if(!confirm(t.nums.join(', ')+' 조합을 내 보관함에서 삭제하시겠습니까?'))return;
-  const epoch=authEpoch;$('vaultStatus').textContent='삭제 중…';
+async function deleteSelectedVaultTickets(){
+  const user=currentUser,ids=[...vaultDeleteSelection].filter(id=>vaultTickets.some(t=>t.id===id));if(!user||!ids.length)return;
+  if(!confirm('선택한 '+ids.length+'개 조합을 내 보관함에서 삭제하시겠습니까?'))return;
+  const epoch=authEpoch,button=$('vaultDeleteSelected');button.disabled=true;$('vaultStatus').textContent='선택한 조합을 삭제 중…';
   try{
-    await ticketCollection(user.uid).doc(id).delete();
+    for(let i=0;i<ids.length;i+=400){
+      const batch=db.batch();ids.slice(i,i+400).forEach(id=>batch.delete(ticketCollection(user.uid).doc(id)));await batch.commit();
+    }
     if(epoch!==authEpoch||currentUser?.uid!==user.uid)return;
-    vaultTickets=vaultTickets.filter(x=>x.id!==id);
-    if(selectedTicketId===id){selectedTicketId=null;$('vaultDetail').classList.add('hidden');clearVaultAnalysis();}
+    const deleted=new Set(ids);vaultTickets=vaultTickets.filter(x=>!deleted.has(x.id));ids.forEach(id=>vaultDeleteSelection.delete(id));
+    if(selectedTicketId&&deleted.has(selectedTicketId)){selectedTicketId=null;$('vaultDetail').classList.add('hidden');clearVaultAnalysis();}
     renderVault();
-    $('vaultStatus').textContent=vaultTickets.length?'삭제했습니다. 내 조합 '+vaultTickets.length+'개':'삭제했습니다. 아직 저장한 조합이 없습니다.';
+    $('vaultStatus').textContent=vaultTickets.length?ids.length+'개를 삭제했습니다. 내 조합 '+vaultTickets.length+'개':ids.length+'개를 삭제했습니다. 아직 저장한 조합이 없습니다.';
   }catch(e){
-    if(epoch===authEpoch)$('vaultStatus').textContent=e?.code==='permission-denied'?'삭제 권한이 설정되지 않았습니다. 운영자에게 문의해주세요.':'삭제하지 못했습니다. 인터넷 연결을 확인하고 다시 시도해주세요.';
+    if(epoch===authEpoch)$('vaultStatus').textContent=e?.code==='permission-denied'?'삭제 권한이 설정되지 않았습니다. 운영자에게 문의해주세요.':'선택한 조합을 삭제하지 못했습니다. 인터넷 연결을 확인하고 다시 시도해주세요.';
+    updateVaultBulkControls();
   }
 }
 function clearVaultAnalysis(){$('vaultAnalysis').replaceChildren();$('vaultPrompt').value='';$('vaultCopyArea').classList.add('hidden');$('vaultCopyStatus').textContent='';}
