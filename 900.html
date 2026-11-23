@@ -2,1434 +2,2000 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LOTTO MATH LAB</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Lev</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#0B1120;--card:#111B2E;--border:#1E2D45;--borderL:#2A3F5F;
-  --gold:#F0C040;--goldDim:#C49A20;--goldBright:#FFD866;
-  --red:#FF4757;--green:#2ED573;--blue:#3742FA;--cyan:#70A1FF;
-  --purple:#A29BFE;--orange:#FFA502;
-  --text:#E8ECF1;--textDim:#8899AA;--textMuted:#556677;
-}
-body{background:var(--bg);color:var(--text);font-family:'Pretendard',-apple-system,'Noto Sans KR',sans-serif;padding:12px;max-width:860px;margin:0 auto}
-.header{text-align:center;padding:20px 0 8px}
-.header h1{font-size:26px;font-weight:800;color:var(--gold);letter-spacing:-1px}
-.header p{font-size:12px;color:var(--textDim);margin-top:4px}
-.chart-wrapper{position:relative;width:100%}
-.data-bar{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:11px;color:var(--textDim);flex-wrap:wrap;gap:6px}
-.data-bar .status{display:flex;align-items:center;gap:6px}
-.data-bar .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.dot-green{background:var(--green);box-shadow:0 0 6px var(--green)}
-.dot-yellow{background:var(--gold);box-shadow:0 0 6px var(--gold);animation:pulse 1s infinite}
-.dot-red{background:var(--red);box-shadow:0 0 6px var(--red)}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.tabs{display:flex;gap:3px;margin-bottom:14px;background:var(--card);border-radius:10px;padding:3px;border:1px solid var(--border)}
-.tab{flex:1;padding:9px 0;text-align:center;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:12px;transition:all .2s;background:transparent;color:var(--textDim)}
-.tab.active{background:var(--gold);color:var(--bg)}
-.sub-tabs{display:flex;gap:3px;margin-bottom:10px;overflow-x:auto}
-.sub-tab{flex:1;padding:6px 10px;border:none;border-radius:7px;cursor:pointer;font-weight:700;font-size:11px;transition:all .2s;background:var(--border);color:var(--text);white-space:nowrap}
-.sub-tab.active{background:var(--gold);color:var(--bg)}
-.card{background:var(--card);border-radius:10px;border:1px solid var(--border);padding:14px;margin-bottom:10px}
-.card-title{font-size:14px;font-weight:700;color:var(--gold);margin-bottom:10px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
-.stat{text-align:center;padding:10px;background:var(--bg);border-radius:8px}
-.stat-val{font-size:20px;font-weight:800;color:var(--gold)}
-.stat-label{font-size:10px;color:var(--textDim);margin-top:2px}
-.info-box{padding:8px 10px;border-radius:7px;font-size:11px;margin-top:8px}
-.info-green{background:rgba(46,213,115,.1);border:1px solid rgba(46,213,115,.2)}
-.info-red{background:rgba(255,71,87,.1);border:1px solid rgba(255,71,87,.2)}
-.info-neutral{background:var(--bg);border-radius:7px;padding:8px;font-size:11px;color:var(--textDim);margin-top:8px}
-table{width:100%;border-collapse:collapse;font-size:11px}
-th{padding:7px 5px;text-align:left;border-bottom:1px solid var(--border);color:var(--textDim);font-weight:600;font-size:10px}
-td{padding:6px 5px;border-bottom:1px solid rgba(30,45,69,.12)}
-.text-right{text-align:right}.text-center{text-align:center}
-.text-gold{color:var(--gold)}.text-red{color:var(--red)}.text-cyan{color:var(--cyan)}.text-green{color:var(--green)}.text-dim{color:var(--textDim)}
-.fw700{font-weight:700}
-.ball{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;font-weight:800;font-size:13px;color:#000;margin:2px}
-.ball-sm{width:26px;height:26px;font-size:11px}
-.ball-1{background:#FECA57;box-shadow:0 2px 6px rgba(254,202,87,.3)}
-.ball-2{background:#48DBFB;box-shadow:0 2px 6px rgba(72,219,251,.3)}
-.ball-3{background:#FF6B6B;box-shadow:0 2px 6px rgba(255,107,107,.3)}
-.ball-4{background:#A29BFE;box-shadow:0 2px 6px rgba(162,155,254,.3)}
-.ball-5{background:#55E6C1;box-shadow:0 2px 6px rgba(85,230,193,.3)}
-.num-selector{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
-.num-btn{width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:var(--bg);color:var(--textDim);font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;user-select:none}
-.num-btn:hover{border-color:var(--goldDim);color:var(--gold)}
-.num-btn.active{background:var(--gold);color:var(--bg);border-color:var(--gold);box-shadow:0 0 6px rgba(240,192,64,.6)}
-.btn{padding:8px 16px;border:none;border-radius:7px;cursor:pointer;font-weight:700;font-size:12px;transition:all .2s}
-.btn-primary{background:var(--gold);color:var(--bg)}
-.btn-primary:hover{background:var(--goldBright)}
-.btn-primary:disabled{opacity:.5;cursor:default}
-.btn-sm{padding:5px 10px;font-size:11px}
-.btn-outline{background:transparent;border:1px solid var(--border);color:var(--textDim)}
-.btn-outline:hover{border-color:var(--gold);color:var(--gold)}
-.btn-outline.active{border-color:var(--gold);color:var(--gold);background:rgba(240,192,64,.08)}
-.btn-danger{background:var(--red);color:#fff}
-select,input[type=number],input[type=text],input:not([type]){background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px}
-input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-input[type=number]{-moz-appearance:textfield}
-input[type=date]{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px}
-.strategy-btn{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--bg);cursor:pointer;color:var(--text);text-align:left;width:100%;font-size:12px;margin-bottom:4px}
-.strategy-btn.active{border-color:var(--gold);background:rgba(240,192,64,.08)}
-.strategy-btn .name{font-weight:700}.strategy-btn.active .name{color:var(--gold)}
-.strategy-btn .desc{font-size:10px;color:var(--textDim);margin-top:1px}
-.result-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;flex-wrap:wrap;gap:4px}
-.result-row+.result-row{border-top:1px solid rgba(30,45,69,.12)}
-.result-meta{font-size:10px;color:var(--textDim);display:flex;gap:6px}
-.heatmap{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;margin:10px 0}
-.hm-cell{aspect-ratio:1;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;border:2px solid transparent}
-.hm-cell:hover{transform:scale(1.1);border-color:var(--gold)}
-.hm-cell.selected{border-color:var(--gold);box-shadow:0 0 8px var(--gold)}
-input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;background:var(--border);outline:none}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--gold);cursor:pointer}
-.flex{display:flex}.flex-center{display:flex;align-items:center}.flex-between{display:flex;justify-content:space-between;align-items:center}
-.flex-wrap{flex-wrap:wrap}.gap4{gap:4px}.gap6{gap:6px}.gap8{gap:8px}.gap12{gap:12px}
-.mb6{margin-bottom:6px}.mb8{margin-bottom:8px}.mb10{margin-bottom:10px}.mb12{margin-bottom:12px}.mt8{margin-top:8px}.mt10{margin-top:10px}
-.mono{font-family:'Courier New',monospace;font-size:11px}
-.hidden{display:none !important}
-.footer{text-align:center;padding:16px 0 8px;font-size:10px;color:var(--textMuted)}
-.version-badge{position:fixed;top:8px;right:8px;z-index:1000;background:rgba(17,27,46,.94);border:1px solid var(--goldDim);color:var(--gold);font-size:10px;font-weight:800;padding:5px 8px;border-radius:999px;box-shadow:0 2px 10px rgba(0,0,0,.25)}
-.mini-chip{display:inline-block;padding:3px 6px;border-radius:999px;background:var(--bg);border:1px solid var(--border);font-size:10px;margin:2px}.scorebar{height:5px;border-radius:3px;background:var(--border);overflow:hidden;margin-top:3px}.scorebar>span{display:block;height:100%;background:var(--gold)}
-p{margin-bottom:6px;line-height:1.6}
-.loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(11,17,32,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999}
-.loading-overlay h2{color:var(--gold);font-size:20px;margin-bottom:16px}
-.loading-overlay p{color:var(--textDim);font-size:13px;margin-bottom:20px}
-.loading-bar{width:300px;height:8px;background:var(--card);border-radius:4px;overflow:hidden}
-.loading-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--goldBright));border-radius:4px;transition:width .2s;width:0}
-.loading-pct{color:var(--gold);font-size:14px;font-weight:700;margin-top:10px}
-.omr-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;max-width:240px;margin:0 auto}
-.omr-cell{aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;background:var(--bg);border:1px solid var(--border);color:var(--textMuted)}
-.omr-cell.marked{background:var(--gold);color:var(--bg);border-color:var(--gold);box-shadow:0 0 6px rgba(240,192,64,.4)}
-.omr-cell.bonus-marked{background:transparent;color:var(--cyan);border:2px dashed var(--cyan)}
-.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:998;padding:20px}
-.modal{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:400px;width:100%;max-height:80vh;overflow-y:auto}
-.wheel-num-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--bg);color:var(--textDim);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
-.wheel-num-btn.active{background:var(--gold);color:var(--bg);border-color:var(--gold)}
-@media(max-width:500px){
-  .heatmap{grid-template-columns:repeat(5,1fr)}
-  .grid2{grid-template-columns:1fr 1fr}
-  .stat-val{font-size:17px}
-  .ball{width:28px;height:28px;font-size:11px}
-  .tabs{overflow-x:auto}
-  .tab{font-size:11px;white-space:nowrap;padding:8px 4px}
-  .num-btn{width:24px;height:24px;font-size:10px}
-}
+  :root{
+    --bg:#0a0a0a;
+    --panel:#141414;
+    --panel2:#1c1c1c;
+    --border:#2a2a2a;
+    --text:#e8e8e8;
+    --sub:#8a8a8a;
+    --long:#00c076;
+    --short:#f6465d;
+    --accent:#f0b90b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Malgun Gothic",sans-serif;
+    padding:16px;
+    padding-bottom:60px;
+  }
+  .wrap{max-width:520px;margin:0 auto;position:relative;}
 
+  .header{
+    display:flex;
+    justify-content:flex-start;
+    align-items:flex-start;
+    margin-bottom:18px;
+  }
+  .title{font-size:20px;font-weight:700;}
+  .subtitle{font-size:12px;color:var(--sub);margin-top:2px;}
+  .version-badge{
+    font-size:10px;
+    color:var(--sub);
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:4px 8px;
+    white-space:nowrap;
+    text-align:left;
+    line-height:1.5;
+  }
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .card-title{
+    font-size:13px;
+    font-weight:600;
+    color:var(--sub);
+    margin-bottom:12px;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+  }
+
+  .row{display:flex;gap:10px;margin-bottom:10px;}
+  .row:last-child{margin-bottom:0;}
+  .field{flex:1;min-width:0;}
+  .field label{
+    display:block;
+    font-size:12px;
+    color:var(--sub);
+    margin-bottom:5px;
+  }
+  input[type=number], input[type=text]{
+    width:100%;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    color:var(--text);
+    font-size:16px;
+    padding:10px 10px;
+    border-radius:8px;
+    outline:none;
+  }
+  input:focus{border-color:var(--accent);}
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{
+    -webkit-appearance:none;
+    margin:0;
+  }
+  input[type=number]{
+    -moz-appearance:textfield;
+  }
+
+  .toggle{
+    display:flex;
+    border-radius:8px;
+    overflow:hidden;
+    border:1px solid var(--border);
+  }
+  .toggle button{
+    flex:1;
+    padding:10px;
+    background:var(--panel2);
+    color:var(--sub);
+    border:none;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .toggle button.active-long{background:rgba(0,192,118,0.15);color:var(--long);}
+  .toggle button.active-short{background:rgba(246,70,93,0.15);color:var(--short);}
+  .toggle button.active-none{background:rgba(138,138,138,0.18);color:var(--text);}
+
+  .result-line{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding:9px 0;
+    border-bottom:1px solid var(--border);
+  }
+  .result-line:last-child{border-bottom:none;}
+  .result-label{font-size:13px;color:var(--sub);}
+  .result-value{font-size:15px;font-weight:700;}
+  .result-value.big{font-size:19px;}
+  .val-long{color:var(--long);}
+  .val-short{color:var(--short);}
+  .val-accent{color:var(--accent);}
+
+  .hint{font-size:11px;color:var(--sub);margin-top:8px;line-height:1.5;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{
+    text-align:right;
+    color:var(--sub);
+    font-weight:600;
+    font-size:11px;
+    padding:6px 4px;
+    border-bottom:1px solid var(--border);
+  }
+  th:first-child, td:first-child{text-align:left;}
+  td{
+    text-align:right;
+    padding:7px 4px;
+    border-bottom:1px solid #1f1f1f;
+  }
+  tr.entry-row td{background:rgba(240,185,11,0.08);}
+  tr.liq-row td{background:rgba(246,70,93,0.10);}
+
+  .btn{
+    width:100%;
+    padding:12px;
+    border-radius:8px;
+    border:none;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+  }
+
+
+  .note{
+    font-size:11px;
+    color:var(--sub);
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:10px 12px;
+    line-height:1.6;
+  }
+
+  .coin-select-row{
+    margin-bottom:10px;
+  }
+  .coin-select-row label{
+    display:block;
+    font-size:12px;
+    color:var(--sub);
+    margin-bottom:5px;
+  }
+  select#coinInput, input#coinInput{
+    width:100%;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    color:var(--text);
+    font-size:16px;
+    padding:10px 10px;
+    border-radius:8px;
+    outline:none;
+    -webkit-appearance:none;
+    appearance:none;
+  }
+  input#coinInput:focus{border-color:var(--accent);}
+
+  .live-price-box{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:8px;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:10px 12px;
+    margin-bottom:14px;
+  }
+  .live-price-info{display:flex;flex-direction:column;gap:2px;}
+  .live-price-label{font-size:11px;color:var(--sub);}
+  .live-price-value{font-size:16px;font-weight:700;color:var(--accent);}
+  .live-price-pnl{font-size:12px;font-weight:600;color:var(--sub);}
+  .live-price-total{font-size:13px;font-weight:700;color:var(--text);}
+  .position-live-box .live-price-info{width:100%;min-width:0;}
+  .position-live-box .live-price-pnl,
+  .position-live-box .live-price-total{
+    display:block;
+    max-width:100%;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:clip;
+    font-variant-numeric:tabular-nums;
+  }
+  .position-live-box .live-price-pnl{font-size:clamp(10px,3.1vw,12px);letter-spacing:-0.02em;}
+  .position-live-box .live-price-actions{margin-top:6px;}
+
+  .fx-status-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-size:11px;
+    color:var(--sub);
+    margin:-2px 0 10px 0;
+  }
+  .live-price-actions{display:flex;gap:6px;flex-wrap:wrap;}
+  .btn-mini{
+    background:var(--panel);
+    border:1px solid var(--border);
+    color:var(--text);
+    font-size:11px;
+    font-weight:600;
+    padding:7px 10px;
+    border-radius:6px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .btn-mini:disabled{color:var(--sub);cursor:not-allowed;opacity:0.5;}
+  .btn-mini:not(:disabled):active{opacity:0.8;}
+
+  .accordion-summary{
+    cursor:pointer;
+    list-style:none;
+    padding:16px;
+    margin-bottom:0;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    user-select:none;
+  }
+  .accordion-summary::-webkit-details-marker{display:none;}
+  .accordion-summary::after{
+    content:'▾';
+    font-size:12px;
+    color:var(--sub);
+    transition:transform 0.2s ease;
+  }
+  details[open] .accordion-summary::after{
+    transform:rotate(180deg);
+  }
+  .accordion-body{
+    padding:0 16px 16px 16px;
+  }
+
+  .chart-card{
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px;
+    margin-top:12px;
+  }
+  .chart-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .chart-title{
+    font-size:13px;
+    color:var(--sub);
+  }
+  .tf-buttons{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+  }
+  .tf-btn{
+    background:var(--panel);
+    border:1px solid var(--border);
+    color:var(--sub);
+    font-size:12px;
+    padding:5px 10px;
+    border-radius:6px;
+    cursor:pointer;
+  }
+  .tf-btn.active{
+    background:rgba(240,185,11,0.15);
+    color:var(--accent);
+    border-color:var(--accent);
+  }
+  .chart-canvas-wrap{
+    position:relative;
+    height:240px;
+    width:100%;
+  }
+  .indicator-canvas-wrap{
+    position:relative;
+    height:110px;
+    width:100%;
+    margin-top:10px;
+  }
+  @media (min-width:1280px){
+    .wrap{max-width:1360px;}
+    .desktop-grid{
+      display:grid;
+      grid-template-columns:minmax(480px,1fr) 340px 380px;
+      gap:16px;
+      align-items:stretch;
+    }
+    .col-left, .col-mid, .col-right{min-width:0;}
+    .col-mid{order:1;}
+    .col-left{order:2; display:flex; flex-direction:column;}
+    .col-right{order:3;}
+    .col-left > .card{flex:1;}
+  }
+
+  .indicator-label{
+    font-size:11px;
+    color:var(--sub);
+    margin-top:8px;
+    margin-bottom:2px;
+  }
+  .chart-loading{
+    text-align:center;
+    color:var(--sub);
+    font-size:12px;
+    padding:20px 0;
+  }
+  .analysis-btn{
+    width:100%;
+    margin-top:12px;
+    background:var(--panel);
+    border:1px solid var(--accent);
+    color:var(--accent);
+    font-size:13px;
+    padding:9px;
+    border-radius:8px;
+    cursor:pointer;
+  }
+  .analysis-box{
+    margin-top:10px;
+    display:none;
+  }
+  .analysis-box textarea{
+    width:100%;
+    min-height:180px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    color:var(--text);
+    font-size:12px;
+    line-height:1.6;
+    border-radius:8px;
+    padding:10px;
+    resize:vertical;
+    box-sizing:border-box;
+  }
+  .analysis-copy-btn{
+    margin-top:6px;
+    width:100%;
+    background:var(--accent);
+    color:#1a1400;
+    border:none;
+    font-size:13px;
+    font-weight:600;
+    padding:9px;
+    border-radius:8px;
+    cursor:pointer;
+  }
+  .analysis-copy-btn.copied{
+    background:var(--long);
+    color:#fff;
+  }
+
+  .split-entry-card{
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px;
+    margin-bottom:12px;
+  }
+  .split-entry-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+    font-size:13px;
+    color:var(--sub);
+  }
+  .split-entry-row{
+    display:flex;
+    gap:6px;
+    align-items:center;
+    margin-bottom:8px;
+  }
+  .split-entry-row input{
+    flex:1;
+    min-width:0;
+    background:var(--panel);
+    border:1px solid var(--border);
+    color:var(--text);
+    font-size:14px;
+    padding:8px;
+    border-radius:6px;
+  }
+  .split-entry-row .split-entry-label{
+    font-size:11px;
+    color:var(--sub);
+    width:34px;
+    flex-shrink:0;
+  }
+  .split-entry-row .split-row-del{
+    flex-shrink:0;
+    background:var(--panel);
+    border:1px solid var(--border);
+    color:var(--short);
+    width:32px;
+    height:32px;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:14px;
+  }
+  .split-entry-summary{
+    font-size:12px;
+    color:var(--sub);
+    line-height:1.6;
+    border-top:1px solid var(--border);
+    padding-top:8px;
+    margin-top:4px;
+  }
+  input[readonly]{
+    opacity:0.65;
+    cursor:not-allowed;
+  }
+
+  /* 무포 모드: 포지션 입력 영역 흐리게 */
+  .pos-inputs-dimmed input:not(#coinInput),
+  .pos-inputs-dimmed .toggle:not(.dir-toggle){
+    opacity:0.35;
+    pointer-events:none;
+  }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@0.2.1/dist/chartjs-chart-financial.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 </head>
 <body>
-<div class="version-badge">v3.2</div>
+<div class="wrap">
 
-<div class="loading-overlay hidden" id="loadingOverlay">
-  <h2>🎰 LOTTO MATH LAB</h2>
-  <p id="loadingMsg">데이터를 불러오는 중...</p>
-  <div class="loading-bar"><div class="loading-bar-fill" id="loadingFill"></div></div>
-  <div class="loading-pct" id="loadingPct">0%</div>
-</div>
-<div id="mainApp">
-<div class="header">
-  <h1>LOTTO MATH LAB</h1>
-  <p>조준은 1등, 안전망은 3등 — 수학·통계 기반 로또 분석 엔진</p>
-</div>
-<div class="data-bar">
-  <div class="status"><div class="dot dot-green" id="statusDot"></div><span id="statusText">데이터 로드 중...</span></div>
-  <div class="flex-center gap6">
-    <span id="dataRange"></span>
-    <button id="drawAdminButton" class="btn btn-sm btn-outline hidden" onclick="openAddDrawModal()">➕ 회차 추가</button>
+  <div class="header">
+    <div class="version-badge">v5.2 · 2026-08-12</div>
   </div>
-</div>
-<div class="tabs">
-  <button class="tab active" onclick="switchTab('stats')">📊 통계</button>
-  <button class="tab" onclick="switchTab('generate')">🎲 생성</button>
-  <button class="tab" onclick="switchTab('history')">📋 이력</button>
-  <button class="tab" onclick="switchTab('indicator')">📉 보조지표</button>
-  <button class="tab" onclick="switchTab('analyze')">🔍 분석</button>
-    <button class="tab" onclick="switchTab('lab')">🧪 연구실</button>
-</div>
 
-<!-- ═══════════ 탭1: 통계분석 ═══════════ -->
-<div id="tab-stats">
-  <div class="sub-tabs">
-    <button class="sub-tab active" onclick="switchSubTab('freq')">번호 빈도</button>
-    <button class="sub-tab" onclick="switchSubTab('zone')">구간 분포</button>
-    <button class="sub-tab" onclick="switchSubTab('pattern')">패턴 분석</button>
-  </div>
-  <div id="sub-freq">
-    <div class="card"><div class="card-title">📊 번호별 출현 빈도 (총 <span id="totalDraws"></span>회차)</div>
-      <div class="chart-wrapper" style="height:200px"><canvas id="freqChart"></canvas></div>
-      <div class="flex-center gap12 mt8" style="justify-content:center;font-size:10px;color:var(--textDim)"><span><span class="text-red">●</span> 기대값 초과</span><span><span class="text-cyan">●</span> 기대값 미만</span><span class="text-gold">--- 기대값 (<span id="expectedVal"></span>회)</span></div>
+  <div class="desktop-grid">
+  <div class="col-left">
+
+  <!-- 입력 -->
+  <div class="card" id="positionCard">
+    <div class="card-title">포지션 입력</div>
+
+    <div class="coin-select-row">
+      <label>코인 선택 (직접 타이핑 검색 가능)</label>
+      <input type="text" id="coinInput" list="coinList" value="BTCUSDT" placeholder="예: BTC, ETH, UB..." autocomplete="off"
+             onchange="onCoinInputCommit()" onkeydown="if(event.key==='Enter'){this.blur();}">
+      <datalist id="coinList"></datalist>
     </div>
-    <div class="card"><div class="card-title">🔥 핫/콜드 번호</div><div class="grid2"><div><div class="text-red fw700 mb6" style="font-size:11px">HOT (다빈출)</div><div id="hotNums"></div></div><div><div class="text-cyan fw700 mb6" style="font-size:11px">COLD (저빈출)</div><div id="coldNums"></div></div></div></div>
-  </div>
-  <div id="sub-zone" class="hidden">
-    <div class="card"><div class="card-title">📐 구간별 출현 비율 vs 기대 비율</div>
-      <div class="chart-wrapper" style="height:200px"><canvas id="zoneChart"></canvas></div>
-    </div>
-    <div class="card"><div class="card-title">📈 번호 합계 분포</div><div class="grid2"><div class="stat"><div class="stat-val" id="sumAvg"></div><div class="stat-label">평균 합계</div></div><div class="stat"><div class="stat-val" id="sumStd"></div><div class="stat-label">표준편차</div></div></div>
-      <div class="chart-wrapper mt8" style="height:150px"><canvas id="sumChart"></canvas></div>
-      <div class="info-neutral">💡 이론적 합계 범위: 21(최소)~255(최대), 중심극한정리에 의해 정규분포에 근사</div>
-    </div>
-  </div>
-  <div id="sub-pattern" class="hidden">
-    <div class="card"><div class="card-title">⚖️ 홀짝 비율 분포</div><table><thead><tr><th>홀:짝</th><th class="text-right">출현</th><th class="text-right">비율</th></tr></thead><tbody id="oddEvenBody"></tbody></table><div class="info-neutral">💡 통계적으로 3:3, 4:2, 2:4 비율이 전체의 약 75% 차지</div></div>
-    <div class="card"><div class="card-title">🔗 연속번호 출현</div><div class="grid2"><div class="stat"><div class="stat-val" id="consecPct"></div><div class="stat-label">연속번호 포함 비율</div></div><div class="stat"><div class="stat-val" id="consecCount"></div><div class="stat-label">해당 회차 수</div></div></div><div class="info-neutral">💡 실제 로또에서 연속번호가 포함되는 비율은 약 60~65%로 매우 흔함</div></div>
-    <div class="card"><div class="card-title">♻️ 이월수 분석</div>
-      <div class="text-dim mb8" style="font-size:11px">직전 회차 당첨번호가 다음 회차에 다시 출현(이월)하는 패턴 분석</div>
-      <div class="grid2 mb8"><div class="stat"><div class="stat-val" id="carryPct"></div><div class="stat-label">이월수 포함 비율</div></div><div class="stat"><div class="stat-val" id="carryAvg"></div><div class="stat-label">회차당 평균 이월 개수</div></div></div>
-      <div class="text-gold fw700 mb6" style="font-size:11px">🎫 직전 회차 번호 (다음 회차 이월 후보)</div>
-      <div id="carryCandidates" class="flex-center gap4 mb8" style="flex-wrap:wrap"></div>
-      <div id="carryDetail"></div>
-      <div class="info-neutral">💡 이론상 각 번호의 이월 확률은 6/45 ≈ 13.3%. 회차당 기대 이월 개수는 0.8개</div>
-    </div>
-    <div class="card">
-      <div class="card-title">📊 베이즈 번호 신뢰도</div>
-      <div class="text-dim mb8" style="font-size:11px">Beta-Binomial 평활화를 적용한 최근 출현률 추정치입니다. 다음 회차 당첨확률을 의미하지 않으며 번호별 최근 출현 강도를 비교하는 참고값입니다.</div>
-      <div class="grid2 mb8">
-        <div><span style="font-size:11px;font-weight:600">분석 구간: </span><select id="bayesPeriod" onchange="renderBayes()"><option value="10">최근 10회</option><option value="20" selected>최근 20회</option><option value="50">최근 50회</option></select></div>
+
+    <div class="live-price-box">
+      <div class="live-price-info">
+        <span class="live-price-label">BTCUSDT 기준가 (참고용, 1초 자동 갱신)</span>
+        <span class="live-price-value" id="btcPriceValue">-</span>
       </div>
-      <div id="bayesResult"></div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════ 탭2: 번호생성 ═══════════ -->
-<div id="tab-generate" class="hidden">
-  <div class="card">
-    <div class="card-title">📅 생성 분석 기간</div>
-    <label for="genPeriod" style="font-size:12px;font-weight:600">분석 범위: </label><select id="genPeriod" onchange="onGenPeriodChange()"><option value="0">전체</option><option value="10">최근 10주</option><option value="30">최근 30주</option><option value="50">최근 50주</option><option value="100">최근 100주</option></select>
-    <div id="genPeriodInfo" class="text-dim mt8" style="font-size:11px"></div>
-    <div class="text-dim mt8" style="font-size:11px;line-height:1.6">1주 = 불러온 데이터의 1회차이며 최신 회차부터 계산합니다. 저빈도 가중·결과 점수·축소조합 자동 추천에 선택 기간을 적용합니다. 갭 분석은 선택 범위 안의 최근 최대 15회, 점수는 기존 10·20회 추세와 미출현 갭 계산을 유지합니다. 균형 분포·인기번호 회피는 과거 데이터와 무관한 추출 규칙입니다.</div>
-  </div>
-  <div class="card"><label for="genTargetRound" class="text-dim">대상 회차: </label><input id="genTargetRound" type="number" min="1" max="1000000" style="width:110px"><p class="text-dim mt8" style="font-size:11px">생성할 번호의 대상 회차를 설정하세요.</p></div>
-  <div class="card"><div class="card-title">🧮 번호 생성 전략</div><div id="strategyList"></div></div>
-  <div class="card"><div class="flex-between flex-wrap gap8 mb8"><div><span style="font-size:12px;font-weight:600">세트 수: </span><select id="genCount"><option value="1">1</option><option value="3">3</option><option value="5" selected>5</option><option value="10">10</option></select></div><button class="btn btn-primary" onclick="generateNumbers()">🎲 번호 생성</button></div></div>
-  <div class="card">
-    <div class="card-title">🔒 고정수 · 제외수 · 조합 품질</div>
-    <div class="grid2 mb8"><div><span class="text-dim" style="font-size:10px">고정수 (쉼표)</span><input id="fixedNums" placeholder="예: 7,23" style="width:100%;margin-top:4px"></div><div><span class="text-dim" style="font-size:10px">제외수 (쉼표)</span><input id="excludedNums" placeholder="예: 1,2,44" style="width:100%;margin-top:4px"></div></div>
-    <div class="grid3"><div><span class="text-dim" style="font-size:10px">조합간 최대 중복</span><select id="maxOverlap" style="width:100%;margin-top:4px"><option value="2">2개</option><option value="3" selected>3개</option><option value="4">4개</option><option value="5">5개</option></select></div><div><span class="text-dim" style="font-size:10px">합계 범위</span><select id="sumFilter" style="width:100%;margin-top:4px"><option value="0">제한 없음</option><option value="100-175" selected>100~175</option><option value="120-165">120~165</option></select></div><div><span class="text-dim" style="font-size:10px">홀짝</span><select id="oeFilter" style="width:100%;margin-top:4px"><option value="0">제한 없음</option><option value="2-4" selected>2:4~4:2</option><option value="3">3:3만</option></select></div></div>
-    <div class="info-neutral">필터는 원하는 조합 형태를 만드는 기능이며 한 장의 당첨확률 자체를 높이지 않습니다.</div>
-  </div>
-  <div id="genResults" class="hidden"><div class="card"><div class="card-title" id="genResultTitle"></div><div id="genResultBody"></div></div></div>
-
-  <div class="card">
-    <div class="card-title">🎯 축소조합 (Wheeling System)</div>
-    <div class="text-dim mb8" style="font-size:11px">유망 번호를 선택하면, 그중 3개가 당첨번호에 포함될 경우 생성 조합 중 최소 1장은 그 3개를 포함하도록 커버링 조합 세트를 생성합니다. 최대 18개까지 지원합니다(그 이상은 조합 수가 폭증해 계산이 사실상 불가능합니다). 18개 기준으로도 3개 이상 포함 확률은 위 계산기 기준 약 46%이며, 90%를 달성하려면 후보 30개·조합 수백~수천 장이 필요해 이 기능 범위를 벗어납니다.</div>
-    <div class="mb8">
-      <span style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">유망 번호 선택 (8~18개):</span>
-      <div class="flex-center gap4 mb8" style="flex-wrap:wrap"><button class="btn btn-sm btn-outline" onclick="autoWheelPool(10)">보수형 10개</button><button class="btn btn-sm btn-outline" onclick="autoWheelPool(12)">균형형 12개</button><button class="btn btn-sm btn-outline" onclick="autoWheelPool(15)">공격형 15개</button><button class="btn btn-sm btn-outline" onclick="clearWheelPool()">초기화</button></div><div id="wheelNumSelector" style="display:flex;flex-wrap:wrap;gap:4px"></div>
-      <div class="flex-between mt8"><span class="text-dim" style="font-size:11px">선택: <span id="wheelCount" class="text-gold fw700">0</span>개 (3개 이상 포함 확률: <span id="wheelProb" class="text-gold fw700">0%</span>)</span><button class="btn btn-primary btn-sm" onclick="generateWheel()" id="wheelBtn" disabled>🎯 축소조합 생성</button></div>
-      <div id="wheelLoading" class="hidden text-dim mt6" style="font-size:11px">⏳ 조합 계산 중입니다... (번호 수가 많으면 몇 초 걸릴 수 있어요)</div>
-    </div>
-    <div id="wheelResults" class="hidden"></div>
-  </div>
-
-  <div class="card"><div class="card-title">📘 전략별 수학 원리</div><div style="font-size:11px;color:var(--textDim);line-height:1.6"><p><strong class="text-gold">균형 분포</strong> — 5개 구간에서 골고루 추출. 당첨확률을 높이는 방식이 아니라 조합 형태의 편중을 줄이는 분산 전략.</p><p><strong class="text-gold">인기번호 회피</strong> — 게임이론 기반. 당첨 시 분배 인원 최소화로 실질 수익 극대화.</p><p><strong class="text-gold">저빈도 가중</strong> — 선택 기간의 기대 출현 횟수 대비 실제 출현이 적은 번호에 가중치를 부여하는 휴리스틱.</p><p><strong class="text-gold">갭 분석</strong> — 선택 기간 안의 최근 최대 15회차 미출현 번호 우선 선택. 평균회귀 관점의 전략.</p></div></div>
-</div>
-
-<!-- ═══════════ 탭3: 이력 ═══════════ -->
-<div id="tab-history" class="hidden">
-  <div class="sub-tabs">
-    <button class="sub-tab active" onclick="switchHistSub('backtest')">백테스트</button>
-    <button class="sub-tab" onclick="switchHistSub('draws')">당첨 히스토리</button>
-      <button class="sub-tab" onclick="switchHistSub('strategy')">전략 검증</button>
-  </div>
-
-  <div id="hist-backtest">
-    <div class="card">
-      <div class="card-title">🔍 내 번호 백테스트</div>
-      <div class="text-dim mb12" style="font-size:11px">번호 6개를 입력하면, 1회차부터 최신 회차까지 3등 이상(5개 일치) 당첨 이력을 역추적합니다.</div>
-      <div class="flex-center mb12" style="justify-content:center;gap:8px;flex-wrap:wrap;padding:10px 0">
-        <input type="number" id="bt1" min="1" max="45" placeholder="1" style="width:55px;height:55px;font-size:22px;font-weight:900;text-align:center;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--gold)">
-        <input type="number" id="bt2" min="1" max="45" placeholder="2" style="width:55px;height:55px;font-size:22px;font-weight:900;text-align:center;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--gold)">
-        <input type="number" id="bt3" min="1" max="45" placeholder="3" style="width:55px;height:55px;font-size:22px;font-weight:900;text-align:center;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--gold)">
-        <input type="number" id="bt4" min="1" max="45" placeholder="4" style="width:55px;height:55px;font-size:22px;font-weight:900;text-align:center;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--gold)">
-        <input type="number" id="bt5" min="1" max="45" placeholder="5" style="width:55px;height:55px;font-size:22px;font-weight:900;text-align:center;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--gold)">
-        <input type="number" id="bt6" min="1" max="45" placeholder="6" style="width:55px;height:55px;font-size:22px;font-weight:900;text-align:center;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--gold)">
-      </div>
-      <button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px;font-weight:800;border-radius:10px" onclick="runBacktest()">🔍 백테스트 실행</button>
-    </div>
-    <div id="btResults" class="hidden"></div>
-  </div>
-
-  <div id="hist-strategy" class="hidden">
-    <div class="card"><div class="card-title">🧪 워크포워드 전략 백테스트</div><div class="text-dim mb8" style="font-size:11px">각 회차 직전 데이터만 사용해 추세·반등·균형 상위 6개를 선정하고 다음 실제 회차와 비교합니다. 미래 데이터는 사용하지 않습니다.</div><div class="grid2 mb8"><div><span class="text-dim" style="font-size:10px">검증 회차</span><select id="wfPeriod" style="width:100%;margin-top:4px"><option value="100">최근 100회</option><option value="300" selected>최근 300회</option><option value="500">최근 500회</option></select></div><div class="flex-center" style="align-items:end"><button class="btn btn-primary" style="width:100%" onclick="runWalkForward()">검증 실행</button></div></div><div id="wfResult"></div></div>
-  </div>
-
-  <div id="hist-draws" class="hidden">
-    <div class="card">
-      <div class="card-title">📋 당첨 히스토리</div>
-      <div class="flex-center gap8 mb8" style="flex-wrap:wrap">
-        <div><span class="text-dim" style="font-size:10px">시작</span><input type="number" id="histStart" min="1" style="width:70px;margin-left:4px"></div>
-        <div><span class="text-dim" style="font-size:10px">끝</span><input type="number" id="histEnd" style="width:70px;margin-left:4px"></div>
-        <button class="btn btn-primary btn-sm" onclick="renderHistory()">조회</button>
-      </div>
-      <div class="flex-center gap4 mb10" style="flex-wrap:wrap">
-        <button class="btn-outline btn btn-sm" onclick="quickHistory(10)">최근 10회</button>
-        <button class="btn-outline btn btn-sm" onclick="quickHistory(30)">최근 30회</button>
-        <button class="btn-outline btn btn-sm" onclick="quickHistory(50)">최근 50회</button>
-        <button class="btn-outline btn btn-sm" onclick="quickHistory(0)">전체</button>
+      <div class="live-price-actions">
+        <button type="button" class="btn-mini" onclick="fetchBtcPrice(true)">새로고침</button>
       </div>
     </div>
-    <div id="histResults"></div>
-    <div id="histSummary" class="hidden"></div>
-  </div>
-</div>
 
-<!-- ═══════════ 탭4: 보조지표 ═══════════ -->
-<div id="tab-indicator" class="hidden">
+    <div class="live-price-box position-live-box">
+      <div class="live-price-info">
+        <span class="live-price-label" id="livePriceLabel">BTCUSDT 실시간가 (1초 자동 갱신)</span>
+        <span class="live-price-value" id="livePriceValue">-</span>
+        <span class="live-price-pnl" id="livePricePnl">진입가 대비 -</span>
+        <span class="live-price-total" id="liveTotal">합계(증거금+손익) -</span>
+      </div>
+      <div class="live-price-actions">
+        <button type="button" class="btn-mini" onclick="fetchLivePrice(true)">새로고침</button>
+        <button type="button" class="btn-mini" id="applyToEntryBtn" disabled onclick="applyLivePrice('entryPrice')">→ 진입가</button>
+        <button type="button" class="btn-mini" id="applyToTargetBtn" disabled onclick="applyLivePrice('priceInput')">→ 예상가</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field" style="flex:1">
+        <label>방향</label>
+        <div class="toggle dir-toggle">
+          <button id="btnLong" onclick="setDirection('long')">Long</button>
+          <button id="btnShort" onclick="setDirection('short')">Short</button>
+          <button id="btnNone" onclick="setDirection('none')">무포</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field" style="flex:1">
+        <label>진입 방식</label>
+        <div class="toggle">
+          <button id="btnSingleEntry" onclick="setEntryMode('single')">단일진입</button>
+          <button id="btnSplitEntry" onclick="setEntryMode('split')">분할매매</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" id="singleEntryRow">
+      <div class="field">
+        <label>진입가 (USDT)</label>
+        <input type="number" id="entryPrice" value="65780" step="0.1" oninput="syncPositionInputs(); calc()">
+      </div>
+    </div>
+
+    <div id="splitEntryCard" class="split-entry-card" style="display:none;">
+      <div class="split-entry-header">
+        <span>분할 진입 회차</span>
+        <button type="button" class="btn-mini" onclick="addSplitRow()">+ 행 추가</button>
+      </div>
+      <div id="splitEntryRows"></div>
+      <div class="split-entry-summary" id="splitEntrySummary">진입가·증거금을 입력하면 평균 진입가가 자동 계산됩니다.</div>
+    </div>
+
+    <div class="row">
+      <div class="field" style="flex:1">
+        <label>예상가 (USDT)</label>
+        <div style="display:flex; gap:6px;">
+          <input type="number" id="priceInput" value="" step="0.1" placeholder="예상 가격 입력" oninput="calc()" style="flex:1;">
+          <button type="button" class="btn-mini" onclick="clearTargetPrice()">지우기</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>배율 (x)</label>
+        <input type="number" id="leverage" value="10" step="1" oninput="syncPositionInputs(); calc(); if(entryMode==='split') updateSplitEntries();">
+      </div>
+      <div class="field">
+        <label>증거금 (원화)<span id="marginAutoNote" style="display:none; color:var(--sub); font-weight:normal;"> · 분할매매 자동계산</span></label>
+        <input type="number" id="margin" value="138000" step="1000" oninput="quantityInputSource='margin'; syncQuantityFromMargin(); calc(); updateFundsUsdt();">
+        <div id="marginUsdt" style="font-size:11px;color:var(--sub);margin-top:4px;"></div>
+      </div>
+      <div class="field">
+        <label>수량 (<span id="positionQtySymbol">BTC</span>)</label>
+        <input type="number" id="positionQty" value="" step="0.00000001" min="0" placeholder="코인 수량" oninput="quantityInputSource='quantity'; syncMarginFromQuantity(); calc(); updateFundsUsdt();">
+        <div id="positionQtyNote" style="font-size:11px;color:var(--sub);margin-top:4px;">증거금과 자동 연동</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>총 자금 — 교차 증거금 (원화)</label>
+        <input type="number" id="totalFunds" value="" step="1000" placeholder="계좌 전체 잔고 입력" oninput="calc(); updateFundsUsdt();">
+        <div id="totalFundsUsdt" style="font-size:11px;color:var(--sub);margin-top:4px;"></div>
+      </div>
+    </div>
+    <div class="hint" style="margin-top:-4px; margin-bottom:10px;">교차마진: 청산가는 총 자금 기준으로 계산됩니다. 비워두면 증거금 = 총 자금 (격리마진처럼 동작).</div>
+
+    <details style="margin-top:4px;">
+      <summary class="accordion-summary" style="padding:10px 0; font-size:12px; color:var(--sub);">고급 설정 (유지증거금율 · 환율 · 수수료율)</summary>
+      <div class="accordion-body" style="padding:0;">
+
+    <div class="row">
+      <div class="field">
+        <label>유지증거금율 (%)</label>
+        <input type="number" id="mmRate" value="0.5" step="0.01" oninput="calc()">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>원/달러 환율</label>
+        <input type="number" id="fxRate" value="1380" step="1" oninput="syncPositionInputs(); calc(); updateFundsUsdt();">
+      </div>
+    </div>
+    <div class="fx-status-row">
+      <span id="fxStatus">환율 자동 갱신 대기 중...</span>
+      <button type="button" class="btn-mini" onclick="fetchExchangeRate(true)">새로고침</button>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>편도 수수료율 (%)</label>
+        <input type="number" id="feeRate" value="0.055" step="0.001" oninput="calc()">
+      </div>
+    </div>
+
+    <div class="hint">유지증거금율 기본값 0.5%는 바이빗 50배 구간 실측치(진입 65,780 / 청산 64,758.70) 기준 근사값입니다. 실제 청산가는 거래소 주문창의 예상 청산가를 반드시 다시 확인하세요.</div>
+
+      </div>
+    </details>
+  </div>
+
+  </div>
+  <div class="col-mid">
+
+  <!-- 차트 분석 -->
   <div class="card">
-    <div class="card-title">🎯 균형 시그널 스코어</div>
-    <div class="text-dim mb8" style="font-size:11px">최근 출현 강도 기반 추세 점수와 미출현 갭 기반 반등 점수를 결합한 상대평가입니다. 균형 점수 = 추세 55% + 반등 45%.</div>
-    <div class="flex-between mb8"><div class="text-dim" style="font-size:10px">이번 분석 기준 추천 번호</div><div id="topBalls"></div></div>
-    <div class="heatmap" id="signalHeatmap"></div>
-  </div>
-  <div class="card">
-    <div class="card-title">🧭 점수 구조</div>
-    <div id="weightSliders"></div>
-    <button class="btn btn-primary btn-sm mt8" onclick="recalcSignal()">🔄 재계산</button>
-  </div>
-  <div class="sub-tabs">
-    <button class="sub-tab active" onclick="switchIndSub('rsi')">RSI</button>
-    <button class="sub-tab" onclick="switchIndSub('bb')">볼린저</button>
-    <button class="sub-tab" onclick="switchIndSub('macd')">MACD</button>
-    <button class="sub-tab" onclick="switchIndSub('super')">슈퍼트렌드</button>
-    <button class="sub-tab" onclick="switchIndSub('mom')">모멘텀</button>
-    <button class="sub-tab" onclick="switchIndSub('range')">번호대</button>
-  </div>
-
-  <div id="ind-rsi">
-    <div class="card"><div class="card-title">📊 출현 모멘텀 RSI</div>
-      <div class="text-dim mb8" style="font-size:11px">출현=1·미출현=0 변화로 계산한 모멘텀 지표(0~100). 주가 RSI와 동일한 예측 의미는 없으며 최근 출현 변화의 방향성을 비교합니다.</div>
-      <div class="mb8"><span style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">RSI 기간: </span><select id="rsiPeriod" onchange="renderRSI()"><option value="14">14회</option><option value="20" selected>20회</option><option value="30">30회</option></select></div>
-      <div class="chart-wrapper" style="height:220px"><canvas id="rsiChart"></canvas></div>
-      <div class="grid2 mt8"><div class="card" style="margin:0;padding:10px"><div class="text-red fw700 mb6" style="font-size:11px">🔴 과열 (RSI > 70)</div><div id="rsiHot" style="font-size:11px"></div></div><div class="card" style="margin:0;padding:10px"><div class="text-cyan fw700 mb6" style="font-size:11px">🔵 침체 (RSI < 30)</div><div id="rsiCold" style="font-size:11px"></div></div></div>
-    </div>
-  </div>
-
-  <div id="ind-bb" class="hidden">
-    <div class="card"><div class="card-title">📉 볼린저밴드</div>
-      <div class="text-dim mb8" style="font-size:11px">출현 빈도 이동평균 ± 2σ 밴드. 밴드 이탈 = 통계적 이상치</div>
-      <div class="mb8"><span style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">번호 선택 (1~45): </span><div id="bbNumSelector" class="num-selector"></div></div>
-      <div class="chart-wrapper" style="height:200px"><canvas id="bbChart"></canvas></div>
-      <div class="grid2 mt8"><div class="card" style="margin:0;padding:10px"><div class="text-red fw700 mb6" style="font-size:11px">⬆ 상단 돌파 (과다출현)</div><div id="bbUpper" style="font-size:11px"></div></div><div class="card" style="margin:0;padding:10px"><div class="text-cyan fw700 mb6" style="font-size:11px">⬇ 하단 이탈 (과소출현)</div><div id="bbLower" style="font-size:11px"></div></div></div>
-    </div>
-  </div>
-
-  <div id="ind-macd" class="hidden">
-    <div class="card"><div class="card-title">📊 MACD</div>
-      <div class="text-dim mb8" style="font-size:11px">EMA(12)-EMA(26) + Signal(9). 추세 전환 감지. 히스토그램이 양전환되면 출현 모멘텀 상승 신호</div>
-      <div class="mb8"><span style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">번호 선택 (1~45): </span><div id="macdNumSelector" class="num-selector"></div></div>
-      <div class="chart-wrapper" style="height:220px"><canvas id="macdChart"></canvas></div>
-    </div>
-  </div>
-
-  <div id="ind-super" class="hidden">
-    <div class="card">
-      <div class="card-title">⚡ 슈퍼트렌드 (Supertrend)</div>
-      <div class="text-dim mb8" style="font-size:11px">번호의 출현 변동성 밴드 돌파 시 추세 포착 (녹색: 상승 / 적색: 하락). 상승 우세군에서 번호를 선별하면 5개 일치 확률 향상</div>
-      <div class="mb8"><span style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">번호 선택 (1~45): </span><div id="superNumSelector" class="num-selector"></div></div>
-      <div class="chart-wrapper" style="height:200px"><canvas id="superChart"></canvas></div>
-      <div class="grid2 mt8">
-        <div class="card" style="margin:0;padding:10px"><div class="text-green fw700 mb6" style="font-size:11px">🟢 상승 우세군 (주목)</div><div id="superBuyList" style="font-size:11px;line-height:1.5"></div></div>
-        <div class="card" style="margin:0;padding:10px"><div class="text-red fw700 mb6" style="font-size:11px">🔴 하락 우세군 (미출현 지속)</div><div id="superSellList" style="font-size:11px;line-height:1.5"></div></div>
+    <div class="card-title">캔들차트 · 거래량 · RSI · MACD 분석</div>
+    <div class="chart-card" style="margin-top:0;">
+      <div class="chart-header">
+        <span class="chart-title" id="chartTitle">BTCUSDT 캔들차트</span>
+        <div class="tf-buttons">
+          <button type="button" class="tf-btn" id="tfBtn-1" onclick="setTimeframe('1')">1분</button>
+          <button type="button" class="tf-btn" id="tfBtn-5" onclick="setTimeframe('5')">5분</button>
+          <button type="button" class="tf-btn" id="tfBtn-15" onclick="setTimeframe('15')">15분</button>
+          <button type="button" class="tf-btn" id="tfBtn-60" onclick="setTimeframe('60')">1시간</button>
+          <button type="button" class="tf-btn" id="tfBtn-240" onclick="setTimeframe('240')">4시간</button>
+          <button type="button" class="tf-btn" id="tfBtn-D" onclick="setTimeframe('D')">1일</button>
+          <button type="button" class="tf-btn" onclick="resetChartZoom()" title="확대/축소 원래대로">↺ 리셋</button>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas id="candleChart"></canvas>
+      </div>
+      <div class="indicator-label">거래량</div>
+      <div class="indicator-canvas-wrap">
+        <canvas id="volumeChart"></canvas>
+      </div>
+      <div class="indicator-label">RSI (14)</div>
+      <div class="indicator-canvas-wrap">
+        <canvas id="rsiChart"></canvas>
+      </div>
+      <div class="indicator-label">MACD (12, 26, 9)</div>
+      <div class="indicator-canvas-wrap">
+        <canvas id="macdChart"></canvas>
+      </div>
+      <div class="chart-loading" id="chartLoading" style="display:none;">캔들 데이터 불러오는 중...</div>
+      <button type="button" class="analysis-btn" id="analysisBtn" onclick="generateAnalysisText()">📋 전체 타임프레임(1분·5분·15분·1시간·4시간·1일) 분석 텍스트 생성</button>
+      <div class="analysis-box" id="analysisBox">
+        <textarea id="analysisOutput" readonly></textarea>
+        <button type="button" class="analysis-copy-btn" id="analysisCopyBtn" onclick="copyAnalysisText()">복사하기</button>
       </div>
     </div>
   </div>
 
-  <div id="ind-mom" class="hidden">
-    <div class="card"><div class="card-title">🎯 구간 모멘텀 오실레이터</div>
-      <div class="text-dim mb8" style="font-size:11px">5구간의 최근 출현 모멘텀 비교 (최근 10회 vs 이전 10회). 둘레: 구간/번호대 · 중심에서 바깥쪽: 누적 출현 횟수(회)</div>
-      <div class="chart-wrapper" style="height:280px"><canvas id="momChart"></canvas></div>
-      <table class="mt8"><thead><tr><th>구간</th><th class="text-right">최근10회</th><th class="text-right">이전10회</th><th class="text-right">변화율</th></tr></thead><tbody id="momBody"></tbody></table>
-    </div>
   </div>
+  <div class="col-right">
 
-  <div id="ind-range" class="hidden">
-    <div class="card">
-      <div class="card-title">📊 번호대별 출현 추세 (최근 20회)</div>
-      <div class="text-dim mb8" style="font-size:11px">단번대~40번대 회차별 출현 개수 추세. 과소 출현 번호대에서 반등 번호를 찾아보세요</div>
-      <div class="chart-wrapper" style="height:250px"><canvas id="rangeChart"></canvas></div>
-      <div class="grid3 mt8" id="rangeStats"></div>
-    </div>
-  </div>
-
-  <div class="info-box info-neutral mt8" style="font-size:10px;text-align:center">💡 5대 지표를 종합하여 유망 번호 10~12개를 선별한 후, 축소조합(생성 탭)으로 3등 안전망을 구축하세요.</div>
-</div>
-
-<!-- ═══════════ 탭5: 내 번호 분석 ═══════════ -->
-<div id="tab-analyze" class="hidden">
+  <!-- 결과 -->
   <div class="card">
-    <div class="card-title">🔢 분석할 번호 6개 입력</div>
-    <div class="text-dim mb12" style="font-size:11px">직접 선택한 6개의 번호를 보조지표 기반으로 정밀 분석합니다. 5개 이상 일치(3등+) 가능성을 점검하세요.</div>
-    <div class="flex-center mb12" style="justify-content:center;gap:8px;flex-wrap:wrap;padding:10px 0">
-      <input type="number" id="myNum1" min="1" max="45" placeholder="1" style="width:70px;height:70px;font-size:26px;font-weight:900;text-align:center;border-radius:12px;border:2px solid var(--border);background:var(--bg);color:var(--gold)">
-      <input type="number" id="myNum2" min="1" max="45" placeholder="2" style="width:70px;height:70px;font-size:26px;font-weight:900;text-align:center;border-radius:12px;border:2px solid var(--border);background:var(--bg);color:var(--gold)">
-      <input type="number" id="myNum3" min="1" max="45" placeholder="3" style="width:70px;height:70px;font-size:26px;font-weight:900;text-align:center;border-radius:12px;border:2px solid var(--border);background:var(--bg);color:var(--gold)">
-      <input type="number" id="myNum4" min="1" max="45" placeholder="4" style="width:70px;height:70px;font-size:26px;font-weight:900;text-align:center;border-radius:12px;border:2px solid var(--border);background:var(--bg);color:var(--gold)">
-      <input type="number" id="myNum5" min="1" max="45" placeholder="5" style="width:70px;height:70px;font-size:26px;font-weight:900;text-align:center;border-radius:12px;border:2px solid var(--border);background:var(--bg);color:var(--gold)">
-      <input type="number" id="myNum6" min="1" max="45" placeholder="6" style="width:70px;height:70px;font-size:26px;font-weight:900;text-align:center;border-radius:12px;border:2px solid var(--border);background:var(--bg);color:var(--gold)">
+    <div class="card-title">계산 결과</div>
+    <div class="result-line">
+      <span class="result-label">증거금</span>
+      <span class="result-value" id="outMarginKRW">-</span>
     </div>
-    <button class="btn btn-primary" style="width:100%;padding:16px;font-size:16px;font-weight:800;border-radius:12px;letter-spacing:1px" onclick="analyzeMyNumbers()">🔍 정밀 분석 실행</button>
-  </div>
-  <div id="analyzeResult" class="hidden"></div>
-</div>
-
-
-<!-- ═══════════ 탭6: 이번 회차 연구실 ═══════════ -->
-<div id="tab-lab" class="hidden">
-  <div class="card"><div class="card-title">🧪 이번 회차 연구실</div><div class="text-dim mb8" style="font-size:11px">최근 데이터로 추세·반등·균형 후보를 한 화면에 정리합니다. 점수는 과거 데이터 기반 상대평가이며 당첨확률 보장이 아닙니다.</div><button class="btn btn-primary" id="labRefreshBtn" style="width:100%" onclick="refreshLabData()">🔄 최신 분석</button><div id="labRefreshStatus" class="hidden mt8" style="font-size:11px;text-align:center"></div><div id="labSummary" class="mt8"></div></div>
-  <div class="card"><div class="card-title">🔎 번호 상세 프로필</div><div class="flex-center gap8 mb8"><select id="profileNum" style="flex:1"></select><button class="btn btn-primary btn-sm" onclick="renderNumberProfile()">조회</button></div><div id="numberProfile"></div></div>
-  <div class="card"><div class="card-title">🤝 번호 쌍 · 삼중조합 분석</div><div class="grid2 mb8"><div><span class="text-dim" style="font-size:10px">번호 2~3개 (쉼표)</span><input id="pairInput" placeholder="예: 7,23 또는 7,23,41" style="width:100%;margin-top:4px"></div><div class="flex-center" style="align-items:end"><button class="btn btn-primary btn-sm" style="width:100%" onclick="analyzePairTriple()">분석</button></div></div><div id="pairResult"></div></div>
-  <div class="card"><div class="card-title">🩺 데이터 상태 · 이상 검사</div><div id="dataHealth"></div><button class="btn btn-outline btn-sm mt8" onclick="renderDataHealth()">다시 검사</button></div>
-</div>
-
-<div class="footer">🎯 본 도구는 1~3등 범위의 일치 확률을 수학적으로 최적화하기 위한 분석 엔진입니다. 로또는 독립시행 확률 게임이며 당첨을 보장하지 않습니다.</div>
-</div>
-
-<!-- 회차 추가 모달 -->
-<div id="addDrawModal" class="modal-overlay hidden" onclick="if(event.target===this)closeAddDrawModal()">
-  <div class="modal">
-    <div class="flex-between mb12"><div class="card-title" style="margin:0">➕ 당첨 회차 수동 추가</div><button class="btn btn-sm btn-outline" onclick="closeAddDrawModal()">✕</button></div>
-    <div class="mb8"><span class="text-dim" style="font-size:11px">회차번호</span><input type="number" id="addRound" style="width:100%;margin-top:4px"></div>
-    <div class="mb8"><span class="text-dim" style="font-size:11px">날짜</span><input type="date" id="addDate" style="width:100%;margin-top:4px"></div>
-    <div class="mb8">
-      <span class="text-dim" style="font-size:11px">당첨번호 6개</span>
-      <div class="flex-center gap4 mt8">
-        <input type="number" id="addN1" min="1" max="45" style="width:42px;height:42px;text-align:center;font-weight:700;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--gold)">
-        <input type="number" id="addN2" min="1" max="45" style="width:42px;height:42px;text-align:center;font-weight:700;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--gold)">
-        <input type="number" id="addN3" min="1" max="45" style="width:42px;height:42px;text-align:center;font-weight:700;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--gold)">
-        <input type="number" id="addN4" min="1" max="45" style="width:42px;height:42px;text-align:center;font-weight:700;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--gold)">
-        <input type="number" id="addN5" min="1" max="45" style="width:42px;height:42px;text-align:center;font-weight:700;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--gold)">
-        <input type="number" id="addN6" min="1" max="45" style="width:42px;height:42px;text-align:center;font-weight:700;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--gold)">
-      </div>
+    <div class="result-line">
+      <span class="result-label">포지션 가치</span>
+      <span class="result-value" id="outPosValue">-</span>
     </div>
-    <div class="mb12"><span class="text-dim" style="font-size:11px">보너스번호</span><input type="number" id="addBonus" min="1" max="45" style="width:60px;margin-left:8px;height:36px;text-align:center;font-weight:700;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--cyan)"></div>
-    <button class="btn btn-primary" style="width:100%;padding:12px;font-weight:800" onclick="addManualDraw()">✅ 추가</button>
-    <div id="manualDrawList" class="mt8"></div>
+    <div class="result-line">
+      <span class="result-label">평단가 (손익분기)</span>
+      <span class="result-value" id="outBreakeven">-</span>
+    </div>
+    <div class="result-line">
+      <span class="result-label">예상가 변동률</span>
+      <span class="result-value" id="outPctResult">-</span>
+    </div>
+    <div class="result-line">
+      <span class="result-label">예상가 손익률 (증거금 대비)</span>
+      <span class="result-value" id="outPctPnlPct">-</span>
+    </div>
+    <div class="result-line">
+      <span class="result-label">예상가 손익 금액</span>
+      <span class="result-value" id="outPctPnlAmt">-</span>
+    </div>
+    <div class="result-line">
+      <span class="result-label">예상 청산가</span>
+      <span class="result-value big val-accent" id="outLiqPrice">-</span>
+    </div>
+    <div class="result-line">
+      <span class="result-label">청산까지 거리</span>
+      <span class="result-value" id="outLiqDist">-</span>
+    </div>
   </div>
+
+  </div>
+  </div>
+
+  <div class="note">
+    이 계산기는 참고용 산술 도구이며, 실제 거래소 청산가·수수료·펀딩비와 차이가 있을 수 있습니다. 투자 판단과 책임은 본인에게 있습니다.
+  </div>
+
 </div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import {
+    getFirestore, doc, setDoc, getDoc
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA17v9qmiIJVLOsp7iNwMmtw8iQwnaaaJA",
+    authDomain: "m-db-6fe4e.firebaseapp.com",
+    projectId: "m-db-6fe4e",
+    storageBucket: "m-db-6fe4e.firebasestorage.app",
+    messagingSenderId: "233165673451",
+    appId: "1:233165673451:web:33986bb690dc7c2b46ffae"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const SETTINGS_DOC = doc(db, 'leverage_settings', 'current');
+
+  const authReady = signInAnonymously(auth).catch(e => {
+    console.error('익명 로그인 실패', e);
+  });
+
+  window.fbSaveSettings = async function(data){
+    await authReady;
+    await setDoc(SETTINGS_DOC, data, { merge: true });
+  };
+
+  window.fbLoadSettings = async function(){
+    await authReady;
+    const snap = await getDoc(SETTINGS_DOC);
+    return snap.exists() ? snap.data() : null;
+  };
+
+  window.fbReady = authReady;
+
+  authReady.then(async () => {
+    if(typeof window.loadAndApplySettings === 'function'){
+      await window.loadAndApplySettings();
+    }
+  });
+</script>
+
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyCLUNqnDrXLMkZHyxWfbM1Zfbimdk3AKWw",
-  authDomain: "ma-db-d0c98.firebaseapp.com",
-  projectId: "ma-db-d0c98",
-  storageBucket: "ma-db-d0c98.firebasestorage.app",
-  messagingSenderId: "497220756438",
-  appId: "1:497220756438:web:72610748c39c6e29eb3a77",
-  measurementId: "G-KJBJ0TCN4P"
+let direction = 'long';
+let lastLivePrice = null;
+let liveFetchInFlight = false;
+let lastBtcPrice = null;
+let btcFetchInFlight = false;
+let currentSymbol = 'BTCUSDT';
+let quantityInputSource = 'margin';
+
+const COIN_LABELS = {
+  BTCUSDT:'BTC', ETHUSDT:'ETH', XRPUSDT:'XRP', SOLUSDT:'SOL', UBUSDT:'UB', LABUSDT:'LAB'
 };
 
-let db = null;
-let DRAWS = [];
-const DATA_SOURCE_INFO={jsonCount:0,jsonLast:null,firestoreCount:0,firestoreLast:null,cacheUsed:false,fallbackUsed:false};
-const N = 45, PICK = 6, COMBOS = 8145060;
-let indSelected = { bb: 1, macd: 1, super: 1 };
+const FAVORITE_SYMBOLS = ['BTCUSDT','ETHUSDT','XRPUSDT','SOLUSDT','UBUSDT','LABUSDT'];
+let bybitSymbolSet = new Set(FAVORITE_SYMBOLS);
 
-async function initApp(){
-  const FS_TIMEOUT=3000;
-  const withTimeout=(p)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),FS_TIMEOUT))]);
+function coinLabelOf(symbol){
+  if(!symbol) return '심볼 미상';
+  return COIN_LABELS[symbol] || symbol.replace('USDT','');
+}
 
-  try {
-    updateLoading('lotto-data.json 로드 중...', 10);
-    const res = await fetch('lotto-data.json');
-    if(res.ok){ DRAWS = await res.json(); DRAWS.sort((a,b) => a.round - b.round); DATA_SOURCE_INFO.jsonCount=DRAWS.length;DATA_SOURCE_INFO.jsonLast=DRAWS[DRAWS.length-1]?.round||null; updateLoading('JSON에서 ' + DRAWS.length + '회차 로드 완료', 70); }
-  } catch(e){ console.log('JSON 파일 로드 실패:', e.message); }
+function updateLivePriceLabel(){
+  document.getElementById('livePriceLabel').textContent = `${currentSymbol} 실시간가 (1초 자동 갱신)`;
+}
 
-  try {
-    if (typeof firebase !== 'undefined') {
-      if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
-      db = firebase.firestore();
-      if(DRAWS.length > 0){
-        const metaSnap = await withTimeout(db.collection('meta').doc('info').get());
-        if(metaSnap.exists){
-          const lastInDB = metaSnap.data().lastDraw; DATA_SOURCE_INFO.firestoreLast=lastInDB;
-          const lastInJSON = DRAWS[DRAWS.length-1].round;
-          if(lastInDB > lastInJSON){
-            updateLoading('Firestore에서 최신 데이터 추가 로드...', 80);
-            const snapshot = await withTimeout(db.collection('draws').where(firebase.firestore.FieldPath.documentId(), '>', String(lastInJSON)).get());
-            DATA_SOURCE_INFO.firestoreCount=snapshot.size; snapshot.forEach(doc => { const d = doc.data(); DRAWS.push({ round:+doc.id, nums:[d.no1,d.no2,d.no3,d.no4,d.no5,d.no6], bonus:d.bonus, date:d.date }); });
-            DRAWS.sort((a,b) => a.round - b.round);
-          }
-        }
-      } else { await withTimeout(loadFromFirestore()); }
-    }
-  } catch(e){ console.log('Firestore 연결 실패/타임아웃:', e.message); }
+function updatePageTitle(price){
+  document.title = `Lev ${coinLabelOf(currentSymbol)} ${fmtPrice(price)}`;
+}
 
-  if(DRAWS.length === 0){
-    const cached = localStorage.getItem('lotto_draws');
-    if(cached){ DRAWS = JSON.parse(cached); DATA_SOURCE_INFO.cacheUsed=true; updateLoading('캐시에서 ' + DRAWS.length + '회차 로드', 80); }
+function resetLiveDisplayForSymbolChange(){
+  lastLivePrice = null;
+  document.getElementById('livePriceValue').textContent = '불러오는 중...';
+  document.getElementById('applyToEntryBtn').disabled = true;
+  document.getElementById('applyToTargetBtn').disabled = true;
+  updateLivePriceLabel();
+  updateLivePnl();
+}
+
+function changeCoin(symbol){
+  currentSymbol = symbol;
+  updatePositionQtyLabel();
+  syncPositionInputs();
+  resetLiveDisplayForSymbolChange();
+  scheduleSaveSettings();
+  fetchLivePrice(true);
+  connectPriceStream();
+  if(typeof loadChartData === 'function') loadChartData();
+}
+
+function resolveSymbolInput(raw){
+  if(!raw) return null;
+  const sym = raw.trim().toUpperCase();
+  if(bybitSymbolSet.has(sym)) return sym;
+  if(!sym.endsWith('USDT')){
+    const withSuffix = sym + 'USDT';
+    if(bybitSymbolSet.has(withSuffix)) return withSuffix;
   }
-  // 실제 회차 데이터만 사용합니다.
-  loadManualDraws();
-  try { localStorage.setItem('lotto_draws', JSON.stringify(DRAWS.filter(d=>!d._manual))); } catch(e){}
-
-  updateLoading(DRAWS.length + '회차 로드 완료!', 100);
-  document.getElementById('loadingOverlay').classList.add('hidden');
-  updateStatusBar();
-  renderStatsTab();
-  renderStrategies();
-  initIndicatorSelects();
-  initWheelSelector();
-  ensureProfileOptions();
+  return null;
 }
 
-async function loadFromFirestore(){
-  updateLoading('Firestore에서 데이터 로드 중...', 10);
-  try {
-    const snapshot = await db.collection('draws').get();
-    if(snapshot.empty) return;
-    DRAWS = [];
-    snapshot.forEach(doc => { const d = doc.data(); DRAWS.push({round:+doc.id,nums:[d.no1,d.no2,d.no3,d.no4,d.no5,d.no6],bonus:d.bonus,date:d.date}); });
-    DRAWS.sort((a,b) => a.round - b.round); DATA_SOURCE_INFO.firestoreCount=DRAWS.length;DATA_SOURCE_INFO.firestoreLast=DRAWS[DRAWS.length-1]?.round||null;
-    updateLoading('Firestore에서 ' + DRAWS.length + '회차 로드 완료', 90);
-  } catch(e){ console.log('Firestore 읽기 실패:', e.message); }
-}
-
-function getDrawNums(){ return DRAWS.map(d => d.nums); }
-function ballClass(n){ if(n<=10)return'ball ball-1';if(n<=20)return'ball ball-2';if(n<=30)return'ball ball-3';if(n<=40)return'ball ball-4';return'ball ball-5'; }
-function renderBall(n,sm){ return '<span class="' + ballClass(n) + (sm ? ' ball-sm' : '') + '">' + n + '</span>'; }
-const CI = {};
-function destroyChart(id){ if(CI[id]){CI[id].destroy();delete CI[id]} }
-const chartTooltip = {backgroundColor:'#111B2E',borderColor:'#1E2D45',borderWidth:1,titleColor:'#E8ECF1',bodyColor:'#E8ECF1'};
-const chartGridColor = '#1E2D4530';
-function mean(a){return a.reduce((s,v)=>s+v,0)/a.length}
-function stddev(a){const m=mean(a);return Math.sqrt(a.reduce((s,v)=>s+(v-m)**2,0)/a.length)}
-
-function updateLoading(msg, pct){
-  document.getElementById('loadingMsg').textContent = msg;
-  document.getElementById('loadingFill').style.width = pct + '%';
-  document.getElementById('loadingPct').textContent = pct + '%';
-}
-
-function updateStatusBar(){
-  updateGenerationPeriod();
-  const first = DRAWS[0]?.round || '?';
-  const last = DRAWS[DRAWS.length-1]?.round || '?';
-  const lastDate = DRAWS[DRAWS.length-1]?.date || '';
-  const manualCount = DRAWS.filter(d=>d._manual).length;
-  document.getElementById('statusDot').className = 'dot dot-green';
-  let statusTxt = '데이터 로드 완료 (' + DRAWS.length + '회차)';
-  if(manualCount > 0) statusTxt += ' [수동 ' + manualCount + '건]';
-  document.getElementById('statusText').textContent = statusTxt;
-  document.getElementById('dataRange').textContent = first + '회 ~ ' + last + '회 | ' + lastDate;
-}
-
-/* ===== 탭 전환 ===== */
-let curTab='stats', curSub='freq', curIndSub='rsi', curHistSub='backtest';
-function switchTab(id){
-  const tabs = ['stats','generate','history','indicator','analyze','lab'];
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active', tabs[i]===id));
-  tabs.forEach(t=>document.getElementById('tab-'+t).classList.toggle('hidden', t!==id));
-  curTab=id;
-  if(id==='generate'){updateGenerationPeriod();if(!$('genTargetRound').value)$('genTargetRound').value=(DRAWS.at(-1)?.round||0)+1;}
-  if(id==='stats') renderStatsTab();
-  if(id==='indicator') renderIndicatorTab();
-  if(id==='history' && curHistSub==='draws') initHistoryInputs();
-  if(id==='lab') renderLab();
-}
-function switchSubTab(id){
-  document.querySelectorAll('#tab-stats .sub-tab').forEach((t,i)=>t.classList.toggle('active',['freq','zone','pattern'][i]===id));
-  ['freq','zone','pattern'].forEach(s=>document.getElementById('sub-'+s).classList.toggle('hidden',s!==id));
-  curSub=id; renderStatsTab();
-}
-function switchHistSub(id){
-  const ids=['backtest','draws','strategy'];
-  document.querySelectorAll('#tab-history .sub-tab').forEach((t,i)=>t.classList.toggle('active',ids[i]===id));
-  ids.forEach(x=>document.getElementById('hist-'+x).classList.toggle('hidden',id!==x));
-  curHistSub=id;
-  if(id==='draws') initHistoryInputs();
-}
-function switchIndSub(id){
-  const subTabs = ['rsi','bb','macd','super','mom','range'];
-  document.querySelectorAll('#tab-indicator .sub-tab').forEach((t,i)=>t.classList.toggle('active', subTabs[i]===id));
-  subTabs.forEach(s=>document.getElementById('ind-'+s).classList.toggle('hidden',s!==id));
-  curIndSub=id; renderIndicatorSub();
-}
-
-/* ===== 통계 탭 ===== */
-function getFreq(){ const f=new Array(N+1).fill(0); getDrawNums().forEach(d=>d.forEach(n=>f[n]++)); return f; }
-function renderStatsTab(){
-  const draws=getDrawNums(), total=draws.length; if(!total)return;
-  const freq=getFreq(), expected=(total*PICK)/N;
-  document.getElementById('totalDraws').textContent=total;
-  document.getElementById('expectedVal').textContent=expected.toFixed(1);
-  if(curSub==='freq') renderFreqSub(freq,expected,total);
-  else if(curSub==='zone') renderZoneSub(total);
-  else if(curSub==='pattern') renderPatternSub(freq,expected,total);
-}
-function renderFreqSub(freq,expected,total){
-  destroyChart('freqChart');
-  const labels=Array.from({length:N},(_,i)=>i+1), counts=labels.map(i=>freq[i]);
-  const colors=labels.map(i=>freq[i]>expected?'#FF4757':freq[i]<expected-1?'#70A1FF':'#556677');
-  if(typeof Chart!=='undefined'){
-    CI.freqChart=new Chart(document.getElementById('freqChart'),{type:'bar',data:{labels,datasets:[{type:'bar',data:counts,backgroundColor:colors,borderRadius:2,barPercentage:.7},{type:'line',data:labels.map(()=>expected),borderColor:'#F0C040',borderWidth:2,borderDash:[5,5],pointRadius:0,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:chartTooltip},scales:{x:{ticks:{color:'#556677',font:{size:8},maxRotation:0},grid:{display:false}},y:{ticks:{color:'#556677',font:{size:9}},grid:{color:chartGridColor}}}}});
+function onCoinInputCommit(){
+  const inputEl = document.getElementById('coinInput');
+  const resolved = resolveSymbolInput(inputEl.value);
+  if(!resolved){
+    inputEl.value = currentSymbol;
+    return;
   }
-  const sorted=Array.from({length:N},(_,i)=>({num:i+1,count:freq[i+1],diff:+(freq[i+1]-expected).toFixed(1)})).sort((a,b)=>b.count-a.count);
-  document.getElementById('hotNums').innerHTML=sorted.slice(0,6).map(d=>'<div class="flex-between" style="padding:3px 0;font-size:11px">' + renderBall(d.num,true) + '<span class="text-red">' + d.count + '회 (+' + d.diff + ')</span></div>').join('');
-  document.getElementById('coldNums').innerHTML=sorted.slice(-6).reverse().map(d=>'<div class="flex-between" style="padding:3px 0;font-size:11px">' + renderBall(d.num,true) + '<span class="text-cyan">' + d.count + '회 (' + d.diff + ')</span></div>').join('');
-}
-function renderZoneSub(total){
-  const zones=[{name:'1~9',r:[1,9]},{name:'10~19',r:[10,19]},{name:'20~29',r:[20,29]},{name:'30~39',r:[30,39]},{name:'40~45',r:[40,45]}];
-  const all=total*PICK;
-  zones.forEach(z=>{let c=0;getDrawNums().forEach(d=>d.forEach(n=>{if(n>=z.r[0]&&n<=z.r[1])c++}));z.pct=+((c/all)*100).toFixed(1);z.exp=+(((z.r[1]-z.r[0]+1)/N)*100).toFixed(1)});
-  destroyChart('zoneChart');
-  if(typeof Chart!=='undefined'){
-    CI.zoneChart=new Chart(document.getElementById('zoneChart'),{type:'bar',data:{labels:zones.map(z=>z.name),datasets:[{label:'실제',data:zones.map(z=>z.pct),backgroundColor:'#F0C040',borderRadius:3,barPercentage:.6},{label:'기대',data:zones.map(z=>z.exp),backgroundColor:'#556677',borderRadius:3,barPercentage:.6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8899AA',font:{size:10}}},tooltip:chartTooltip},scales:{x:{ticks:{color:'#8899AA',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#556677',font:{size:9},callback:v=>v+'%'},grid:{color:chartGridColor}}}}});
-  }
-  const sums=getDrawNums().map(d=>d.reduce((a,b)=>a+b,0));
-  document.getElementById('sumAvg').textContent=mean(sums).toFixed(1);
-  document.getElementById('sumStd').textContent='±'+stddev(sums).toFixed(1);
-  const bk={};sums.forEach(s=>{const b=Math.floor(s/20)*20;const k=b+'~'+(b+19);bk[k]=(bk[k]||0)+1});
-  const sl=Object.keys(bk).sort();
-  destroyChart('sumChart');
-  if(typeof Chart!=='undefined'){
-    CI.sumChart=new Chart(document.getElementById('sumChart'),{type:'bar',data:{labels:sl,datasets:[{data:sl.map(k=>bk[k]),backgroundColor:'#70A1FF',borderRadius:3,barPercentage:.7}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:chartTooltip},scales:{x:{ticks:{color:'#8899AA',font:{size:9}},grid:{display:false}},y:{ticks:{color:'#556677',font:{size:9}},grid:{color:chartGridColor}}}}});
+  inputEl.value = resolved;
+  if(resolved !== currentSymbol){
+    changeCoin(resolved);
   }
 }
-function renderPatternSub(freq,expected,total){
-  const dist={};getDrawNums().forEach(d=>{const o=d.filter(n=>n%2===1).length;const k=o+':'+(6-o);dist[k]=(dist[k]||0)+1});
-  const oe=Object.entries(dist).map(([k,v])=>({ratio:k,count:v,pct:+((v/total)*100).toFixed(1)})).sort((a,b)=>b.count-a.count);
-  document.getElementById('oddEvenBody').innerHTML=oe.map(d=>'<tr><td>'+d.ratio+'</td><td class="text-right">'+d.count+'회</td><td class="text-right '+(d.pct>25?'text-gold':'text-dim')+'">'+d.pct+'%</td></tr>').join('');
-  let wc=0;getDrawNums().forEach(d=>{const s=[...d].sort((a,b)=>a-b);for(let i=0;i<s.length-1;i++){if(s[i+1]-s[i]===1){wc++;break}}});
-  document.getElementById('consecPct').textContent=((wc/total)*100).toFixed(1)+'%';
-  document.getElementById('consecCount').textContent=wc+'/'+total;
-  renderCarryOver();
-  renderBayes();
+
+function populateCoinDatalist(symbols){
+  symbols.forEach(s => bybitSymbolSet.add(s));
+  const rest = [...bybitSymbolSet].filter(s => !FAVORITE_SYMBOLS.includes(s)).sort();
+  const ordered = [...FAVORITE_SYMBOLS, ...rest];
+  document.getElementById('coinList').innerHTML =
+    ordered.map(s => `<option value="${s}">${coinLabelOf(s)}</option>`).join('');
 }
 
-/* ===== 이월수 분석 ===== */
-function renderCarryOver(){
-  const draws=getDrawNums();if(draws.length<2)return;
-  let carryRounds=0,totalCarry=0;
-  for(let i=1;i<draws.length;i++){
-    const prev=new Set(draws[i-1]);
-    const carried=draws[i].filter(n=>prev.has(n)).length;
-    if(carried>0)carryRounds++;
-    totalCarry+=carried;
-  }
-  const n=draws.length-1;
-  document.getElementById('carryPct').textContent=((carryRounds/n)*100).toFixed(1)+'%';
-  document.getElementById('carryAvg').textContent=(totalCarry/n).toFixed(2)+'개';
-  // 직전 회차 번호별 개인 이월 성적
-  const lastNums=draws[draws.length-1];
-  const stats=lastNums.map(num=>{
-    let appeared=0,carried=0;
-    for(let i=0;i<draws.length-1;i++){
-      if(draws[i].includes(num)){appeared++;if(draws[i+1].includes(num))carried++}
-    }
-    return{num,rate:appeared>0?+((carried/appeared)*100).toFixed(1):0,carried,appeared};
-  });
-  document.getElementById('carryCandidates').innerHTML=lastNums.map(n=>renderBall(n)).join('');
-  document.getElementById('carryDetail').innerHTML='<table style="font-size:10px"><thead><tr><th>번호</th><th class="text-right">과거 출현</th><th class="text-right">이월 성공</th><th class="text-right">개인 이월률</th></tr></thead><tbody>'+stats.sort((a,b)=>b.rate-a.rate).map(s=>'<tr><td>'+renderBall(s.num,true)+'</td><td class="text-right">'+s.appeared+'회</td><td class="text-right">'+s.carried+'회</td><td class="text-right '+(s.rate>13.3?'text-gold fw700':'text-dim')+'">'+s.rate+'%</td></tr>').join('')+'</tbody></table>';
-}
-
-/* ===== 베이즈 신뢰도 ===== */
-function renderBayes(){
-  const period = +document.getElementById('bayesPeriod').value;
-  const recent = getDrawNums().slice(-period);
-  const alpha0 = 6, beta0 = 39; // prior mean 6/45, equivalent sample size 45
-  const prior = alpha0/(alpha0+beta0);
-  const results=[];
-  for(let n=1;n<=N;n++){
-    const appeared=recent.filter(d=>d.includes(n)).length;
-    const alpha=alpha0+appeared, beta=beta0+period-appeared;
-    const posteriorMean=alpha/(alpha+beta);
-    results.push({num:n,prior:prior*100,posterior:posteriorMean*100,appeared});
-  }
-  results.sort((a,b)=>b.posterior-a.posterior||a.num-b.num);
-  const top10=results.slice(0,10),bot5=results.slice(-5).reverse();
-  let html='<div class="text-green fw700 mb6" style="font-size:11px">🔺 평활 출현률 상위 10 (기준 '+(prior*100).toFixed(1)+'%)</div>';
-  html+=top10.map(d=>'<div class="flex-between" style="padding:3px 0;font-size:11px">'+renderBall(d.num,true)+'<span class="text-green fw700">'+d.posterior.toFixed(1)+'%</span><span class="text-dim">('+d.appeared+'/'+period+'회)</span></div>').join('');
-  html+='<div class="text-cyan fw700 mb6 mt8" style="font-size:11px">🔻 평활 출현률 하위 5</div>';
-  html+=bot5.map(d=>'<div class="flex-between" style="padding:3px 0;font-size:11px">'+renderBall(d.num,true)+'<span class="text-cyan">'+d.posterior.toFixed(1)+'%</span><span class="text-dim">('+d.appeared+'/'+period+'회)</span></div>').join('');
-  html+='<div class="info-neutral mt8">Beta(6,39) 사전분포에 최근 관측을 합친 사후평균입니다. 로또 각 번호의 다음 회차 실제 추첨확률은 여전히 동일합니다.</div>';
-  document.getElementById('bayesResult').innerHTML=html;
-}
-
-/* ===== 생성 탭 ===== */
-function getGenerationDraws(){
-  const period=+document.getElementById('genPeriod').value||0;
-  return period>0?DRAWS.slice(-period):DRAWS;
-}
-function generationPeriodLabel(){
-  const period=+document.getElementById('genPeriod').value||0,draws=getGenerationDraws();
-  return (period?'최근 '+period+'주':'전체')+' · '+(draws.length?draws[0].round+'~'+draws[draws.length-1].round+'회 · '+draws.length+'개 회차':'데이터 없음');
-}
-function updateGenerationPeriod(){
-  const el=document.getElementById('genPeriod');if(!el)return;
-  const previous=el.value,periods=[10,30,50,100];
-  for(let n=150;n<=DRAWS.length;n+=50)periods.push(n);
-  el.innerHTML='<option value="0">전체</option>'+periods.map(n=>'<option value="'+n+'">최근 '+n+'주</option>').join('');
-  el.value=periods.includes(+previous)?previous:'0';
-  document.getElementById('genPeriodInfo').textContent='분석 대상: '+generationPeriodLabel();
-}
-function onGenPeriodChange(){
-  updateGenerationPeriod();
-  document.getElementById('genResults').classList.add('hidden');
-  document.getElementById('wheelResults').classList.add('hidden');
-  if(wheelAutoSize)autoWheelPool(wheelAutoSize);
-}
-
-
-const strategies=[{id:'balanced',name:'균형 분포',desc:'구간 편중을 줄인 형태 분산'},{id:'antiPop',name:'인기번호 회피',desc:'32~45를 늘려 타인과의 조합 중복 가능성 완화'},{id:'poisson',name:'저빈도 가중',desc:'선택 기간의 기대 출현 대비 저빈도 번호 가중'},{id:'gap',name:'갭 분석',desc:'최근 미출현 번호 우선 — 평균회귀 관점'}];
-let selStrat='balanced';
-function renderStrategies(){document.getElementById('strategyList').innerHTML=strategies.map(s=>'<button class="strategy-btn'+(s.id===selStrat?' active':'')+'" onclick="selStrat=\''+s.id+'\';renderStrategies()"><div><div class="name">'+s.name+'</div><div class="desc">'+s.desc+'</div></div>'+(s.id===selStrat?'<span class="text-gold">✓</span>':'')+' </button>').join('')}
-
-function balancedPick(){
-  const z=[[1,9],[10,19],[20,29],[30,39],[40,45]],pk=[2,1,1,1,1];
-  for(let i=pk.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pk[i],pk[j]]=[pk[j],pk[i]]}
-  const r=[];
-  z.forEach((zone,i)=>{const pool=Array.from({length:zone[1]-zone[0]+1},(_,k)=>zone[0]+k);for(let j=0;j<pk[i]&&pool.length;j++){r.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0])}});
-  while(r.length<6){const n=Math.floor(Math.random()*45)+1;if(!r.includes(n))r.push(n)}
-  return r.sort((a,b)=>a-b);
-}
-function antiPopPick(){
-  const pop=[7,3,11,13,17,21,1,5];
-  const hi=Array.from({length:N},(_,i)=>i+1).filter(n=>n>=32);
-  const lo=Array.from({length:N},(_,i)=>i+1).filter(n=>n<32&&!pop.includes(n));
-  const r=[];
-  for(let i=0;i<3&&hi.length;i++) r.push(hi.splice(Math.floor(Math.random()*hi.length),1)[0]);
-  for(let i=0;i<3&&lo.length;i++) r.push(lo.splice(Math.floor(Math.random()*lo.length),1)[0]);
-  return r.sort((a,b)=>a-b);
-}
-function poissonPick(drawObjects=DRAWS){
-  const freq=new Array(N+1).fill(0),exp=(drawObjects.length*PICK)/N;
-  drawObjects.forEach(d=>d.nums.forEach(n=>freq[n]++));
-  const w=[];for(let i=1;i<=N;i++)w.push({n:i,w:Math.max(.1,exp-freq[i]+5)});
-  const r=[],u=new Set();
-  while(r.length<PICK){const eligible=w.filter(x=>!u.has(x.n));const tw=eligible.reduce((s,x)=>s+x.w,0);let rr=Math.random()*tw;for(const x of eligible){rr-=x.w;if(rr<=0){r.push(x.n);u.add(x.n);break}}}
-  return r.sort((a,b)=>a-b);
-}
-function gapPick(drawObjects=DRAWS){
-  const recent=drawObjects.slice(-15).map(d=>d.nums),rn=new Set(recent.flat());
-  const nr=Array.from({length:N},(_,i)=>i+1).filter(n=>!rn.has(n));
-  const pool=nr.length>=3?[...nr]:Array.from({length:N},(_,i)=>i+1);
-  const r=[];
-  while(r.length<Math.min(3,pool.length)){const n=pool.splice(Math.floor(Math.random()*pool.length),1)[0];if(!r.includes(n))r.push(n)}
-  while(r.length<PICK){const n=Math.floor(Math.random()*45)+1;if(!r.includes(n))r.push(n)}
-  return r.sort((a,b)=>a-b);
-}
-const genFns={balanced:balancedPick,antiPop:antiPopPick,poisson:poissonPick,gap:gapPick};
-const stratNames={balanced:'균형 분포',antiPop:'인기번호 회피',poisson:'저빈도 가중',gap:'갭 분석'};
-function parseNumList(id){
-  const el=document.getElementById(id);if(!el)return[];
-  return [...new Set(el.value.split(/[,\s]+/).map(Number).filter(n=>Number.isInteger(n)&&n>=1&&n<=45))];
-}
-function passesQuality(nums){
-  const sum=nums.reduce((a,b)=>a+b,0),odd=nums.filter(n=>n%2).length;
-  const sf=document.getElementById('sumFilter')?.value||'0',of=document.getElementById('oeFilter')?.value||'0';
-  if(sf!=='0'){const [lo,hi]=sf.split('-').map(Number);if(sum<lo||sum>hi)return false;}
-  if(of==='3'&&odd!==3)return false;if(of==='2-4'&&(odd<2||odd>4))return false;
-  return true;
-}
-function applyConstraints(base,fixed,excluded){
-  const out=[...fixed.filter(n=>!excluded.includes(n))];
-  for(const n of base){if(out.length>=6)break;if(!excluded.includes(n)&&!out.includes(n))out.push(n)}
-  let guard=0;while(out.length<6&&guard++<300){const n=Math.floor(Math.random()*45)+1;if(!excluded.includes(n)&&!out.includes(n))out.push(n)}
-  return out.sort((a,b)=>a-b);
-}
-function overlapCount(a,b){return a.filter(n=>b.includes(n)).length}
-function generateNumbers(){
-  try{generationRecord();}catch(e){alert(e.message);return;}
-  const sourceDraws=getGenerationDraws();
-  if(!sourceDraws.length){alert('분석할 회차 데이터가 없습니다.');return;}
-  const scoreDetails=calcScoreDetailsForDraws(sourceDraws);
-  const count=+document.getElementById('genCount').value,fn=genFns[selStrat],results=[];
-  const fixed=parseNumList('fixedNums'),excluded=parseNumList('excludedNums');
-  if(fixed.length>6){alert('고정수는 최대 6개입니다.');return} if(fixed.some(n=>excluded.includes(n))){alert('같은 번호를 고정수와 제외수에 동시에 넣을 수 없습니다.');return}
-  const maxOv=+document.getElementById('maxOverlap').value;
-  let attempts=0;
-  while(results.length<count&&attempts++<3000){
-    const nums=applyConstraints(fn(sourceDraws),fixed,excluded);if(nums.length!==6||!passesQuality(nums))continue;
-    if(results.some(r=>overlapCount(r.nums,nums)>maxOv))continue;
-    const detail=nums.map(n=>scoreDetails.find(x=>x.num===n));
-    results.push({nums,sum:nums.reduce((a,b)=>a+b,0),oe:nums.filter(n=>n%2===1).length+':'+nums.filter(n=>n%2===0).length,lh:nums.filter(n=>n<=22).length+':'+nums.filter(n=>n>22).length,score:(detail.reduce((a,b)=>a+b.balanced,0)/6).toFixed(1)});
-  }
-  generationSnapshot=generationRecord();
-  document.getElementById('genResults').classList.remove('hidden');
-  document.getElementById('genResultTitle').textContent='🎯 생성 결과 ('+stratNames[selStrat]+') · '+generationPeriodLabel()+' · 대상 '+generationSnapshot.targetRound+'회';
-  document.getElementById('genResultBody').innerHTML=results.length?results.map((r,i)=>'<div class="result-row"><div class="flex-center gap4"><span style="font-size:10px;color:var(--textDim);width:20px">#'+(i+1)+'</span>'+r.nums.map(n=>renderBall(n)).join('')+'</div><div class="result-meta"><span>합:'+r.sum+'</span><span>홀짝:'+r.oe+'</span><span>균형:'+r.score+'</span></div></div>').join(''):'<div class="info-red info-box">현재 고정/제외/품질/중복 조건을 동시에 만족하는 조합을 만들지 못했습니다. 조건을 조금 완화해주세요.</div>';
-}
-
-/* ===== 적중 확률 계산기 (초기하분포) ===== */
-function comb(n,k){
-  if(k<0||k>n) return 0;
-  k=Math.min(k,n-k);
-  let res=1;
-  for(let i=0;i<k;i++){ res = res*(n-i)/(i+1); }
-  return res;
-}
-function probAtLeast3(poolSize, pop=45, winners=6, kMin=3){
-  const total = comb(pop, poolSize);
-  if(total<=0) return 0;
-  let p=0;
-  for(let k=kMin;k<=winners;k++){
-    if(poolSize-k<0) continue;
-    p += comb(winners,k)*comb(pop-winners, poolSize-k);
-  }
-  return p/total;
-}
-
-/* ===== 축소조합 ===== */
-let wheelSelected = new Set();
-let wheelAutoSize = 0;
-function initWheelSelector(){
-  const c = document.getElementById('wheelNumSelector');
-  c.innerHTML = '';
-  for(let i=1;i<=N;i++){
-    const btn = document.createElement('div');
-    btn.className = 'wheel-num-btn' + (wheelSelected.has(i) ? ' active' : '');
-    btn.textContent = i;
-    btn.onclick = () => {
-      wheelAutoSize=0;
-      if(wheelSelected.has(i)){ wheelSelected.delete(i); btn.classList.remove('active'); }
-      else if(wheelSelected.size < 18){ wheelSelected.add(i); btn.classList.add('active'); }
-      document.getElementById('wheelCount').textContent = wheelSelected.size;
-      document.getElementById('wheelBtn').disabled = wheelSelected.size < 8;
-      document.getElementById('wheelProb').textContent = wheelSelected.size>0 ? (probAtLeast3(wheelSelected.size)*100).toFixed(1)+'%' : '0%';
-    };
-    c.appendChild(btn);
-  }
-}
-function autoWheelPool(size){
-  const draws=getGenerationDraws();if(!draws.length){alert('분석할 회차 데이터가 없습니다.');return;}
-  wheelAutoSize=size;
-  const scores=calcScoreDetailsForDraws(draws).sort((a,b)=>b.balanced-a.balanced||a.num-b.num);wheelSelected=new Set(scores.slice(0,size).map(x=>x.num));initWheelSelector();
-  document.getElementById('wheelCount').textContent=wheelSelected.size;document.getElementById('wheelBtn').disabled=wheelSelected.size<8;document.getElementById('wheelProb').textContent=(probAtLeast3(wheelSelected.size)*100).toFixed(1)+'%';
-}
-function clearWheelPool(){wheelAutoSize=0;wheelSelected.clear();initWheelSelector();document.getElementById('wheelCount').textContent='0';document.getElementById('wheelProb').textContent='0%';document.getElementById('wheelBtn').disabled=true;}
-
-function generateWheel(){
-  const nums = [...wheelSelected].sort((a,b)=>a-b);
-  const K = nums.length;
-  if(K < 8) return;
-  document.getElementById('wheelBtn').disabled = true;
-  document.getElementById('wheelLoading').classList.remove('hidden');
-  document.getElementById('wheelResults').classList.add('hidden');
-  setTimeout(()=>runWheelCalc(nums), 30);
-}
-function runWheelCalc(nums){
-  const K = nums.length;
-  const comboMasks = [];
-  (function combo(start,depth,mask){
-    if(depth===6){ comboMasks.push(mask); return; }
-    for(let i=start;i<K;i++){ combo(i+1,depth+1,mask|(1<<i)); }
-  })(0,0,0);
-  const tripleMasks = [];
-  (function tri(start,depth,mask){
-    if(depth===3){ tripleMasks.push(mask); return; }
-    for(let i=start;i<K;i++){ tri(i+1,depth+1,mask|(1<<i)); }
-  })(0,0,0);
-  let uncovered = tripleMasks.map((_,i)=>i);
-  const neededMasks = [];
-  while(uncovered.length > 0){
-    let bestIdx=-1, bestCover=0, bestCoveredList=null;
-    for(let ci=0; ci<comboMasks.length; ci++){
-      const cm = comboMasks[ci];
-      let cover=0; const coveredList=[];
-      for(const ti of uncovered){ const tm=tripleMasks[ti]; if((tm & cm)===tm){ cover++; coveredList.push(ti); } }
-      if(cover > bestCover){ bestCover=cover; bestIdx=ci; bestCoveredList=coveredList; }
-    }
-    if(bestIdx===-1) break;
-    neededMasks.push(comboMasks[bestIdx]);
-    const coveredSet = new Set(bestCoveredList);
-    uncovered = uncovered.filter(ti=>!coveredSet.has(ti));
-  }
-  const needed = neededMasks.map(mask=>{
-    const arr=[];
-    for(let i=0;i<K;i++){ if(mask & (1<<i)) arr.push(nums[i]); }
-    return arr;
-  });
-  renderWheelResult(needed, K);
-}
-function renderWheelResult(needed, K){
-  document.getElementById('wheelLoading').classList.add('hidden');
-  document.getElementById('wheelBtn').disabled = false;
-  const cost = needed.length * 1000;
-  let html = '<div class="card mt8"><div class="card-title">🎯 축소조합 결과</div>';
-  html += '<div class="grid2 mb8"><div class="stat"><div class="stat-val text-gold">'+needed.length+'장</div><div class="stat-label">생성 조합 수</div></div><div class="stat"><div class="stat-val">'+cost.toLocaleString()+'원</div><div class="stat-label">총 비용</div></div></div>';
-  html += '<div class="info-green info-box mb8">✅ 선택한 '+K+'개 번호 중 당첨번호와 <strong>3개 이상 일치</strong>하면 최소 1장은 5등 이상 당첨 보장</div>';
-  html += needed.map((c,i)=>'<div class="result-row"><span style="font-size:10px;color:var(--textDim);width:25px">#'+(i+1)+'</span>'+c.map(n=>renderBall(n)).join('')+'</div>').join('');
-  html += '</div>';
-  document.getElementById('wheelResults').innerHTML = html;
-  document.getElementById('wheelResults').classList.remove('hidden');
-}
-
-/* ===== 이력 탭: 백테스트 ===== */
-function runBacktest(){
-  const inputs = [1,2,3,4,5,6].map(i => parseInt(document.getElementById('bt'+i).value));
-  const valid = inputs.filter(n=>!isNaN(n)&&n>=1&&n<=45);
-  const unique = new Set(valid);
-  if(valid.length!==6||unique.size!==6){ alert("1~45 사이 중복 없는 번호 6개를 입력해주세요."); return; }
-  const myNums = [...unique].sort((a,b)=>a-b);
-  const hits = {6:[],5:[],4:[],3:[]};
-  DRAWS.forEach(d => {
-    const matched = myNums.filter(n=>d.nums.includes(n));
-    const mc = matched.length;
-    if(mc >= 3) hits[mc].push({round:d.round, date:d.date, nums:d.nums, bonus:d.bonus, matched, mc});
-  });
-  let html = '<div class="card"><div class="card-title">📊 백테스트 결과 (총 '+DRAWS.length+'회차)</div>';
-  html += '<div class="flex-center gap6 mb10" style="justify-content:center;padding:8px 0">'+myNums.map(n=>renderBall(n)).join('')+'</div>';
-  const total3plus = hits[6].length+hits[5].length+hits[4].length+hits[3].length;
-  html += '<div class="grid2 mb8">';
-  html += '<div class="stat"><div class="stat-val text-gold">'+total3plus+'회</div><div class="stat-label">3개 이상 일치 (총)</div></div>';
-  html += '<div class="stat"><div class="stat-val">'+(hits[5].length+hits[6].length)+'회</div><div class="stat-label">5개+ 일치 (3등↑)</div></div>';
-  html += '</div>';
-  html += '<table><thead><tr><th>등수</th><th class="text-right">횟수</th><th class="text-right">비율</th></tr></thead><tbody>';
-  [{m:6,name:'1등(6개)'},{m:5,name:'2~3등(5개)'},{m:4,name:'4등(4개)'},{m:3,name:'5등(3개)'}].forEach(g=>{
-    const cnt=hits[g.m].length;
-    html+='<tr><td class="fw700 '+(g.m>=5?'text-gold':'')+'">'+g.name+'</td><td class="text-right">'+cnt+'회</td><td class="text-right text-dim">'+(DRAWS.length>0?((cnt/DRAWS.length)*100).toFixed(2):0)+'%</td></tr>';
-  });
-  html += '</tbody></table></div>';
-
-  const allHits = [...hits[6],...hits[5],...hits[4],...hits[3]].sort((a,b)=>b.mc-a.mc||b.round-a.round);
-  if(allHits.length > 0){
-    html += '<div class="card"><div class="card-title">🎯 일치 회차 상세 (3개 이상)</div>';
-    allHits.slice(0,50).forEach(h=>{
-      html += '<div style="padding:8px 0;border-bottom:1px solid rgba(30,45,69,.12)">';
-      html += '<div class="flex-between mb6"><span class="fw700">'+h.round+'회</span><span class="text-dim" style="font-size:10px">'+h.date+'</span><span class="fw700 '+(h.mc>=5?'text-gold':h.mc>=4?'text-green':'text-cyan')+'">'+h.mc+'개 일치</span></div>';
-      html += '<div class="flex-center gap4" style="flex-wrap:wrap">'+h.nums.map(n=>{
-        const isMatch = h.matched.includes(n);
-        return '<span class="'+ballClass(n)+' ball-sm" style="'+(isMatch?'':'opacity:0.3')+'">'+n+'</span>';
-      }).join('')+'</div></div>';
-    });
-    if(allHits.length>50) html+='<div class="text-dim text-center mt8" style="font-size:10px">...외 '+(allHits.length-50)+'건</div>';
-    html += '</div>';
-  }
-  document.getElementById('btResults').innerHTML = html;
-  document.getElementById('btResults').classList.remove('hidden');
-}
-
-/* ===== 이력 탭: 당첨 히스토리 ===== */
-function initHistoryInputs(){
-  if(!document.getElementById('histEnd').value){
-    document.getElementById('histEnd').value = DRAWS[DRAWS.length-1]?.round || '';
-    document.getElementById('histStart').value = Math.max(1, (DRAWS[DRAWS.length-1]?.round||20) - 19);
-  }
-}
-function quickHistory(n){
-  const last = DRAWS[DRAWS.length-1]?.round || 0;
-  if(n===0){ document.getElementById('histStart').value=DRAWS[0]?.round||1; }
-  else{ document.getElementById('histStart').value=Math.max(1,last-n+1); }
-  document.getElementById('histEnd').value=last;
-  renderHistory();
-}
-function renderHistory(){
-  const start=+document.getElementById('histStart').value, end=+document.getElementById('histEnd').value;
-  const filtered = DRAWS.filter(d=>d.round>=start&&d.round<=end);
-  if(filtered.length===0){ document.getElementById('histResults').innerHTML='<div class="card"><div class="text-dim text-center">해당 구간에 데이터가 없습니다.</div></div>'; return; }
-
-  const RENDER_LIMIT=60; // OMR 카드 과다 렌더 시 브라우저 멈춤 방지
-  const toRender=filtered.slice().reverse().slice(0,RENDER_LIMIT);
-  let html = '';
-  if(filtered.length>RENDER_LIMIT) html+='<div class="info-box info-neutral mb8" style="font-size:10px">⚡ 성능 보호: '+filtered.length+'회차 중 최신 '+RENDER_LIMIT+'회차만 상세 표시합니다. 구간 요약은 전체 기준입니다.</div>';
-  toRender.forEach(d=>{
-    html += '<div class="card" style="margin-bottom:8px">';
-    html += '<div class="flex-between mb6"><span class="fw700 text-gold">'+d.round+'회</span><span class="text-dim" style="font-size:11px">'+(d.date||'')+'</span></div>';
-    html += '<div class="flex-center gap4 mb8" style="justify-content:center;flex-wrap:wrap">'+d.nums.map(n=>renderBall(n)).join('');
-    if(d.bonus) html += '<span style="color:var(--textMuted);margin:0 2px">+</span><span class="'+ballClass(d.bonus)+'" style="opacity:.5;border:2px dashed var(--cyan)">'+d.bonus+'</span>';
-    html += '</div>';
-    html += '<div style="border-top:1px solid var(--border);padding-top:8px"><div class="text-dim text-center mb6" style="font-size:10px">OMR 마킹 패턴</div>';
-    html += '<div class="omr-grid">';
-    for(let n=1;n<=45;n++){
-      const isWin = d.nums.includes(n);
-      const isBonus = d.bonus === n;
-      html += '<div class="omr-cell'+(isWin?' marked':'')+(isBonus?' bonus-marked':'')+'">'+n+'</div>';
-    }
-    html += '</div></div>';
-    const sum=d.nums.reduce((a,b)=>a+b,0);
-    const odd=d.nums.filter(n=>n%2!==0).length;
-    const low=d.nums.filter(n=>n<=22).length;
-    html += '<div class="grid3 mt8"><div class="stat" style="padding:6px"><div style="font-size:14px;font-weight:700">'+sum+'</div><div class="stat-label">합계</div></div><div class="stat" style="padding:6px"><div style="font-size:14px;font-weight:700">'+odd+':'+(6-odd)+'</div><div class="stat-label">홀:짝</div></div><div class="stat" style="padding:6px"><div style="font-size:14px;font-weight:700">'+low+':'+(6-low)+'</div><div class="stat-label">저:고</div></div></div>';
-    html += '</div>';
-  });
-
-  document.getElementById('histResults').innerHTML = html;
-
-  // 구간 요약
-  const allNums = filtered.flatMap(d=>d.nums);
-  const freq = {};
-  allNums.forEach(n=>freq[n]=(freq[n]||0)+1);
-  const sorted = Object.entries(freq).map(([n,c])=>({num:+n,count:c})).sort((a,b)=>b.count-a.count);
-  const avgSum = (filtered.map(d=>d.nums.reduce((a,b)=>a+b,0)).reduce((a,b)=>a+b,0)/filtered.length).toFixed(1);
-
-  let sumHtml = '<div class="card"><div class="card-title">📊 구간 요약 ('+start+'~'+end+'회, '+filtered.length+'회차)</div>';
-  sumHtml += '<div class="grid2 mb8"><div class="stat"><div class="stat-val">'+avgSum+'</div><div class="stat-label">평균 합계</div></div><div class="stat"><div class="stat-val">'+filtered.length+'</div><div class="stat-label">조회 회차 수</div></div></div>';
-  sumHtml += '<div class="grid2"><div><div class="text-gold fw700 mb6" style="font-size:11px">TOP 5 다빈출</div>'+sorted.slice(0,5).map(d=>'<div class="flex-between" style="padding:2px 0;font-size:11px">'+renderBall(d.num,true)+'<span class="text-gold">'+d.count+'회</span></div>').join('')+'</div>';
-  sumHtml += '<div><div class="text-cyan fw700 mb6" style="font-size:11px">TOP 5 저빈출</div>'+sorted.slice(-5).reverse().map(d=>'<div class="flex-between" style="padding:2px 0;font-size:11px">'+renderBall(d.num,true)+'<span class="text-cyan">'+d.count+'회</span></div>').join('')+'</div></div></div>';
-  document.getElementById('histSummary').innerHTML = sumHtml;
-  document.getElementById('histSummary').classList.remove('hidden');
-}
-
-/* ===== 수동 회차 추가 ===== */
-function openAddDrawModal(){
-  if(!isDrawAdmin){alert('회차 등록·수정은 운영자만 가능합니다.');return;}
-  const last = DRAWS.filter(d=>!d._manual).slice(-1)[0]?.round || DRAWS[DRAWS.length-1]?.round || 0;
-  document.getElementById('addRound').value = last + 1;
-  document.getElementById('addDrawModal').classList.remove('hidden');
-  renderManualList();
-}
-function closeAddDrawModal(){ document.getElementById('addDrawModal').classList.add('hidden'); }
-async function addManualDraw(){
-  if(!isDrawAdmin){alert('회차 등록·수정은 운영자만 가능합니다.');return;}
-  const round=+document.getElementById('addRound').value,date=document.getElementById('addDate').value;
-  const nums=[1,2,3,4,5,6].map(i=>+document.getElementById('addN'+i).value),bonus=+document.getElementById('addBonus').value;
-  if(!round||nums.some(n=>!Number.isInteger(n)||n<1||n>45)||new Set(nums).size!==6){alert('회차와 당첨번호 6개를 정확히 입력해주세요.');return}
-  if(bonus&&(!Number.isInteger(bonus)||bonus<1||bonus>45)){alert('보너스번호는 1~45 사이여야 합니다.');return}
-  if(bonus&&nums.includes(bonus)){alert('보너스번호는 당첨번호 6개와 중복될 수 없습니다.');return}
-  if(DRAWS.find(d=>d.round===round)){alert('이미 존재하는 회차입니다.');return}
-  const newDraw={round,nums:nums.sort((a,b)=>a-b),bonus:bonus||null,date:date||'',_manual:true};
-  DRAWS.push(newDraw);DRAWS.sort((a,b)=>a.round-b.round);saveManualDraws();
-  if(db){try{const n=newDraw.nums;await db.collection('draws').doc(String(round)).set({no1:n[0],no2:n[1],no3:n[2],no4:n[3],no5:n[4],no6:n[5],bonus:newDraw.bonus,date:newDraw.date});await db.collection('meta').doc('info').set({lastDraw:DRAWS[DRAWS.length-1].round},{merge:true});}catch(e){console.log('Firestore 저장 실패:',e.message);alert('기기에는 저장됐지만 Firestore 저장에 실패했습니다: '+e.message)}}
-  updateStatusBar();refreshCurrentTab();renderManualList();
-  [1,2,3,4,5,6].forEach(i=>document.getElementById('addN'+i).value='');document.getElementById('addBonus').value='';document.getElementById('addRound').value=(DRAWS[DRAWS.length-1]?.round||round)+1;
-}
-function saveManualDraws(){
-  const manual = DRAWS.filter(d=>d._manual);
-  localStorage.setItem('lotto_manual_draws', JSON.stringify(manual));
-}
-function loadManualDraws(){
+async function loadSymbolList(){
+  const collected = [];
+  let cursor = '';
   try{
-    const saved = localStorage.getItem('lotto_manual_draws');
-    if(saved){
-      const manual = JSON.parse(saved);
-      manual.forEach(m=>{
-        if(!DRAWS.find(d=>d.round===m.round)){
-          m._manual = true;
-          DRAWS.push(m);
+    do{
+      const url = `https://api.bybit.com/v5/market/instruments-info?category=linear&limit=1000${cursor ? '&cursor=' + encodeURIComponent(cursor) : ''}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const list = data?.result?.list || [];
+      list.forEach(it => {
+        if(it.quoteCoin === 'USDT' && it.status === 'Trading'){
+          collected.push(it.symbol);
         }
       });
-      DRAWS.sort((a,b)=>a.round-b.round);
+      cursor = data?.result?.nextPageCursor || '';
+    } while(cursor);
+    populateCoinDatalist(collected);
+  }catch(e){
+    console.error('전체 코인 목록 조회 실패', e);
+    populateCoinDatalist([]);
+  }
+}
+loadSymbolList();
+
+// ===== 입력값(설정) 저장/불러오기 =====
+const SETTINGS_FIELDS = ['entryPrice','priceInput','leverage','margin','positionQty','totalFunds','mmRate','fxRate','feeRate','coinInput'];
+
+function collectSettings(){
+  const obj = { direction, entryMode, quantityInputSource };
+  SETTINGS_FIELDS.forEach(id => {
+    obj[id] = document.getElementById(id).value;
+  });
+  if(entryMode === 'split'){
+    obj.splitEntries = JSON.stringify(getSplitRowsData());
+  }
+  return obj;
+}
+
+function applySettings(data){
+  if(!data) return;
+  SETTINGS_FIELDS.forEach(id => {
+    if(data[id] !== undefined && data[id] !== null && data[id] !== ''){
+      document.getElementById(id).value = data[id];
     }
-  }catch(e){}
-}
-function deleteManualDraw(round){
-  if(!isDrawAdmin){alert('회차 수정은 운영자만 가능합니다.');return;}
-  if(!confirm(round+'회차를 삭제할까요?'))return;
-  DRAWS = DRAWS.filter(d=>d.round!==round);
-  saveManualDraws();
-  if(db){try{db.collection('draws').doc(String(round)).delete()}catch(e){}}
-  updateStatusBar();
-  refreshCurrentTab();
-  renderManualList();
-}
-function refreshCurrentTab(){
-  if(curTab==='stats')renderStatsTab();
-  else if(curTab==='indicator')renderIndicatorTab();
-  else if(curTab==='history'&&curHistSub==='draws'&&document.getElementById('histResults').innerHTML)renderHistory();
-}
-function renderManualList(){
-  const manual = DRAWS.filter(d=>d._manual);
-  if(manual.length===0){ document.getElementById('manualDrawList').innerHTML='<div class="text-dim text-center mt8" style="font-size:10px">수동 추가된 회차가 없습니다.</div>'; return; }
-  document.getElementById('manualDrawList').innerHTML='<div class="text-dim mt8 mb6" style="font-size:10px;font-weight:700">수동 추가 목록 ('+manual.length+'건)</div>'+manual.map(m=>'<div class="flex-between" style="padding:4px 0;border-bottom:1px solid rgba(30,45,69,.12);font-size:11px"><span class="fw700">'+m.round+'회</span><span class="text-dim">'+m.nums.join(', ')+'</span><button class="btn btn-sm btn-danger" onclick="deleteManualDraw('+m.round+')">삭제</button></div>').join('');
+  });
+  if(data.quantityInputSource === 'quantity' || data.quantityInputSource === 'margin'){
+    quantityInputSource = data.quantityInputSource;
+  }
+  if(data.direction === 'long' || data.direction === 'short' || data.direction === 'none'){
+    setDirection(data.direction, true);
+  }
+  if(data.entryMode === 'split' && data.splitEntries){
+    try{
+      const rows = JSON.parse(data.splitEntries);
+      document.getElementById('splitEntryRows').innerHTML = '';
+      if(rows.length){
+        rows.forEach(r => addSplitRow(r.price, r.marginKRW, true));
+      }
+      setEntryMode('split', true);
+    }catch(e){
+      console.error('분할매매 데이터 복원 실패', e);
+      setEntryMode('single', true);
+    }
+  } else {
+    setEntryMode('single', true);
+  }
 }
 
-/* ===== 보조지표 탭 ===== */
-const WEIGHTS = {rsi:25, bb:20, macd:20, super:20, mom:15};
-const WEIGHT_NAMES = {rsi:'RSI 상대강도',bb:'볼린저밴드',macd:'MACD',super:'슈퍼트렌드',mom:'구간 모멘텀'};
+let settingsSaveTimer = null;
+function scheduleSaveSettings(){
+  if(typeof window.fbSaveSettings !== 'function') return;
+  clearTimeout(settingsSaveTimer);
+  settingsSaveTimer = setTimeout(async () => {
+    try{
+      await window.fbSaveSettings(collectSettings());
+    }catch(e){
+      console.error('설정 저장 실패', e);
+    }
+  }, 800);
+}
 
-function initIndicatorSelects(){
-  document.getElementById('weightSliders').innerHTML='<div class="grid2"><div class="stat"><div class="stat-val text-green">55%</div><div class="stat-label">추세 점수<br>최근 10·20회 출현 강도</div></div><div class="stat"><div class="stat-val text-cyan">45%</div><div class="stat-label">반등 점수<br>현재 미출현 갭 중심</div></div></div><div class="info-neutral">RSI·볼린저·MACD·슈퍼트렌드는 별도 관찰 지표로 유지하며 균형 점수와 혼합하지 않습니다.</div>';
-  ['bb','macd','super'].forEach(ind=>{
-    const container=document.getElementById(ind+'NumSelector');
-    if(!container)return;
-    container.innerHTML='';
-    for(let i=1;i<=N;i++){
-      const btn=document.createElement('div');
-      btn.className='num-btn'+(i===indSelected[ind]?' active':'');
-      btn.textContent=i;
-      btn.onclick=()=>{
-        indSelected[ind]=i;
-        Array.from(container.children).forEach(c=>c.classList.remove('active'));
-        btn.classList.add('active');
-        if(ind==='bb')renderBB();else if(ind==='macd')renderMACD();else if(ind==='super')renderSupertrend();
-      };
-      container.appendChild(btn);
+window.loadAndApplySettings = async function(){
+  try{
+    const data = await window.fbLoadSettings();
+    applySettings(data);
+  }catch(e){
+    console.error('설정 불러오기 실패', e);
+  }
+  const savedRaw = document.getElementById('coinInput').value;
+  const resolved = resolveSymbolInput(savedRaw) || savedRaw.trim().toUpperCase() || 'BTCUSDT';
+  document.getElementById('coinInput').value = resolved;
+  if(resolved !== currentSymbol){
+    currentSymbol = resolved;
+    updatePositionQtyLabel();
+    resetLiveDisplayForSymbolChange();
+    fetchLivePrice(true);
+    connectPriceStream();
+    if(typeof loadChartData === 'function') loadChartData();
+  } else {
+    updateLivePriceLabel();
+    updatePositionQtyLabel();
+  }
+  syncPositionInputs();
+  calc();
+  fetchExchangeRate(false);
+};
+
+async function fetchExchangeRate(isManual){
+  const statusEl = document.getElementById('fxStatus');
+  if(isManual) statusEl.textContent = '환율 불러오는 중...';
+  try{
+    const res = await fetch('https://open.er-api.com/v6/latest/USD');
+    const data = await res.json();
+    const krw = data?.rates?.KRW;
+    if(!krw || isNaN(krw)) throw new Error('환율 파싱 실패');
+    document.getElementById('fxRate').value = Math.round(krw);
+    calc();
+    const updatedAt = data?.time_last_update_utc
+      ? new Date(data.time_last_update_utc).toLocaleString('ko-KR')
+      : new Date().toLocaleString('ko-KR');
+    statusEl.textContent = `자동 환율 적용됨 (기준: ${updatedAt})`;
+  }catch(e){
+    console.error('환율 조회 실패', e);
+    statusEl.textContent = '환율 자동 조회 실패 — 수동 입력값 유지 중';
+  }
+}
+
+setInterval(() => fetchExchangeRate(false), 24 * 60 * 60 * 1000);
+
+async function fetchLivePrice(isFirstLoad){
+  const valueEl = document.getElementById('livePriceValue');
+  const entryBtn = document.getElementById('applyToEntryBtn');
+  const targetBtn = document.getElementById('applyToTargetBtn');
+  if(liveFetchInFlight) return;
+  liveFetchInFlight = true;
+  if(isFirstLoad) valueEl.textContent = '불러오는 중...';
+  try{
+    const res = await fetch(`https://api.bybit.com/v5/market/tickers?category=linear&symbol=${currentSymbol}`);
+    const data = await res.json();
+    const price = parseFloat(data?.result?.list?.[0]?.lastPrice);
+    if(!price || isNaN(price)) throw new Error('가격 파싱 실패');
+    lastLivePrice = price;
+    valueEl.textContent = `${fmtPrice(price)} USDT`;
+    entryBtn.disabled = false;
+    targetBtn.disabled = false;
+    updateLivePnl();
+    updatePageTitle(price);
+  }catch(e){
+    console.error('시세 조회 실패', e);
+    if(lastLivePrice === null){
+      valueEl.textContent = '불러오기 실패 (수동 입력 이용)';
+      entryBtn.disabled = true;
+      targetBtn.disabled = true;
+      document.getElementById('livePricePnl').textContent = '진입가 대비 -';
+    }
+  }finally{
+    liveFetchInFlight = false;
+  }
+}
+
+function updateLivePnl(){
+  const pnlEl = document.getElementById('livePricePnl');
+  const totalEl = document.getElementById('liveTotal');
+
+  // ★ 무포 모드: 손익 계산 불필요
+  if(direction === 'none'){
+    pnlEl.textContent = '무포 상태 — 포지션 손익 없음';
+    pnlEl.className = 'live-price-pnl';
+    totalEl.textContent = '';
+    return;
+  }
+
+  if(lastLivePrice === null){
+    pnlEl.textContent = '진입가 대비 -';
+    totalEl.textContent = '합계(증거금+손익) -';
+    return;
+  }
+
+  const {entry, lev, margin, totalFunds, fx} = getInputs();
+  if(!entry || !lev || !margin){
+    pnlEl.textContent = '진입가 대비 -';
+    totalEl.textContent = '합계(총자금+손익) -';
+    return;
+  }
+
+  const pct = direction === 'long'
+    ? (lastLivePrice - entry) / entry * 100
+    : (entry - lastLivePrice) / entry * 100;
+  const pnlPct = pct * lev;
+  const pnlAmt = margin * pnlPct / 100;
+  const pnlKRW = pnlAmt * fx;
+
+  pnlEl.textContent = `손익 ${fmtSigned(pnlPct,1)}% · ${fmtSigned(pnlAmt)} USDT · ${fmtSigned(pnlKRW,0)}원`;
+  pnlEl.title = `진입가 대비 ${fmtSigned(pct,2)}% · 손익률 ${fmtSigned(pnlPct,1)}% · ${fmtSigned(pnlAmt)} USDT (${fmtSigned(pnlKRW,0)}원)`;
+  pnlEl.className = 'live-price-pnl ' + (pnlAmt >= 0 ? 'val-long' : 'val-short');
+
+  // 교차마진: 총 자금 기준 합계 / 격리: 증거금 기준 합계
+  const baseUSDT = totalFunds > margin ? totalFunds : margin;
+  const totalUSDT = baseUSDT + pnlAmt;
+  const totalKRW = totalUSDT * fx;
+  const label = totalFunds > margin ? '합계(총자금+손익)' : '합계(증거금+손익)';
+  totalEl.textContent = `${label} ${fmt(totalUSDT)} USDT (${fmt(totalKRW,0)}원)`;
+  totalEl.className = 'live-price-total ' + (pnlAmt >= 0 ? 'val-long' : 'val-short');
+}
+
+async function fetchBtcPrice(isFirstLoad){
+  const valueEl = document.getElementById('btcPriceValue');
+  if(btcFetchInFlight) return;
+  btcFetchInFlight = true;
+  if(isFirstLoad) valueEl.textContent = '불러오는 중...';
+  try{
+    const res = await fetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=BTCUSDT');
+    const data = await res.json();
+    const price = parseFloat(data?.result?.list?.[0]?.lastPrice);
+    if(!price || isNaN(price)) throw new Error('가격 파싱 실패');
+    lastBtcPrice = price;
+    valueEl.textContent = `${fmtPrice(price)} USDT`;
+  }catch(e){
+    console.error('BTC 기준가 조회 실패', e);
+    if(lastBtcPrice === null){
+      valueEl.textContent = '불러오기 실패';
+    }
+  }finally{
+    btcFetchInFlight = false;
+  }
+}
+
+function applyLivePrice(targetInputId){
+  if(lastLivePrice === null) return;
+  document.getElementById(targetInputId).value = lastLivePrice.toFixed(priceDecimals(lastLivePrice));
+  calc();
+}
+
+function clearTargetPrice(){
+  document.getElementById('priceInput').value = '';
+  calc();
+}
+
+fetchBtcPrice(true);
+fetchLivePrice(true);
+let priceSocket = null;
+let priceSocketReconnectTimer = null;
+let priceSocketPingTimer = null;
+let priceSocketGeneration = 0;
+
+function connectPriceStream(){
+  const generation = ++priceSocketGeneration;
+  clearTimeout(priceSocketReconnectTimer);
+  clearInterval(priceSocketPingTimer);
+  if(priceSocket){
+    priceSocket.onclose = null;
+    priceSocket.close();
+  }
+  const symbols = [...new Set([currentSymbol, 'BTCUSDT'])];
+  try{
+    priceSocket = new WebSocket('wss://stream.bybit.com/v5/public/linear');
+    const socket = priceSocket;
+    socket.onopen = () => {
+      if(generation !== priceSocketGeneration) return;
+      socket.send(JSON.stringify({ op:'subscribe', args:symbols.map(s => `tickers.${s}`) }));
+      priceSocketPingTimer = setInterval(() => {
+        if(socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ op:'ping' }));
+      }, 20000);
+    };
+    socket.onmessage = (event) => {
+      if(generation !== priceSocketGeneration) return;
+      try{
+        const msg = JSON.parse(event.data);
+        if(!msg.topic?.startsWith('tickers.') || !msg.data) return;
+        const symbol = msg.topic.slice(8);
+        const price = parseFloat(msg.data.lastPrice);
+        if(!Number.isFinite(price) || price <= 0) return;
+        if(symbol === 'BTCUSDT'){
+          lastBtcPrice = price;
+          document.getElementById('btcPriceValue').textContent = `${fmtPrice(price)} USDT`;
+        }
+        if(symbol === currentSymbol){
+          lastLivePrice = price;
+          document.getElementById('livePriceValue').textContent = `${fmtPrice(price)} USDT`;
+          document.getElementById('applyToEntryBtn').disabled = false;
+          document.getElementById('applyToTargetBtn').disabled = false;
+          updateLivePnl();
+          updatePageTitle(price);
+        }
+      }catch(e){ console.error('실시간 시세 메시지 처리 실패', e); }
+    };
+    socket.onclose = () => {
+      clearInterval(priceSocketPingTimer);
+      if(generation === priceSocketGeneration){
+        priceSocketReconnectTimer = setTimeout(connectPriceStream, 3000);
+      }
+    };
+    socket.onerror = () => socket.close();
+  }catch(e){
+    console.error('실시간 시세 연결 실패', e);
+    priceSocketReconnectTimer = setTimeout(connectPriceStream, 3000);
+  }
+}
+connectPriceStream();
+let livePriceTimer = setInterval(() => {
+  // 웹소켓 수신 여부와 관계없이 표시값을 실제 1초마다 보정한다.
+  if(currentSymbol !== 'BTCUSDT') fetchBtcPrice(false);
+  fetchLivePrice(false);
+}, 1000);
+
+function setDirection(d, skipSave){
+  direction = d;
+  document.getElementById('btnLong').className = d==='long' ? 'active-long' : '';
+  document.getElementById('btnShort').className = d==='short' ? 'active-short' : '';
+  document.getElementById('btnNone').className = d==='none' ? 'active-none' : '';
+
+  // 무포일 때 포지션 관련 입력 영역을 흐리게 표시 (차트·코인 선택은 그대로)
+  const card = document.getElementById('positionCard');
+  if(d === 'none'){
+    card.classList.add('pos-inputs-dimmed');
+  } else {
+    card.classList.remove('pos-inputs-dimmed');
+  }
+
+  calc();
+  if(!skipSave) scheduleSaveSettings();
+}
+setDirection('long', true);
+
+// ===== 분할매매 모드 =====
+let entryMode = 'single';
+let splitRowCount = 0;
+
+function setEntryMode(mode, skipSave){
+  entryMode = mode;
+  document.getElementById('btnSingleEntry').className = mode==='single' ? 'active-long' : '';
+  document.getElementById('btnSplitEntry').className = mode==='split' ? 'active-long' : '';
+  document.getElementById('singleEntryRow').style.display = mode==='single' ? 'flex' : 'none';
+  document.getElementById('splitEntryCard').style.display = mode==='split' ? 'block' : 'none';
+  document.getElementById('marginAutoNote').style.display = mode==='split' ? 'inline' : 'none';
+  document.getElementById('entryPrice').readOnly = (mode==='split');
+  document.getElementById('margin').readOnly = (mode==='split');
+  document.getElementById('positionQty').readOnly = (mode==='split');
+
+  if(mode==='split'){
+    quantityInputSource = 'margin';
+    if(document.querySelectorAll('#splitEntryRows .split-entry-row').length === 0){
+      const curEntry = document.getElementById('entryPrice').value;
+      const curMarginKRW = document.getElementById('margin').value;
+      addSplitRow(curEntry, curMarginKRW, true);
+    } else {
+      updateSplitEntries();
+    }
+  } else {
+    calc();
+  }
+  if(!skipSave) scheduleSaveSettings();
+}
+
+function addSplitRow(price, marginKRW, skipSave){
+  splitRowCount++;
+  const rowId = 'split-' + splitRowCount;
+  const container = document.getElementById('splitEntryRows');
+  const row = document.createElement('div');
+  row.className = 'split-entry-row';
+  row.id = rowId;
+  row.innerHTML = `
+    <span class="split-entry-label">진입가</span>
+    <input type="number" class="split-price" placeholder="진입가" value="${price!=null?price:''}" step="0.1" oninput="updateSplitEntries()">
+    <span class="split-entry-label">증거금</span>
+    <input type="number" class="split-margin" placeholder="증거금(원)" value="${marginKRW!=null?marginKRW:''}" step="1000" oninput="updateSplitEntries()">
+    <button type="button" class="split-row-del" onclick="removeSplitRow('${rowId}')">✕</button>
+  `;
+  container.appendChild(row);
+  if(!skipSave) updateSplitEntries();
+}
+
+function removeSplitRow(rowId){
+  const row = document.getElementById(rowId);
+  if(row) row.remove();
+  updateSplitEntries();
+}
+
+function getSplitRowsData(){
+  const rows = document.querySelectorAll('#splitEntryRows .split-entry-row');
+  const data = [];
+  rows.forEach(row => {
+    const price = parseFloat(row.querySelector('.split-price').value);
+    const marginKRW = parseFloat(row.querySelector('.split-margin').value);
+    data.push({ price: isNaN(price) ? null : price, marginKRW: isNaN(marginKRW) ? null : marginKRW });
+  });
+  return data;
+}
+
+function updateSplitEntries(){
+  const rows = getSplitRowsData();
+  const valid = rows.filter(r => r.price != null && r.marginKRW != null && r.marginKRW > 0);
+  const summaryEl = document.getElementById('splitEntrySummary');
+
+  if(valid.length === 0){
+    summaryEl.textContent = '진입가·증거금을 입력하면 평균 진입가가 자동 계산됩니다.';
+    scheduleSaveSettings();
+    return;
+  }
+
+  let totalMarginKRW = 0;
+  valid.forEach(r => {
+    totalMarginKRW += r.marginKRW;
+  });
+  // 동일 레버리지 분할 진입의 실제 보유 수량을 반영한 평균가(조화 가중평균)
+  const totalQtyWeight = valid.reduce((sum, r) => sum + r.marginKRW / r.price, 0);
+  const avgEntry = totalQtyWeight > 0 ? totalMarginKRW / totalQtyWeight : 0;
+
+  document.getElementById('entryPrice').value = avgEntry.toFixed(2);
+  document.getElementById('margin').value = Math.round(totalMarginKRW);
+  quantityInputSource = 'margin';
+  syncQuantityFromMargin();
+
+  summaryEl.textContent = `${valid.length}회 진입 · 평균 진입가 ${fmtPrice(avgEntry)} USDT · 총 증거금 ${fmt(totalMarginKRW,0)}원`;
+
+  calc();
+  scheduleSaveSettings();
+}
+
+setEntryMode('single', true);
+
+function fmt(n, digits=2){
+  if(isNaN(n)) return '-';
+  return n.toLocaleString('ko-KR', {minimumFractionDigits:digits, maximumFractionDigits:digits});
+}
+function priceDecimals(n){
+  const abs = Math.abs(n);
+  return (abs > 0 && abs < 1) ? 5 : 2;
+}
+function fmtPrice(n){
+  if(isNaN(n)) return '-';
+  return fmt(n, priceDecimals(n));
+}
+function fmtSigned(n, digits=2){
+  const s = n>=0 ? '+' : '';
+  return s + fmt(n, digits);
+}
+function escapeHtml(value){
+  return String(value ?? '').replace(/[&<>'"]/g, ch => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;'
+  })[ch]);
+}
+
+function getInputs(){
+  const entry = parseFloat(document.getElementById('entryPrice').value);
+  const lev = parseFloat(document.getElementById('leverage').value);
+  const marginKRW = parseFloat(document.getElementById('margin').value);
+  const totalFundsKRWRaw = parseFloat(document.getElementById('totalFunds').value);
+  const mm = parseFloat(document.getElementById('mmRate').value) / 100;
+  const fx = parseFloat(document.getElementById('fxRate').value);
+  const fee = parseFloat(document.getElementById('feeRate').value) / 100;
+  const margin = marginKRW / fx;
+  // 교차마진: 총 자금이 입력되면 청산가 계산에 사용, 비어있으면 증거금=총자금(격리처럼)
+  const hasTotalFunds = !isNaN(totalFundsKRWRaw) && totalFundsKRWRaw > 0;
+  const totalFunds = hasTotalFunds ? totalFundsKRWRaw / fx : margin;
+  const totalFundsKRW = hasTotalFunds ? totalFundsKRWRaw : marginKRW;
+  // 실효 레버리지 (청산가 계산용) = 포지션크기 / 총자금
+  const posValue = margin * lev;
+  const effectiveLev = totalFunds > 0 ? posValue / totalFunds : lev;
+  return {entry, lev, effectiveLev, margin, marginKRW, totalFunds, totalFundsKRW, mm, fx, fee};
+}
+
+function calcLiqPrice(entry, lev, mm, dir){
+  if(dir === 'long'){
+    return entry * (1 - 1/lev + mm);
+  } else {
+    return entry * (1 + 1/lev - mm);
+  }
+}
+
+function updatePositionQtyLabel(){
+  const el = document.getElementById('positionQtySymbol');
+  if(el) el.textContent = coinLabelOf(currentSymbol);
+}
+
+function formatQuantityInput(value){
+  if(!Number.isFinite(value) || value < 0) return '';
+  return Number(value.toFixed(8)).toString();
+}
+
+function syncQuantityFromMargin(){
+  const entry = parseFloat(document.getElementById('entryPrice').value);
+  const lev = parseFloat(document.getElementById('leverage').value);
+  const marginKRW = parseFloat(document.getElementById('margin').value);
+  const fx = parseFloat(document.getElementById('fxRate').value);
+  const qtyEl = document.getElementById('positionQty');
+  const noteEl = document.getElementById('positionQtyNote');
+  if(!entry || !lev || !marginKRW || !fx){
+    qtyEl.value = '';
+    noteEl.textContent = '증거금과 자동 연동';
+    return;
+  }
+  const quantity = (marginKRW / fx * lev) / entry;
+  qtyEl.value = formatQuantityInput(quantity);
+  noteEl.textContent = `포지션 가치 ≈ ${fmt(marginKRW / fx * lev)} USDT`;
+}
+
+function syncMarginFromQuantity(){
+  const entry = parseFloat(document.getElementById('entryPrice').value);
+  const lev = parseFloat(document.getElementById('leverage').value);
+  const quantity = parseFloat(document.getElementById('positionQty').value);
+  const fx = parseFloat(document.getElementById('fxRate').value);
+  const noteEl = document.getElementById('positionQtyNote');
+  if(!entry || !lev || !quantity || !fx){
+    noteEl.textContent = '진입가·배율·환율을 확인하세요.';
+    return;
+  }
+  const marginKRW = quantity * entry / lev * fx;
+  document.getElementById('margin').value = Math.round(marginKRW);
+  noteEl.textContent = `포지션 가치 ≈ ${fmt(quantity * entry)} USDT`;
+}
+
+function syncPositionInputs(){
+  if(entryMode === 'split' || quantityInputSource === 'margin') syncQuantityFromMargin();
+  else syncMarginFromQuantity();
+}
+
+// 원화 → USDT 실시간 환산 표시
+function updateFundsUsdt(){
+  const fx = parseFloat(document.getElementById('fxRate').value);
+  if(!fx || isNaN(fx)) return;
+
+  const marginKRW = parseFloat(document.getElementById('margin').value);
+  const marginEl = document.getElementById('marginUsdt');
+  if(!isNaN(marginKRW) && marginKRW > 0){
+    marginEl.textContent = `≈ ${fmt(marginKRW / fx)} USDT`;
+  } else {
+    marginEl.textContent = '';
+  }
+
+  const totalKRW = parseFloat(document.getElementById('totalFunds').value);
+  const totalEl = document.getElementById('totalFundsUsdt');
+  if(!isNaN(totalKRW) && totalKRW > 0){
+    totalEl.textContent = `≈ ${fmt(totalKRW / fx)} USDT`;
+  } else {
+    totalEl.textContent = '';
+  }
+}
+
+function calc(){
+  const {entry, lev, effectiveLev, margin, marginKRW, totalFunds, totalFundsKRW, mm, fx, fee} = getInputs();
+  scheduleSaveSettings();
+
+  if(!entry || !lev || !margin || isNaN(fx)){
+    return;
+  }
+  const posValue = margin * lev;
+
+  document.getElementById('outMarginKRW').textContent = `${fmt(marginKRW,0)} 원 (${fmt(margin)} USDT)`;
+  document.getElementById('outPosValue').textContent = `${fmt(posValue)} USDT ≈ ${fmt(posValue*fx,0)} 원`;
+
+  const dirForCalc = direction === 'none' ? 'long' : direction;
+
+  const breakeven = dirForCalc === 'long'
+    ? entry * (1 + 2*fee)
+    : entry * (1 - 2*fee);
+  document.getElementById('outBreakeven').textContent = `${fmtPrice(breakeven)} USDT`;
+
+  // ★ 교차마진: 청산가는 실효 레버리지(=포지션크기/총자금) 기준
+  const liqPrice = calcLiqPrice(entry, effectiveLev, mm, dirForCalc);
+  document.getElementById('outLiqPrice').textContent = `${fmtPrice(liqPrice)} USDT`;
+  document.getElementById('outLiqPrice').className = 'result-value big val-accent';
+
+  const dist = (liqPrice - entry) / entry * 100;
+  document.getElementById('outLiqDist').textContent = `${fmtSigned(dist)}%`;
+
+  calcFromPrice();
+  updateLivePnl();
+  updateFundsUsdt();
+}
+
+function calcFromPrice(){
+  const {entry, lev, margin, fx} = getInputs();
+  const priceVal = document.getElementById('priceInput').value;
+  const price = parseFloat(priceVal);
+
+  if(priceVal === '' || isNaN(price)){
+    document.getElementById('outPctResult').textContent = '-';
+    document.getElementById('outPctPnlPct').textContent = '-';
+    document.getElementById('outPctPnlAmt').textContent = '-';
+    return;
+  }
+  if(isNaN(entry) || isNaN(lev) || isNaN(margin)) return;
+
+  const dirForCalc = direction === 'none' ? 'long' : direction;
+  const pct = dirForCalc === 'long'
+    ? (price - entry) / entry * 100
+    : (entry - price) / entry * 100;
+  const pnlPct = pct * lev;
+  const pnlAmt = margin * pnlPct / 100;
+  const pnlKRW = pnlAmt * fx;
+
+  document.getElementById('outPctResult').textContent = `${fmtSigned(pct)}%`;
+  document.getElementById('outPctPnlPct').textContent = `${fmtSigned(pnlPct)}%`;
+  document.getElementById('outPctPnlPct').className = 'result-value ' + (pnlPct>=0 ? 'val-long':'val-short');
+  document.getElementById('outPctPnlAmt').textContent = `${fmtSigned(pnlAmt)} USDT (${fmtSigned(pnlKRW,0)} 원)`;
+  document.getElementById('outPctPnlAmt').className = 'result-value ' + (pnlAmt>=0 ? 'val-long':'val-short');
+}
+
+document.querySelectorAll('input[type=number]').forEach(el=>{
+  el.addEventListener('wheel', function(e){ this.blur(); }, {passive:true});
+});
+
+// ===== 캔들 차트 + 보조지표 =====
+let currentTimeframe = '15';
+const TF_LABELS = { '1':'1분','5':'5분','15':'15분','60':'1시간','240':'4시간','D':'1일' };
+let candleChartInstance = null;
+let rsiChartInstance = null;
+let macdChartInstance = null;
+let volumeChartInstance = null;
+let chartFetchInFlight = false;
+let lastChartSnapshot = null;
+
+function calcSMA(closes, period){
+  const out = new Array(closes.length).fill(null);
+  let sum = 0;
+  for(let i=0;i<closes.length;i++){
+    sum += closes[i];
+    if(i>=period) sum -= closes[i-period];
+    if(i>=period-1) out[i] = sum/period;
+  }
+  return out;
+}
+
+function calcBollinger(closes, ma, period=20, mult=2){
+  const upper = new Array(closes.length).fill(null);
+  const lower = new Array(closes.length).fill(null);
+  for(let i=0;i<closes.length;i++){
+    if(ma[i]==null) continue;
+    let sumSq = 0;
+    for(let j=i-period+1;j<=i;j++){
+      sumSq += Math.pow(closes[j]-ma[i], 2);
+    }
+    const stdDev = Math.sqrt(sumSq/period);
+    upper[i] = ma[i] + mult*stdDev;
+    lower[i] = ma[i] - mult*stdDev;
+  }
+  return { upper, lower };
+}
+
+function calcATR(candles, period=14){
+  if(candles.length < period + 1) return null;
+  const tr = [];
+  for(let i=1;i<candles.length;i++){
+    const c = candles[i], prevClose = candles[i-1].c;
+    tr.push(Math.max(c.h-c.l, Math.abs(c.h-prevClose), Math.abs(c.l-prevClose)));
+  }
+  const recent = tr.slice(-period);
+  return recent.reduce((sum, v) => sum + v, 0) / recent.length;
+}
+
+function calcEMA(values, period){
+  const out = new Array(values.length).fill(null);
+  const k = 2/(period+1);
+  let emaPrev = null;
+  for(let i=0;i<values.length;i++){
+    if(i === period-1){
+      let sum = 0;
+      for(let j=0;j<period;j++) sum += values[j];
+      emaPrev = sum/period;
+      out[i] = emaPrev;
+    } else if(i >= period){
+      emaPrev = values[i]*k + emaPrev*(1-k);
+      out[i] = emaPrev;
+    }
+  }
+  return out;
+}
+
+function calcRSI(closes, period=14){
+  const out = new Array(closes.length).fill(null);
+  let avgGain = 0, avgLoss = 0;
+  for(let i=1;i<closes.length;i++){
+    const diff = closes[i]-closes[i-1];
+    const gain = diff>0?diff:0;
+    const loss = diff<0?-diff:0;
+    if(i<period){
+      avgGain += gain; avgLoss += loss;
+    } else if(i===period){
+      avgGain = (avgGain+gain)/period;
+      avgLoss = (avgLoss+loss)/period;
+      out[i] = avgLoss===0 ? 100 : 100-(100/(1+avgGain/avgLoss));
+    } else {
+      avgGain = (avgGain*(period-1)+gain)/period;
+      avgLoss = (avgLoss*(period-1)+loss)/period;
+      out[i] = avgLoss===0 ? 100 : 100-(100/(1+avgGain/avgLoss));
+    }
+  }
+  return out;
+}
+
+function calcMACD(closes, fast=12, slow=26, signal=9){
+  const emaFast = calcEMA(closes, fast);
+  const emaSlow = calcEMA(closes, slow);
+  const macdLine = closes.map((_,i) => (emaFast[i]!=null && emaSlow[i]!=null) ? emaFast[i]-emaSlow[i] : null);
+  const macdValid = macdLine.filter(v => v!=null);
+  const signalValid = calcEMA(macdValid, signal);
+  const signalLine = new Array(closes.length).fill(null);
+  let vi = 0;
+  for(let i=0;i<closes.length;i++){
+    if(macdLine[i]!=null){
+      signalLine[i] = signalValid[vi];
+      vi++;
+    }
+  }
+  const histogram = closes.map((_,i) => (macdLine[i]!=null && signalLine[i]!=null) ? macdLine[i]-signalLine[i] : null);
+  return { macdLine, signalLine, histogram };
+}
+
+function resetChartZoom(){
+  if(candleChartInstance && typeof candleChartInstance.resetZoom === 'function'){
+    candleChartInstance.resetZoom();
+  }
+}
+
+function dismissChartTooltips(e){
+  [candleChartInstance, volumeChartInstance, rsiChartInstance, macdChartInstance].forEach(ch => {
+    if(!ch) return;
+    if(e.target === ch.canvas) return;
+    if(ch.tooltip && ch.tooltip.opacity > 0){
+      ch.setActiveElements([]);
+      ch.tooltip.setActiveElements([], {x:0, y:0});
+      ch.update();
+    }
+  });
+}
+document.addEventListener('click', dismissChartTooltips);
+document.addEventListener('touchstart', dismissChartTooltips, {passive:true});
+
+function setTimeframe(tf){
+  currentTimeframe = tf;
+  Object.keys(TF_LABELS).forEach(k => {
+    const btn = document.getElementById('tfBtn-'+k);
+    if(btn) btn.classList.toggle('active', k === tf);
+  });
+  loadChartData();
+}
+
+async function loadChartData(){
+  if(chartFetchInFlight) return;
+  chartFetchInFlight = true;
+  const loadingEl = document.getElementById('chartLoading');
+  loadingEl.style.display = 'block';
+  document.getElementById('chartTitle').textContent = `${currentSymbol} 캔들차트 (${TF_LABELS[currentTimeframe]})`;
+  try{
+    const url = `https://api.bybit.com/v5/market/kline?category=linear&symbol=${currentSymbol}&interval=${currentTimeframe}&limit=200`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if(data?.retCode !== 0) throw new Error(data?.retMsg || `Bybit 오류 ${data?.retCode}`);
+    const list = data?.result?.list || [];
+    const rows = [...list].sort((a,b) => Number(a[0]) - Number(b[0]));
+    const candles = rows.map(r => ({
+      x: Number(r[0]),
+      o: parseFloat(r[1]),
+      h: parseFloat(r[2]),
+      l: parseFloat(r[3]),
+      c: parseFloat(r[4]),
+      v: parseFloat(r[5])
+    }));
+    renderAllCharts(candles);
+  }catch(e){
+    console.error('캔들 데이터 조회 실패', e);
+  }finally{
+    loadingEl.style.display = 'none';
+    chartFetchInFlight = false;
+  }
+}
+
+function renderAllCharts(candles){
+  if(!candles.length) return;
+  const closes = candles.map(c => c.c);
+  const ma20 = calcSMA(closes, 20);
+  const ma60 = calcSMA(closes, 60);
+  const { upper: bbUpper, lower: bbLower } = calcBollinger(closes, ma20, 20, 2);
+  const rsi = calcRSI(closes, 14);
+  const { macdLine, signalLine, histogram } = calcMACD(closes, 12, 26, 9);
+
+  lastChartSnapshot = { candles, ma20, ma60, rsi, macdLine, signalLine, histogram, symbol: currentSymbol, timeframe: currentTimeframe };
+
+  const gridColor = 'rgba(255,255,255,0.06)';
+  const tickColor = '#8a8a8a';
+  const upColor = '#00c076';
+  const downColor = '#f6465d';
+
+  const candleCtx = document.getElementById('candleChart');
+  if(candleChartInstance) candleChartInstance.destroy();
+  candleChartInstance = new Chart(candleCtx, {
+    type: 'candlestick',
+    data: {
+      datasets: [
+        {
+          label: currentSymbol,
+          data: candles,
+          color: { up: upColor, down: downColor, unchanged: tickColor }
+        },
+        {
+          type: 'line', label: 'MA20', data: candles.map((c,i) => ({x:c.x, y:ma20[i]})),
+          borderColor: '#f0b90b', borderWidth: 1, pointRadius: 0, spanGaps: true
+        },
+        {
+          type: 'line', label: 'MA60', data: candles.map((c,i) => ({x:c.x, y:ma60[i]})),
+          borderColor: '#5b8def', borderWidth: 1, pointRadius: 0, spanGaps: true
+        },
+        {
+          type: 'line', label: 'BB Upper', data: candles.map((c,i) => ({x:c.x, y:bbUpper[i]})),
+          borderColor: 'rgba(139,148,158,0.6)', borderWidth: 1, borderDash: [4,3], pointRadius: 0, spanGaps: true, hidden: false
+        },
+        {
+          type: 'line', label: 'BB Lower', data: candles.map((c,i) => ({x:c.x, y:bbLower[i]})),
+          borderColor: 'rgba(139,148,158,0.6)', borderWidth: 1, borderDash: [4,3], pointRadius: 0, spanGaps: true, hidden: false
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false, events: ['click'],
+      plugins: {
+        legend: {
+          labels: {
+            color: tickColor, boxWidth: 10, font: { size: 10 },
+            filter: item => item.text !== 'BB Upper' && item.text !== 'BB Lower'
+          }
+        },
+        zoom: {
+          pan: { enabled: true, mode: 'x' },
+          zoom: {
+            wheel: { enabled: true },
+            pinch: { enabled: true },
+            mode: 'x'
+          },
+          limits: { x: { minRange: 5 * 60 * 1000 } }
+        }
+      },
+      scales: {
+        x: { type: 'time', grid: { color: gridColor }, ticks: { color: tickColor, maxRotation: 0, font: { size: 9 } } },
+        y: { position: 'right', grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 9 } } }
+      }
+    }
+  });
+
+  const volumeCtx = document.getElementById('volumeChart');
+  if(volumeChartInstance) volumeChartInstance.destroy();
+  volumeChartInstance = new Chart(volumeCtx, {
+    type: 'bar',
+    data: {
+      datasets: [{
+        label: '거래량',
+        data: candles.map(c => ({x:c.x, y:c.v})),
+        backgroundColor: candles.map(c => c.c >= c.o ? 'rgba(0,192,118,0.6)' : 'rgba(246,70,93,0.6)')
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false, events: ['click'],
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { type: 'time', grid: { color: gridColor }, ticks: { color: tickColor, maxRotation: 0, font: { size: 9 } } },
+        y: { position: 'right', grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 9 } } }
+      }
+    }
+  });
+
+  const rsiCtx = document.getElementById('rsiChart');
+  if(rsiChartInstance) rsiChartInstance.destroy();
+  rsiChartInstance = new Chart(rsiCtx, {
+    type: 'line',
+    data: {
+      datasets: [{
+        label: 'RSI', data: candles.map((c,i) => ({x:c.x, y:rsi[i]})),
+        borderColor: '#a78bfa', borderWidth: 1.2, pointRadius: 0, spanGaps: true
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false, events: ['click'],
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { type: 'time', grid: { color: gridColor }, ticks: { color: tickColor, maxRotation: 0, font: { size: 9 } } },
+        y: { position: 'right', min: 0, max: 100, grid: { color: gridColor },
+             ticks: { color: tickColor, font: { size: 9 }, callback: v => [30,50,70].includes(v) ? v : '' } }
+      }
+    }
+  });
+
+  const macdCtx = document.getElementById('macdChart');
+  if(macdChartInstance) macdChartInstance.destroy();
+  macdChartInstance = new Chart(macdCtx, {
+    type: 'bar',
+    data: {
+      datasets: [
+        {
+          type: 'bar', label: 'Histogram',
+          data: candles.map((c,i) => ({x:c.x, y:histogram[i]})),
+          backgroundColor: candles.map((c,i) => (histogram[i]==null) ? 'transparent' : (histogram[i] >= 0 ? upColor : downColor))
+        },
+        {
+          type: 'line', label: 'MACD', data: candles.map((c,i) => ({x:c.x, y:macdLine[i]})),
+          borderColor: '#f0b90b', borderWidth: 1, pointRadius: 0, spanGaps: true
+        },
+        {
+          type: 'line', label: 'Signal', data: candles.map((c,i) => ({x:c.x, y:signalLine[i]})),
+          borderColor: '#5b8def', borderWidth: 1, pointRadius: 0, spanGaps: true
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false, events: ['click'],
+      plugins: { legend: { labels: { color: tickColor, boxWidth: 10, font: { size: 10 } } } },
+      scales: {
+        x: { type: 'time', grid: { color: gridColor }, ticks: { color: tickColor, maxRotation: 0, font: { size: 9 } } },
+        y: { position: 'right', grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 9 } } }
+      }
     }
   });
 }
 
-function getNumTimeSeries(num,windowSize){
-  const draws=getDrawNums(),series=[];
-  for(let i=windowSize-1;i<draws.length;i++){let count=0;for(let j=i-windowSize+1;j<=i;j++){if(draws[j].includes(num))count++}series.push(count/windowSize)}
-  return series;
-}
-function calcEMA(data,period){
-  const k=2/(period+1);const ema=[data[0]];
-  for(let i=1;i<data.length;i++)ema.push(data[i]*k+ema[i-1]*(1-k));
-  return ema;
-}
-function calcRSI(num,period){
-  const draws=getDrawNums();if(draws.length<period+1)return 50;
-  const changes=[];for(let i=1;i<draws.length;i++){changes.push((draws[i].includes(num)?1:0)-(draws[i-1].includes(num)?1:0))}
-  const recent=changes.slice(-period);let gains=0,losses=0;
-  recent.forEach(c=>{if(c>0)gains+=c;else losses+=Math.abs(c)});
-  const avgGain=gains/period,avgLoss=losses/period;
-  if(avgGain===0&&avgLoss===0)return 50;if(avgLoss===0)return 100;if(avgGain===0)return 0;return +(100-100/(1+avgGain/avgLoss)).toFixed(1);
+setInterval(() => {
+  if(document.visibilityState === 'visible'){
+    loadChartData();
+  }
+}, 30000);
+
+function formatCandleTime(ts){
+  const d = new Date(ts);
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mi = String(d.getMinutes()).padStart(2,'0');
+  return `${mm}/${dd} ${hh}:${mi}`;
 }
 
-// Indicator labels follow the same DRAWS order as getDrawNums().
-function indAxisTitle(text){return {display:true,text,color:'#8899AA',font:{size:10}};}
-function indDrawDate(value){
-  const m=String(value||'').trim().match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})(?:$|[T\s])/);
-  if(!m)return null;
-  const y=+m[1],month=+m[2],day=+m[3],date=new Date(Date.UTC(y,month-1,day));
-  if(date.getUTCFullYear()!==y||date.getUTCMonth()!==month-1||date.getUTCDate()!==day)return null;
-  const short=String(month).padStart(2,'0')+'/'+String(day).padStart(2,'0');
-  return {short,full:y+'/'+short};
+async function fetchTimeframeCandles(symbol, interval, limit){
+  const url = `https://api.bybit.com/v5/market/kline?category=linear&symbol=${symbol}&interval=${interval}&limit=${limit}`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if(data?.retCode !== 0) throw new Error(data?.retMsg || `Bybit 오류 ${data?.retCode}`);
+  const list = data?.result?.list || [];
+  const rows = [...list].sort((a,b) => Number(a[0]) - Number(b[0]));
+  return rows.map(r => ({
+    x: Number(r[0]), o: parseFloat(r[1]), h: parseFloat(r[2]), l: parseFloat(r[3]), c: parseFloat(r[4]), v: parseFloat(r[5])
+  }));
 }
-function indTimeAxis(length){
-  // Taking the matching tail also accounts for rolling-window warm-up periods.
-  const rows=length>0?DRAWS.slice(-length):[];
-  const dates=rows.map(d=>indDrawDate(d.date));
-  const round=d=>Number.isFinite(+d.round)&&+d.round>0?d.round+'회':'회차 미상';
-  const hasDate=dates.some(Boolean),allDates=dates.length>0&&dates.every(Boolean);
+
+async function fetchFundingInfo(symbol){
+  const url = `https://api.bybit.com/v5/market/tickers?category=linear&symbol=${symbol}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  const t = data?.result?.list?.[0];
+  if(!t) return null;
   return {
-    labels:rows.map((d,i)=>dates[i]?dates[i].short:round(d)),
-    x:{display:true,title:indAxisTitle(allDates?'추첨일자 (월/일)':hasDate?'추첨일자 (월/일) / 회차':'추첨 회차'),ticks:{display:true,color:'#556677',font:{size:8},autoSkip:true,maxTicksLimit:8,maxRotation:0},grid:{display:false}},
-    tooltip:{...chartTooltip,callbacks:{title:items=>{const i=items[0]?.dataIndex;if(i==null||!rows[i])return '';return dates[i]?dates[i].full+' · '+round(rows[i]):round(rows[i]);}}}
+    fundingRate: parseFloat(t.fundingRate),
+    openInterest: parseFloat(t.openInterest),
+    nextFundingTime: Number(t.nextFundingTime)
   };
 }
 
-function renderRSI(){
-  const period=+document.getElementById('rsiPeriod').value;
-  const rsiData=[];for(let i=1;i<=N;i++)rsiData.push({num:i,rsi:calcRSI(i,period)});
-  destroyChart('rsiChart');
-  const colors=rsiData.map(d=>d.rsi>70?'#FF4757':d.rsi<30?'#70A1FF':'#556677');
-  if(typeof Chart!=='undefined'){
-    CI.rsiChart=new Chart(document.getElementById('rsiChart'),{type:'bar',data:{labels:rsiData.map(d=>d.num),datasets:[{label:'RSI',data:rsiData.map(d=>d.rsi),backgroundColor:colors,borderRadius:2,barPercentage:.7}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:chartTooltip},scales:{x:{title:indAxisTitle('번호'),ticks:{callback:function(value){return this.getLabelForValue(value)+'번';},color:'#556677',font:{size:8},maxRotation:0},grid:{display:false}},y:{title:indAxisTitle('RSI (0~100)'),min:0,max:100,ticks:{color:'#556677',font:{size:9},stepSize:10},grid:{color:chartGridColor}}}}});
-  }
-  document.getElementById('rsiHot').innerHTML=rsiData.filter(d=>d.rsi>70).sort((a,b)=>b.rsi-a.rsi).map(d=>'<div class="flex-between" style="padding:2px 0">'+renderBall(d.num,true)+'<span class="text-red">'+d.rsi+'</span></div>').join('')||'<span class="text-dim">없음</span>';
-  document.getElementById('rsiCold').innerHTML=rsiData.filter(d=>d.rsi<30).sort((a,b)=>a.rsi-b.rsi).map(d=>'<div class="flex-between" style="padding:2px 0">'+renderBall(d.num,true)+'<span class="text-cyan">'+d.rsi+'</span></div>').join('')||'<span class="text-dim">없음</span>';
-}
-function renderBB(){
-  const num=indSelected.bb;const draws=getDrawNums();const windowSize=20;if(draws.length<windowSize)return;
-  const series=getNumTimeSeries(num,windowSize);const ma=[],upper=[],lower=[];const bandWindow=20;
-  for(let i=bandWindow-1;i<series.length;i++){const slice=series.slice(i-bandWindow+1,i+1);const m=mean(slice),s=stddev(slice);ma.push(m);upper.push(m+2*s);lower.push(m-2*s)}
-  const timeline=indTimeAxis(ma.length),labels=timeline.labels;const actual=series.slice(series.length-ma.length);
-  destroyChart('bbChart');
-  if(typeof Chart!=='undefined'){
-    CI.bbChart=new Chart(document.getElementById('bbChart'),{type:'line',data:{labels,datasets:[{label:'상단밴드',data:upper,borderColor:'#FF475744',borderWidth:1,pointRadius:0,fill:false,borderDash:[3,3]},{label:'이동평균',data:ma,borderColor:'#F0C040',borderWidth:2,pointRadius:0,fill:false},{label:'하단밴드',data:lower,borderColor:'#70A1FF44',borderWidth:1,pointRadius:0,fill:false,borderDash:[3,3]},{label:'실제 빈도',data:actual,borderColor:'#2ED573',borderWidth:1.5,pointRadius:0,fill:false,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8899AA',font:{size:9}}},tooltip:timeline.tooltip},scales:{x:timeline.x,y:{title:indAxisTitle('출현 비율 (최근 20회)'),ticks:{color:'#556677',font:{size:9}},grid:{color:chartGridColor}}}}});
-  }
-  const upList=[],loList=[];
-  for(let n=1;n<=N;n++){const s=getNumTimeSeries(n,windowSize);if(s.length<bandWindow)continue;const lastSlice=s.slice(-bandWindow);const m=mean(lastSlice),sd=stddev(lastSlice);const last=s[s.length-1];if(last>m+2*sd)upList.push(n);if(last<m-2*sd)loList.push(n)}
-  document.getElementById('bbUpper').innerHTML=upList.length?upList.map(n=>renderBall(n,true)).join(''):'<span class="text-dim">없음</span>';
-  document.getElementById('bbLower').innerHTML=loList.length?loList.map(n=>renderBall(n,true)).join(''):'<span class="text-dim">없음</span>';
-}
-function renderMACD(){
-  const num=indSelected.macd;const draws=getDrawNums();
-  const raw=draws.map(d=>d.includes(num)?1:0);if(raw.length<30)return;
-  const ema12=calcEMA(raw,12),ema26=calcEMA(raw,26);
-  const macdLine=ema12.map((v,i)=>v-ema26[i]);const signal=calcEMA(macdLine,9);const histogram=macdLine.map((v,i)=>v-signal[i]);
-  const len=Math.min(100,macdLine.length);const ml=macdLine.slice(-len),sl=signal.slice(-len),hl=histogram.slice(-len);
-  const timeline=indTimeAxis(len),labels=timeline.labels;
-  destroyChart('macdChart');
-  if(typeof Chart!=='undefined'){
-    CI.macdChart=new Chart(document.getElementById('macdChart'),{type:'bar',data:{labels,datasets:[{type:'line',label:'MACD',data:ml,borderColor:'#F0C040',borderWidth:2,pointRadius:0,fill:false,order:1},{type:'line',label:'Signal',data:sl,borderColor:'#FF4757',borderWidth:1.5,pointRadius:0,fill:false,borderDash:[4,4],order:2},{type:'bar',label:'Histogram',data:hl,backgroundColor:hl.map(v=>v>=0?'rgba(46,213,115,.5)':'rgba(255,71,87,.5)'),borderRadius:1,order:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8899AA',font:{size:9}}},tooltip:timeline.tooltip},scales:{x:timeline.x,y:{title:indAxisTitle('MACD / Signal / 차이'),ticks:{color:'#556677',font:{size:9}},grid:{color:chartGridColor}}}}});
-  }
-}
-function calcSupertrendData(num){
-  const ts=getNumTimeSeries(num,10);if(ts.length<20)return{trend:[],band:[],isUp:true};
-  const atrPeriod=10,multiplier=1.5;
-  const basicUpper=[],basicLower=[],finalUpper=[],finalLower=[],trendBand=[],isUpArr=[];
-  for(let i=0;i<ts.length;i++){const start=Math.max(0,i-atrPeriod+1);const slice=ts.slice(start,i+1);const m=mean(slice),s=stddev(slice);const atr=s>0?s:0.05;basicUpper.push(m+multiplier*atr);basicLower.push(m-multiplier*atr)}
-  finalUpper.push(basicUpper[0]);finalLower.push(basicLower[0]);isUpArr.push(true);trendBand.push(finalLower[0]);
-  for(let i=1;i<ts.length;i++){
-    if(basicUpper[i]<finalUpper[i-1]||ts[i-1]>finalUpper[i-1])finalUpper.push(basicUpper[i]);else finalUpper.push(finalUpper[i-1]);
-    if(basicLower[i]>finalLower[i-1]||ts[i-1]<finalLower[i-1])finalLower.push(basicLower[i]);else finalLower.push(finalLower[i-1]);
-    let isUp=isUpArr[i-1];if(isUp&&ts[i]<finalLower[i])isUp=false;else if(!isUp&&ts[i]>finalUpper[i])isUp=true;
-    isUpArr.push(isUp);trendBand.push(isUp?finalLower[i]:finalUpper[i]);
-  }
-  return{trend:isUpArr,band:trendBand,actual:ts};
-}
-function renderSupertrend(){
-  const num=indSelected.super;const res=calcSupertrendData(num);if(res.trend.length===0)return;
-  const len=Math.min(60,res.band.length);
-  const slicedActual=res.actual.slice(-len),slicedBand=res.band.slice(-len),slicedTrend=res.trend.slice(-len);
-  const timeline=indTimeAxis(len),labels=timeline.labels;
-  destroyChart('superChart');
-  if(typeof Chart!=='undefined'){
-    CI.superChart=new Chart(document.getElementById('superChart'),{type:'line',data:{labels,datasets:[{label:'슈퍼트렌드 밴드',data:slicedBand,borderWidth:2.5,pointRadius:0,fill:false,tension:0.1,segment:{borderColor:ctx=>slicedTrend[ctx.p0DataIndex]?'#2ED573':'#FF4757'}},{label:'실제 빈도(10회)',data:slicedActual,borderColor:'#8899AA',borderWidth:1,pointRadius:1,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8899AA',font:{size:9}}},tooltip:timeline.tooltip},scales:{x:timeline.x,y:{title:indAxisTitle('출현 비율 (최근 10회)'),ticks:{color:'#556677',font:{size:9}},grid:{color:chartGridColor}}}}});
-  }
-  let buyList=[],sellList=[];
-  for(let n=1;n<=N;n++){const st=calcSupertrendData(n);if(st.trend.length>0){if(st.trend[st.trend.length-1])buyList.push(n);else sellList.push(n)}}
-  document.getElementById('superBuyList').innerHTML=buyList.map(n=>renderBall(n,true)).join(' ');
-  document.getElementById('superSellList').innerHTML=sellList.map(n=>renderBall(n,true)).join(' ');
-}
-function renderMomentum(){
-  const draws=getDrawNums();if(draws.length<20)return;
-  const recent10=draws.slice(-10),prev10=draws.slice(-20,-10);
-  const zones=[{name:'1~9',r:[1,9]},{name:'10~19',r:[10,19]},{name:'20~29',r:[20,29]},{name:'30~39',r:[30,39]},{name:'40~45',r:[40,45]}];
-  zones.forEach(z=>{let rc=0,pc=0;recent10.forEach(d=>d.forEach(n=>{if(n>=z.r[0]&&n<=z.r[1])rc++}));prev10.forEach(d=>d.forEach(n=>{if(n>=z.r[0]&&n<=z.r[1])pc++}));z.recent=rc;z.prev=pc;z.change=pc>0?+(((rc-pc)/pc)*100).toFixed(1):(rc>0?100:0)});
-  destroyChart('momChart');
-  if(typeof Chart!=='undefined'){
-    CI.momChart=new Chart(document.getElementById('momChart'),{type:'radar',data:{labels:zones.map(z=>z.name+'번'),datasets:[{label:'최근 10회',data:zones.map(z=>z.recent),backgroundColor:'rgba(240,192,64,.2)',borderColor:'#F0C040',borderWidth:2,pointBackgroundColor:'#F0C040'},{label:'이전 10회',data:zones.map(z=>z.prev),backgroundColor:'rgba(112,161,255,.2)',borderColor:'#70A1FF',borderWidth:2,pointBackgroundColor:'#70A1FF'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{title:{display:true,text:'번호대별 누적 출현 횟수 (회)',color:'#8899AA',font:{size:10}},legend:{labels:{color:'#8899AA',font:{size:10}}},tooltip:chartTooltip},scales:{r:{ticks:{stepSize:1,callback:v=>v+'회',color:'#556677',font:{size:9},backdropColor:'transparent'},grid:{color:'#1E2D45'},pointLabels:{color:'#8899AA',font:{size:11}}}}}});
-  }
-  document.getElementById('momBody').innerHTML=zones.map(z=>'<tr><td class="fw700">'+z.name+'</td><td class="text-right">'+z.recent+'회</td><td class="text-right">'+z.prev+'회</td><td class="text-right '+(z.change>0?'text-green':'text-red')+'">'+(z.change>0?'+':'')+z.change+'%</td></tr>').join('');
-}
-function renderRangeInd(){
-  const draws=getDrawNums();const period=20;const recent=draws.slice(-period);if(recent.length<2)return;
-  const data={'단번대':[],'10번대':[],'20번대':[],'30번대':[],'40번대':[]};
-  recent.forEach(d=>{let counts=[0,0,0,0,0];d.forEach(n=>{if(n>=1&&n<=9)counts[0]++;else if(n>=10&&n<=19)counts[1]++;else if(n>=20&&n<=29)counts[2]++;else if(n>=30&&n<=39)counts[3]++;else if(n>=40&&n<=45)counts[4]++});data['단번대'].push(counts[0]);data['10번대'].push(counts[1]);data['20번대'].push(counts[2]);data['30번대'].push(counts[3]);data['40번대'].push(counts[4])});
-  const timeline=indTimeAxis(recent.length),labels=timeline.labels;
-  destroyChart('rangeChart');
-  if(typeof Chart!=='undefined'){
-    CI.rangeChart=new Chart(document.getElementById('rangeChart'),{type:'line',data:{labels,datasets:[{label:'단번대(1~9)',data:data['단번대'],borderColor:'#FECA57',borderWidth:2,tension:.2},{label:'10번대',data:data['10번대'],borderColor:'#48DBFB',borderWidth:2,tension:.2},{label:'20번대',data:data['20번대'],borderColor:'#FF6B6B',borderWidth:2,tension:.2},{label:'30번대',data:data['30번대'],borderColor:'#A29BFE',borderWidth:2,tension:.2},{label:'40번대',data:data['40번대'],borderColor:'#55E6C1',borderWidth:2,tension:.2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8899AA',font:{size:10}}},tooltip:timeline.tooltip},scales:{x:timeline.x,y:{title:indAxisTitle('출현 번호 수 (개)'),min:0,max:6,ticks:{stepSize:1,color:'#556677',font:{size:9}},grid:{color:chartGridColor}}}}});
-  }
-  const statsHtml=Object.keys(data).map((key,i)=>{const arr=data[key];const avg=(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1);const last=arr[arr.length-1];const colors=['#FECA57','#48DBFB','#FF6B6B','#A29BFE','#55E6C1'];return'<div class="stat"><div class="stat-val" style="color:'+colors[i]+'">'+avg+'개</div><div class="stat-label">'+key+' 평균<br>(최근: '+last+'개)</div></div>'}).join('');
-  document.getElementById('rangeStats').innerHTML=statsHtml;
+const TF_TO_RATIO_PERIOD = { '1':'5min', '5':'5min', '15':'15min', '60':'1h', '240':'4h', 'D':'1d' };
+async function fetchLongShortRatio(symbol, period, limit){
+  const url = `https://api.bybit.com/v5/market/account-ratio?category=linear&symbol=${symbol}&period=${period}&limit=${limit}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  const list = data?.result?.list || [];
+  return [...list].sort((a,b) => Number(a.timestamp) - Number(b.timestamp));
 }
 
-/* ===== 시그널 스코어 (5개 지표) ===== */
-function calcScoreDetailsForDraws(drawObjects){
-  const draws=drawObjects.map(d=>d.nums||d),out=[];if(draws.length<20)return Array.from({length:N},(_,i)=>({num:i+1,trend:50,rebound:50,balanced:50,reasons:['데이터 부족']}));
-  const total=draws.length,exp20=20*PICK/N;
-  for(let n=1;n<=N;n++){
-    const recent10=draws.slice(-10),recent20=draws.slice(-20),prev20=draws.slice(-40,-20);
-    const c10=recent10.filter(d=>d.includes(n)).length,c20=recent20.filter(d=>d.includes(n)).length,p20=prev20.filter(d=>d.includes(n)).length;
-    let gap=0;for(let i=draws.length-1;i>=0;i--){if(draws[i].includes(n))break;gap++}
-    const avgGap=(N/PICK)-1;
-    const trend=Math.max(0,Math.min(100,50+(c10-exp20/2)*11+(c20-p20)*5));
-    const rebound=Math.max(0,Math.min(100,50+(gap-avgGap)*4-(c10-exp20/2)*5));
-    const balanced=+(trend*.55+rebound*.45).toFixed(1);
-    const reasons=[];if(c10>=2)reasons.push('최근10회 '+c10+'회 출현');if(c10===0)reasons.push('최근10회 미출현');if(gap>=8)reasons.push('갭 '+gap+'회');if(c20>p20)reasons.push('20회 추세↑');if(c20<p20)reasons.push('20회 추세↓');
-    out.push({num:n,trend:+trend.toFixed(1),rebound:+rebound.toFixed(1),balanced,reasons:reasons.slice(0,3),gap,c10,c20});
-  }return out;
-}
-function calcSignalScores(){return calcScoreDetailsForDraws(DRAWS).sort((a,b)=>b.balanced-a.balanced||a.num-b.num).map(x=>({...x,score:x.balanced}));}
-function getNumberScoreDetails(nums){const all=calcScoreDetailsForDraws(DRAWS);return nums.map(n=>all.find(x=>x.num===n));}
-function renderSignalHeatmap(){
-  const scores=calcSignalScores();const max=Math.max(...scores.map(s=>s.score)),min=Math.min(...scores.map(s=>s.score)),range=max-min||1;
-  document.getElementById('topBalls').innerHTML=scores.slice(0,6).map(s=>renderBall(s.num)).join('');
-  const byNum=[...scores].sort((a,b)=>a.num-b.num);
-  document.getElementById('signalHeatmap').innerHTML=byNum.map(s=>{const pct=(s.score-min)/range;const r=Math.round(255*pct),g=Math.round(100+155*(1-pct)),b_=Math.round(60*(1-pct));return'<div class="hm-cell" onclick="openNumberFromHeatmap('+s.num+')" style="background:rgba('+r+','+g+','+b_+',.7);color:'+(pct>.5?'#000':'#fff')+'" title="'+s.num+'번 · 균형 '+s.balanced+' · 추세 '+s.trend+' · 반등 '+s.rebound+'">'+s.num+'</div>'}).join('');
-}
-function recalcSignal(){renderSignalHeatmap()}
-function renderIndicatorTab(){renderSignalHeatmap();renderIndicatorSub()}
-function renderIndicatorSub(){
-  if(curIndSub==='rsi')renderRSI();else if(curIndSub==='bb')renderBB();else if(curIndSub==='macd')renderMACD();else if(curIndSub==='super')renderSupertrend();else if(curIndSub==='mom')renderMomentum();else if(curIndSub==='range')renderRangeInd();
-}
-
-/* ===== 분석 탭 ===== */
-function analyzeMyNumbers(){
-  const inputs=[1,2,3,4,5,6].map(i=>parseInt(document.getElementById('myNum'+i).value));
-  const validNums=inputs.filter(n=>!isNaN(n)&&n>=1&&n<=45);const uniqueNums=new Set(validNums);
-  if(validNums.length!==6||uniqueNums.size!==6){alert("1~45 사이의 중복되지 않는 번호 6개를 입력해주세요.");return}
-  const myNums=[...uniqueNums].sort((a,b)=>a-b);
-  const sum=myNums.reduce((a,b)=>a+b,0),odd=myNums.filter(n=>n%2!==0).length,even=6-odd,low=myNums.filter(n=>n<=22).length,high=6-low;
-  const allScores=calcSignalScores();let totalScore=0;
-  const myIndData=myNums.map(n=>{
-    const scoreObj=allScores.find(x=>x.num===n);const score=scoreObj?scoreObj.score:50;
-    const rsi=calcRSI(n,20);const st=calcSupertrendData(n);
-    totalScore+=score;
-    return{num:n,score,trend:scoreObj?.trend||50,rebound:scoreObj?.rebound||50,rsi,isSuperUp:st.trend.length>0?st.trend[st.trend.length-1]:true,reasons:scoreObj?.reasons||[]};
-  });
-  const avgScore=(totalScore/6).toFixed(1);
-
-  // 백테스트 요약 (상세 회차 포함)
-  let bt3plus=0,bt4plus=0,bt5plus=0;
-  const btHits=[];
-  DRAWS.forEach(d=>{
-    const matched=myNums.filter(n=>d.nums.includes(n));const mc=matched.length;
-    if(mc>=3){bt3plus++;btHits.push({round:d.round,date:d.date,nums:d.nums,matched,mc});}
-    if(mc>=4)bt4plus++;if(mc>=5)bt5plus++;
-  });
-  btHits.sort((a,b)=>b.mc-a.mc||b.round-a.round);
-
-  // 인기번호 회피 스코어 (1~31 생일번호대 비율 기반 — 단일 지표 참고용)
-  const over31=myNums.filter(n=>n>31).length;
-  const avoidScore=Math.round(over31/6*100);
-  const hasConsecutive=myNums.some((n,i)=>i>0&&n===myNums[i-1]+1);
-  const allOdd=odd===6, allEven=even===6;
-  let avoidLabel='보통',avoidColor='';
-  if(avoidScore>=67){avoidLabel='회피형 (분산 우수)';avoidColor='text-green';}
-  else if(avoidScore<34){avoidLabel='인기형 (편중 조합)';avoidColor='text-red';}
-
-  let rowsHtml=myIndData.map(item=>{
-    let rsiText='<span class="text-dim">보통 ('+item.rsi+')</span>';
-    if(item.rsi>70)rsiText='<span class="text-red fw700">과열 ('+item.rsi+')</span>';
-    if(item.rsi<30)rsiText='<span class="text-cyan fw700">침체 ('+item.rsi+')</span>';
-    const superText=item.isSuperUp?'<span class="text-green fw700">🟢 상승</span>':'<span class="text-red">🔴 하락</span>';
-    let scoreColor='';if(item.score>58)scoreColor='text-green';else if(item.score<42)scoreColor='text-red';
-    return'<tr><td>'+renderBall(item.num,true)+'</td><td class="text-right fw700 '+scoreColor+'">'+item.score+'점</td><td class="text-right">'+item.trend+'</td><td class="text-right">'+item.rebound+'</td><td class="text-dim" style="font-size:9px">'+item.reasons.join(' · ')+'</td></tr>';
-  }).join('');
-
-  let html='<div class="card mt8"><div class="card-title">📝 기초 패턴 분석</div>'+
-    '<div class="flex-center gap6 mb10" style="justify-content:center;padding:10px 0">'+myNums.map(n=>renderBall(n)).join('')+'</div>'+
-    '<div class="grid3"><div class="stat"><div class="stat-val '+(sum>=100&&sum<=175?'text-green':'text-red')+'">'+sum+'</div><div class="stat-label">합계<br>(권장: 100~175)</div></div>'+
-    '<div class="stat"><div class="stat-val '+(odd>=2&&odd<=4?'text-green':'text-red')+'">'+odd+':'+even+'</div><div class="stat-label">홀:짝</div></div>'+
-    '<div class="stat"><div class="stat-val '+(low>=2&&low<=4?'text-green':'text-red')+'">'+low+':'+high+'</div><div class="stat-label">저:고</div></div></div></div>'+
-    '<div class="card mt8"><div class="card-title">🎯 보조지표 정밀 평가 (5종 가중치 융합)</div>'+
-    '<div class="stat mb8" style="background:rgba(240,192,64,.08);border:1px solid rgba(240,192,64,.2)"><div class="stat-val text-gold">'+avgScore+'점</div><div class="stat-label">조합 평균 시그널 스코어 (기준점: 50점)</div></div>'+
-    '<table style="line-height:1.8"><thead><tr><th>번호</th><th class="text-right">균형</th><th class="text-right">추세</th><th class="text-right">반등</th><th>근거</th></tr></thead><tbody>'+rowsHtml+'</tbody></table>'+
-    '<div class="info-neutral mt8">💡 <strong>1~3등 분석 가이드:</strong><br>'+
-    '• <strong>추세 점수</strong>는 최근 출현 강도, <strong>반등 점수</strong>는 미출현 갭을 중심으로 봅니다.<br>'+
-    '• <strong>균형 점수</strong>는 두 관점을 결합한 상대평가이며 당첨확률 자체를 의미하지 않습니다.</div></div>'+
-    '<div class="card mt8"><div class="card-title">📋 과거 성적 요약</div>'+
-    '<div class="grid3"><div class="stat"><div class="stat-val text-cyan">'+bt3plus+'회</div><div class="stat-label">3개+ 일치</div></div>'+
-    '<div class="stat"><div class="stat-val text-green">'+bt4plus+'회</div><div class="stat-label">4개+ 일치</div></div>'+
-    '<div class="stat"><div class="stat-val text-gold">'+bt5plus+'회</div><div class="stat-label">5개+ 일치 (3등↑)</div></div></div>'+
-    '<div class="info-neutral">총 '+DRAWS.length+'회차 대상 백테스트 결과</div>'+
-    (btHits.length>0 ? '<div class="mt8" style="max-height:260px;overflow-y:auto">'+btHits.slice(0,30).map(h=>
-      '<div style="padding:6px 0;border-bottom:1px solid rgba(30,45,69,.12)">'+
-      '<div class="flex-between mb4"><span class="fw700" style="font-size:11px">'+h.round+'회</span><span class="text-dim" style="font-size:10px">'+(h.date||'')+'</span><span class="fw700 '+(h.mc>=5?'text-gold':h.mc>=4?'text-green':'text-cyan')+'" style="font-size:11px">'+h.mc+'개 일치</span></div>'+
-      '<div class="flex-center gap4" style="flex-wrap:wrap">'+h.nums.map(n=>{const isMatch=h.matched.includes(n);return '<span class="'+ballClass(n)+' ball-sm" style="'+(isMatch?'':'opacity:0.3')+'">'+n+'</span>';}).join('')+'</div></div>'
-    ).join('')+(btHits.length>30?'<div class="text-dim text-center mt6" style="font-size:10px">...외 '+(btHits.length-30)+'건</div>':'')+'</div>' : '') +
-    '</div>'+
-    '<div class="card mt8"><div class="card-title">🙈 인기번호 회피 스코어</div>'+
-    '<div class="text-dim mb8" style="font-size:11px">사람들이 생일·기념일 숫자 습관으로 1~31에 선택이 몰리는 경향은 잘 알려진 사실입니다. 32~45 번호가 많을수록 다른 사람과 조합이 덜 겹칠 가능성이 있다는 단일 지표 기반 참고값이며, 당첨 확률 자체와는 무관합니다.</div>'+
-    '<div class="stat mb8" style="background:rgba(240,192,64,.08);border:1px solid rgba(240,192,64,.2)"><div class="stat-val '+avoidColor+'">'+avoidScore+'점</div><div class="stat-label">회피 스코어 (0~100, 높을수록 분산) — '+avoidLabel+'</div></div>'+
-    '<div class="grid2 mb8"><div class="stat"><div class="stat-val">'+over31+'/6개</div><div class="stat-label">32~45 번호 개수</div></div><div class="stat"><div class="stat-val">'+(6-over31)+'/6개</div><div class="stat-label">1~31 번호 개수</div></div></div>'+
-    (hasConsecutive||allOdd||allEven ? '<div class="info-neutral" style="font-size:10px">참고: '+[hasConsecutive?'연속번호 포함':'',allOdd?'전부 홀수':'',allEven?'전부 짝수':''].filter(Boolean).join(' · ')+' — 이런 패턴이 실제로 더 몰리는지는 정확한 공개 데이터가 없어 단정하지 않습니다.</div>' : '') +
-    '</div>';
-
-  document.getElementById('analyzeResult').innerHTML=html;
-  document.getElementById('analyzeResult').classList.remove('hidden');
+async function buildBtcContext(){
+  const timeframes = ['5','15','60','240'];
+  const [results, funding] = await Promise.all([
+    Promise.allSettled(timeframes.map(tf => fetchTimeframeCandles('BTCUSDT', tf, 100))),
+    fetchFundingInfo('BTCUSDT').catch(() => null)
+  ]);
+  const sections = results.map((r, i) => {
+    const title = `[BTCUSDT ${TF_LABELS[timeframes[i]]}]`;
+    if(r.status !== 'fulfilled') return `${title}\n데이터 조회 실패`;
+    const duration = Number(timeframes[i]) * 60000;
+    const candles = r.value.filter(c => c.x + duration <= Date.now()).slice(-99);
+    if(!candles.length) return `${title}\n확정봉 데이터 없음`;
+    const closes = candles.map(c => c.c);
+    const ma20 = calcSMA(closes, 20), ma60 = calcSMA(closes, 60);
+    const rsi = calcRSI(closes, 14);
+    const {macdLine, signalLine, histogram} = calcMACD(closes, 12, 26, 9);
+    const idx = candles.length - 1, last = candles[idx];
+    const value = n => Number.isFinite(n) ? fmtPrice(n) : '-';
+    const volumes = candles.map(c => c.v).filter(Number.isFinite);
+    const avg = volumes.length ? volumes.reduce((a,b) => a+b,0)/volumes.length : 0;
+    const trend = ma20[idx] == null || ma60[idx] == null ? '데이터 부족'
+      : last.c > ma20[idx] && ma20[idx] > ma60[idx] ? '상승 정렬'
+      : last.c < ma20[idx] && ma20[idx] < ma60[idx] ? '하락 정렬' : '혼조';
+    return `${title}
+최근 확정봉(최대 8개, 오래된순):
+${candles.slice(-8).map(c => `${formatCandleTime(c.x)} O${value(c.o)} H${value(c.h)} L${value(c.l)} C${value(c.c)}`).join('\n')}
+추세(MA 기준): ${trend} / MA20 ${value(ma20[idx])} / MA60 ${value(ma60[idx])} / RSI ${rsi[idx] != null ? rsi[idx].toFixed(1) : '-'}
+MACD ${value(macdLine[idx])} Signal ${value(signalLine[idx])} Hist ${value(histogram[idx])}
+거래량: ${fmt(last.v,0)} (조회 구간 평균 대비 ${avg > 0 ? (last.v/avg*100).toFixed(0)+'%' : '데이터 없음'})
+구간 내 고점/저점(최근 ${candles.length}개 확정봉): 고점 ${value(Math.max(...candles.map(c=>c.h)))} / 저점 ${value(Math.min(...candles.map(c=>c.l)))}`;
+  }).join('\n\n');
+  const fundingLine = funding ? `펀딩비: ${Number.isFinite(funding.fundingRate) ? (funding.fundingRate*100).toFixed(4)+'%' : '데이터 없음'} / 미결제약정(OI): ${Number.isFinite(funding.openInterest) ? fmt(funding.openInterest,0) : '데이터 없음'}` : '펀딩비/미결제약정: 조회 실패';
+  return `[BTCUSDT 시장 컨텍스트 · 5분/15분/1시간/4시간 확정봉]\n${fundingLine}\n\n${sections}\n\nBTC 흐름과 거래량, 주요 고점·저점을 함께 고려하고 급변 징후 및 현재 종목/포지션에 유리하거나 불리한 영향을 구분해 분석해줘. 단순 동행이나 인과관계를 단정하지 말아줘.`;
 }
 
-/* ===== v3.1.1 추가 기능 ===== */
-function calcGapStats(num,draws=getDrawNums()){
-  const gaps=[];let last=-1;draws.forEach((d,i)=>{if(d.includes(num)){if(last>=0)gaps.push(i-last-1);last=i}});
-  let current=0;for(let i=draws.length-1;i>=0;i--){if(draws[i].includes(num))break;current++}
-  return{current,avg:gaps.length?mean(gaps):0,max:gaps.length?Math.max(...gaps):0,lastIndex:last};
-}
-function ensureProfileOptions(){const sel=document.getElementById('profileNum');if(!sel||sel.options.length)return;for(let i=1;i<=45;i++)sel.add(new Option(i+'번',i));}
-function renderNumberProfile(){
-  ensureProfileOptions();const n=+document.getElementById('profileNum').value||1,draws=getDrawNums(),freq=getFreq(),g=calcGapStats(n,draws),d=calcScoreDetailsForDraws(DRAWS).find(x=>x.num===n);
-  const c=k=>draws.slice(-k).filter(x=>x.includes(n)).length;const lastDraw=g.lastIndex>=0?DRAWS[g.lastIndex]:null;
-  document.getElementById('numberProfile').innerHTML='<div class="grid3 mb8"><div class="stat"><div class="stat-val">'+freq[n]+'</div><div class="stat-label">전체 출현</div></div><div class="stat"><div class="stat-val">'+g.current+'</div><div class="stat-label">현재 갭</div></div><div class="stat"><div class="stat-val">'+g.max+'</div><div class="stat-label">역대 최대 갭</div></div></div><div class="grid3 mb8"><div class="stat"><div class="stat-val">'+c(10)+'</div><div class="stat-label">최근10회</div></div><div class="stat"><div class="stat-val">'+c(20)+'</div><div class="stat-label">최근20회</div></div><div class="stat"><div class="stat-val">'+c(50)+'</div><div class="stat-label">최근50회</div></div></div><div class="info-neutral">평균 갭 '+g.avg.toFixed(1)+'회 · 최근 출현 '+(lastDraw?lastDraw.round+'회':'없음')+' · 추세 '+d.trend+' / 반등 '+d.rebound+' / 균형 '+d.balanced+'<br>근거: '+(d.reasons.join(' · ')||'중립')+'</div>';
-}
-function openNumberFromHeatmap(n){switchTab('lab');ensureProfileOptions();document.getElementById('profileNum').value=n;renderNumberProfile();}
-function analyzePairTriple(){
-  const nums=[...new Set(document.getElementById('pairInput').value.split(/[,\s]+/).map(Number).filter(n=>n>=1&&n<=45))];if(nums.length<2||nums.length>3){document.getElementById('pairResult').innerHTML='<div class="info-red info-box">2개 또는 3개 번호를 입력해주세요.</div>';return}
-  const hits=DRAWS.filter(d=>nums.every(n=>d.nums.includes(n)));const pct=DRAWS.length?hits.length/DRAWS.length*100:0;
-  document.getElementById('pairResult').innerHTML='<div class="grid2"><div class="stat"><div class="stat-val">'+hits.length+'회</div><div class="stat-label">동시 출현</div></div><div class="stat"><div class="stat-val">'+pct.toFixed(2)+'%</div><div class="stat-label">과거 비율</div></div></div><div class="info-neutral">최근 동시출현: '+(hits.slice(-10).reverse().map(d=>d.round+'회').join(', ')||'없음')+'<br>과거 동시출현 빈도이며 다음 회차 확률 상승을 뜻하지 않습니다.</div>';
-}
-function validateDrawData(){
-  const issues=[],seen=new Set();let prevRound=null,prevDate=null;
-  DRAWS.forEach(d=>{if(seen.has(d.round))issues.push(d.round+'회 중복');seen.add(d.round);if(!Array.isArray(d.nums)||d.nums.length!==6||new Set(d.nums).size!==6||d.nums.some(n=>!Number.isInteger(+n)||n<1||n>45))issues.push(d.round+'회 당첨번호 이상');if(d.bonus!=null&&(d.bonus<1||d.bonus>45||d.nums.includes(d.bonus)))issues.push(d.round+'회 보너스번호 이상');if(prevRound!=null&&d.round>prevRound+1)issues.push((prevRound+1)+'~'+(d.round-1)+'회 누락');if(prevDate&&d.date&&new Date(d.date)<new Date(prevDate))issues.push(d.round+'회 날짜 역전');prevRound=d.round;if(d.date)prevDate=d.date});return issues;
-}
-function renderDataHealth(){
-  const issues=validateDrawData(),first=DRAWS[0]?.round||'-',last=DRAWS[DRAWS.length-1]?.round||'-',manual=DRAWS.filter(d=>d._manual).length;
-  document.getElementById('dataHealth').innerHTML='<div class="grid3 mb8"><div class="stat"><div class="stat-val">'+DRAWS.length+'</div><div class="stat-label">총 회차</div></div><div class="stat"><div class="stat-val">'+first+'~'+last+'</div><div class="stat-label">회차 범위</div></div><div class="stat"><div class="stat-val">'+manual+'</div><div class="stat-label">수동 데이터</div></div></div><div class="info-neutral mb8">JSON '+(DATA_SOURCE_INFO.jsonCount||0)+'건 / 최신 '+(DATA_SOURCE_INFO.jsonLast||'-')+'회 · Firestore 추가/로드 '+(DATA_SOURCE_INFO.firestoreCount||0)+'건 / 최신 '+(DATA_SOURCE_INFO.firestoreLast||'-')+'회 · 캐시 '+(DATA_SOURCE_INFO.cacheUsed?'사용':'미사용')+(DATA_SOURCE_INFO.fallbackUsed?' · ⚠ 임시데이터 사용':'')+'</div>'+(issues.length?'<div class="info-red info-box">⚠ '+issues.slice(0,20).join('<br>')+(issues.length>20?'<br>...외 '+(issues.length-20)+'건':'')+'</div>':'<div class="info-green info-box">✅ 중복·범위·보너스 중복·회차 누락·날짜 역전 이상이 발견되지 않았습니다.</div>');
-}
-function runWalkForward(){
-  const requested=+document.getElementById('wfPeriod').value||300,minTrain=60;const start=Math.max(minTrain,DRAWS.length-requested);const modes=['trend','rebound','balanced'];const stats=Object.fromEntries(modes.map(m=>[m,{matches:0,h3:0,h4:0,h5:0,best:0,n:0}]));
-  for(let i=start;i<DRAWS.length;i++){
-    const train=DRAWS.slice(0,i),actual=DRAWS[i].nums,details=calcScoreDetailsForDraws(train);
-    for(const m of modes){const pred=[...details].sort((a,b)=>b[m]-a[m]||a.num-b.num).slice(0,6).map(x=>x.num);const hit=pred.filter(n=>actual.includes(n)).length,s=stats[m];s.matches+=hit;s.h3+=hit>=3;s.h4+=hit>=4;s.h5+=hit>=5;s.best=Math.max(s.best,hit);s.n++;}
-  }
-  const names={trend:'추세',rebound:'반등',balanced:'균형'};document.getElementById('wfResult').innerHTML='<table><thead><tr><th>전략</th><th class="text-right">평균 일치</th><th class="text-right">3개+</th><th class="text-right">4개+</th><th class="text-right">최고</th></tr></thead><tbody>'+modes.map(m=>{const x=stats[m];return'<tr><td class="fw700">'+names[m]+'</td><td class="text-right">'+(x.matches/x.n).toFixed(3)+'</td><td class="text-right">'+x.h3+'회 ('+(x.h3/x.n*100).toFixed(1)+'%)</td><td class="text-right">'+x.h4+'회</td><td class="text-right text-gold">'+x.best+'개</td></tr>'}).join('')+'</tbody></table><div class="info-neutral">검증 '+stats.trend.n+'회. 각 시점에서 해당 회차 이후 데이터는 사용하지 않았습니다. 무작위 6개 번호의 기대 일치 개수는 0.8개입니다.</div>';
-}
-async function refreshLabData(){
-  const btn=document.getElementById('labRefreshBtn');
-  const status=document.getElementById('labRefreshStatus');
-  if(!btn||!status)return;
+async function generateAnalysisText(){
+  const btn = document.getElementById('analysisBtn');
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '불러오는 중... (6개 타임프레임)';
 
-  const beforeLast=DRAWS[DRAWS.length-1]?.round||0;
-  const beforeCount=DRAWS.length;
-  btn.disabled=true;
-  btn.textContent='⏳ 최신 데이터 확인 중...';
-  status.className='info-neutral mt8';
-  status.textContent='JSON과 Firestore의 최신 회차를 확인하고 있습니다.';
+  const timeframes = ['1','5','15','60','240','D'];
+  const [candleResults, ratioResults, fundingInfo, btcContext] = await Promise.all([
+    Promise.allSettled(timeframes.map(tf => fetchTimeframeCandles(currentSymbol, tf, 100))),
+    Promise.allSettled(timeframes.map(tf => fetchLongShortRatio(currentSymbol, TF_TO_RATIO_PERIOD[tf], 6))),
+    fetchFundingInfo(currentSymbol).catch(() => null),
+    buildBtcContext().catch(() => "[BTCUSDT 컨텍스트] 조회 실패")
+  ]);
 
-  let jsonOk=false, firestoreOk=false;
-  let jsonDraws=[];
-  let firestoreDraws=[];
-  const errors=[];
-  const FS_TIMEOUT=5000;
-  const withTimeout=(p)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),FS_TIMEOUT))]);
+  const sections = timeframes.map((tf, i) => {
+    const r = candleResults[i];
+    if(r.status !== 'fulfilled' || !r.value.length){
+      return `[${TF_LABELS[tf]}]\n데이터 조회 실패`;
+    }
+    // 분석 텍스트도 진행 중인 마지막 봉을 제외한다.
+    const candles = r.value.length > 1 ? r.value.slice(0, -1) : r.value;
+    const closes = candles.map(c => c.c);
+    const ma20 = calcSMA(closes, 20);
+    const ma60 = calcSMA(closes, 60);
+    const { upper: bbUpper, lower: bbLower } = calcBollinger(closes, ma20, 20, 2);
+    const rsi = calcRSI(closes, 14);
+    const { macdLine, signalLine, histogram } = calcMACD(closes, 12, 26, 9);
+    const lastIdx = candles.length - 1;
+    const recent = candles.slice(-8);
+    const candleLines = recent.map(c =>
+      `${formatCandleTime(c.x)} O${fmtPrice(c.o)} H${fmtPrice(c.h)} L${fmtPrice(c.l)} C${fmtPrice(c.c)}`
+    ).join('\n');
 
-  try{
-    const res=await fetch('lotto-data.json?refresh='+Date.now(),{cache:'no-store'});
-    if(res.ok){
-      const raw=await res.json();
-      if(Array.isArray(raw)){
-        jsonDraws=raw.filter(d=>d&&Number.isFinite(+d.round)&&Array.isArray(d.nums)).map(d=>({round:+d.round,nums:d.nums.map(Number),bonus:d.bonus==null?null:+d.bonus,date:d.date||''}));
-        jsonDraws.sort((a,b)=>a.round-b.round);
-        DATA_SOURCE_INFO.jsonCount=jsonDraws.length;
-        DATA_SOURCE_INFO.jsonLast=jsonDraws[jsonDraws.length-1]?.round||null;
-        jsonOk=true;
+    const volumes = candles.map(c => c.v).filter(v => !isNaN(v));
+    const avgVolume = volumes.length ? volumes.reduce((a,b)=>a+b,0)/volumes.length : null;
+    const lastVolume = candles[lastIdx].v;
+    const volumeLine = (avgVolume && !isNaN(lastVolume))
+      ? `거래량: 최근 캔들 ${fmt(lastVolume,0)} (조회 구간 평균 대비 ${(lastVolume/avgVolume*100).toFixed(0)}%)`
+      : '거래량: 데이터 없음';
+
+    const swingHigh = Math.max(...candles.map(c => c.h));
+    const swingLow = Math.min(...candles.map(c => c.l));
+    const swingLine = `구간 내 고점/저점(최근 ${candles.length}개 캔들 기준): 고점 ${fmtPrice(swingHigh)} / 저점 ${fmtPrice(swingLow)}`;
+
+    let ratioLine = '계정 롱/숏 비율: 데이터 없음';
+    const rr = ratioResults[i];
+    if(rr.status === 'fulfilled' && rr.value.length){
+      const ratioList = rr.value;
+      const latest = ratioList[ratioList.length-1];
+      const buyPct = (parseFloat(latest.buyRatio)*100).toFixed(1);
+      const sellPct = (parseFloat(latest.sellRatio)*100).toFixed(1);
+      const dominant = parseFloat(latest.buyRatio) >= parseFloat(latest.sellRatio) ? '롱' : '숏';
+      let trendNote = '';
+      if(ratioList.length >= 2){
+        const prev = ratioList[ratioList.length-2];
+        const diff = parseFloat(latest.buyRatio) - parseFloat(prev.buyRatio);
+        if(Math.abs(diff) >= 0.01){
+          trendNote = diff > 0 ? ' (직전 대비 롱 비중 증가 중)' : ' (직전 대비 숏 비중 증가 중)';
+        }
       }
-    }else errors.push('JSON HTTP '+res.status);
-  }catch(e){errors.push('JSON: '+e.message)}
+      ratioLine = `계정 롱/숏 비율: 롱 ${buyPct}% / 숏 ${sellPct}% (우세: ${dominant})${trendNote}`;
+    }
 
+    return `[${TF_LABELS[tf]}]
+최근 캔들(${recent.length}개, 오래된순):
+${candleLines}
+MA20 ${ma20[lastIdx]!=null?fmtPrice(ma20[lastIdx]):'-'} / MA60 ${ma60[lastIdx]!=null?fmtPrice(ma60[lastIdx]):'-'} / BB상단 ${bbUpper[lastIdx]!=null?fmtPrice(bbUpper[lastIdx]):'-'} / BB하단 ${bbLower[lastIdx]!=null?fmtPrice(bbLower[lastIdx]):'-'} / RSI ${rsi[lastIdx]!=null?rsi[lastIdx].toFixed(1):'-'} / MACD ${macdLine[lastIdx]!=null?macdLine[lastIdx].toFixed(4):'-'} Signal ${signalLine[lastIdx]!=null?signalLine[lastIdx].toFixed(4):'-'} Hist ${histogram[lastIdx]!=null?histogram[lastIdx].toFixed(4):'-'}
+${volumeLine}
+${swingLine}
+${ratioLine}`;
+  }).join('\n\n');
+
+  // 펀딩비/미결제약정
+  let fundingLine = '펀딩비/미결제약정: 데이터 없음';
+  if(fundingInfo){
+    const frPct = (fundingInfo.fundingRate*100).toFixed(4);
+    const frBias = fundingInfo.fundingRate > 0 ? '롱 우세(롱이 숏에 비용 지불)' : (fundingInfo.fundingRate < 0 ? '숏 우세(숏이 롱에 비용 지불)' : '중립');
+    fundingLine = `펀딩비: ${frPct}% (${frBias}) / 미결제약정(OI): ${fmt(fundingInfo.openInterest,0)}`;
+  }
+
+  // ★ 무포 vs 포지션 보유 분기
+  let positionSection;
+  if(direction === 'none'){
+    // 무포 모드: 포지션 정보 대신 진입 추천 요청
+    positionSection = `현재 포지션: 없음 (무포)
+
+이 데이터를 기준으로 타임프레임별 흐름, 롱/숏 비율이 시사하는 쏠림, 단기/중기 방향에 대한 확률적 우세 판단(확정 예측이 아닌 근거 기반 견해), 주요 지지·저항, 주의할 점을 분석해줘.
+무포 상태이므로, 현재 시점 기준 롱/숏 각각의 진입 추천 구간(반드시 확정봉 트리거 조건, 손절 무효화 가격, 1차·2차 목표가 포함)도 같이 제시해줘.
+분석 마지막에는 반드시 '최종 판단'과 '대응 조언'을 따로 작성해줘. 최종 판단은 롱 우세·숏 우세·관망 중 하나와 신뢰도(낮음·보통·높음)를 표시하고, 대응 조언에는 지금 바로 할 행동, 기다려야 할 조건, 추격 진입 금지 구간을 짧고 명확하게 적어줘.`;
+  } else {
+    // 기존 로직: 포지션 정보 포함
+    const entry = parseFloat(document.getElementById('entryPrice').value);
+    const target = parseFloat(document.getElementById('priceInput').value);
+    const lev = document.getElementById('leverage').value;
+    const marginKRW = document.getElementById('margin').value;
+    const totalFundsKRWVal = document.getElementById('totalFunds').value;
+    const breakevenText = document.getElementById('outBreakeven').textContent;
+    const liqText = document.getElementById('outLiqPrice').textContent;
+    const targetPnlPctText = document.getElementById('outPctPnlPct').textContent;
+    const targetPnlAmtText = document.getElementById('outPctPnlAmt').textContent;
+    const liveCurrentPriceText = lastLivePrice !== null ? `${fmtPrice(lastLivePrice)} USDT` : '조회 안 됨';
+    const livePnlText = document.getElementById('livePricePnl').textContent;
+    const totalFundsLine = (totalFundsKRWVal && parseFloat(totalFundsKRWVal) > 0)
+      ? `- 총 자금 (교차 증거금): ${totalFundsKRWVal}원\n` : '';
+
+    positionSection = `내 포지션:
+- 방향: ${direction === 'long' ? 'Long' : 'Short'}
+- 진입가: ${isNaN(entry) ? '-' : fmtPrice(entry)}
+- 레버리지: ${lev}배
+- 증거금: ${marginKRW}원
+${totalFundsLine}- 평단가(손익분기점): ${breakevenText}
+- 예상 청산가: ${liqText}
+- 현재 시세: ${liveCurrentPriceText}
+- 실시간 손익(현재 시세 기준): ${livePnlText}
+- 예상가(목표가) ${isNaN(target) ? '미입력' : fmtPrice(target) + ' USDT'} 도달 시 시뮬레이션 손익: ${targetPnlPctText} (${targetPnlAmtText})
+
+이 데이터를 기준으로 타임프레임별 흐름, 롱/숏 비율이 시사하는 쏠림, 단기/중기 방향에 대한 확률적 우세 판단(확정 예측이 아닌 근거 기반 견해), 주요 지지·저항, 주의할 점을 분석해줘.
+분석 마지막에는 반드시 '최종 판단'과 '대응 조언'을 따로 작성해줘. 현재 포지션에 대해 유지·일부 정리·전량 정리·손절선 조정 중 무엇이 적절한지 하나를 우선 제시하고, 그 판단이 무효가 되는 가격, 1차·2차 대응 가격, 추가 진입을 피해야 할 조건을 짧고 명확하게 적어줘. 물타기나 레버리지 확대는 기본 대응으로 권하지 말아줘.`;
+  }
+
+  const text = `[${currentSymbol}] 타임프레임별(1분/5분/15분/1시간/4시간/1일) 확정봉 캔들 데이터입니다.
+${fundingLine}
+
+${sections}
+
+${btcContext}
+
+${positionSection}`;
+
+  document.getElementById('analysisOutput').value = text;
+  document.getElementById('analysisBox').style.display = 'block';
+  const copyBtn = document.getElementById('analysisCopyBtn');
+  copyBtn.textContent = '복사하기';
+  copyBtn.classList.remove('copied');
+
+  btn.disabled = false;
+  btn.textContent = originalLabel;
+}
+
+async function copyAnalysisText(){
+  const textarea = document.getElementById('analysisOutput');
+  const btn = document.getElementById('analysisCopyBtn');
   try{
-    if(typeof firebase!=='undefined'){
-      if(!db){
-        try{if(!firebase.apps.length)firebase.initializeApp(firebaseConfig)}catch(e){}
-        db=firebase.firestore();
-      }
-      const snap=await withTimeout(db.collection('draws').get());
-      snap.forEach(doc=>{const d=doc.data();firestoreDraws.push({round:+doc.id,nums:[d.no1,d.no2,d.no3,d.no4,d.no5,d.no6].map(Number),bonus:d.bonus==null?null:+d.bonus,date:d.date||''})});
-      firestoreDraws.sort((a,b)=>a.round-b.round);
-      DATA_SOURCE_INFO.firestoreCount=firestoreDraws.length;
-      DATA_SOURCE_INFO.firestoreLast=firestoreDraws[firestoreDraws.length-1]?.round||null;
-      firestoreOk=true;
-    }else errors.push('Firebase SDK 없음');
-  }catch(e){errors.push('Firestore: '+e.message)}
-
-  // 공식 데이터(JSON → Firestore 순으로 최신값 우선)를 병합하고, 아직 공식화되지 않은 수동 회차만 보존한다.
-  const merged=new Map();
-  jsonDraws.forEach(d=>merged.set(d.round,d));
-  firestoreDraws.forEach(d=>merged.set(d.round,d));
-  DRAWS.filter(d=>d._manual&&!merged.has(d.round)).forEach(d=>merged.set(d.round,d));
-
-  if(merged.size>0){
-    DRAWS=[...merged.values()].sort((a,b)=>a.round-b.round);
-    try{localStorage.setItem('lotto_draws',JSON.stringify(DRAWS.filter(d=>!d._manual)))}catch(e){}
+    await navigator.clipboard.writeText(textarea.value);
+  }catch(e){
+    textarea.select();
+    document.execCommand('copy');
   }
-
-  const afterLast=DRAWS[DRAWS.length-1]?.round||0;
-  const added=Math.max(0,DRAWS.length-beforeCount);
-  updateStatusBar();
-  renderLab();
-  refreshCurrentTab();
-
-  status.className=(afterLast>beforeLast?'info-green info-box mt8':'info-neutral mt8');
-  if(afterLast>beforeLast){
-    status.textContent='✅ '+beforeLast+'회 → '+afterLast+'회 최신 데이터 반영 완료'+(added?' · '+added+'건 추가':'')+' · 연구실 재분석 완료';
-  }else if(jsonOk||firestoreOk){
-    status.textContent='✅ 현재 '+afterLast+'회가 최신 데이터입니다. 연구실 분석을 다시 계산했습니다.';
-  }else{
-    status.className='info-red info-box mt8';
-    status.textContent='⚠ 최신 데이터 확인에 실패했습니다. 현재 '+afterLast+'회 데이터로 다시 분석했습니다.'+(errors.length?' ('+errors.join(' / ')+')':'');
-  }
-
-  btn.disabled=false;
-  btn.textContent='🔄 최신 분석';
+  btn.textContent = '✓ 복사됨';
+  btn.classList.add('copied');
+  setTimeout(() => {
+    btn.textContent = '복사하기';
+    btn.classList.remove('copied');
+  }, 1500);
 }
 
-function renderLab(){
-  ensureProfileOptions();const all=calcSignalScores(),trend=[...all].sort((a,b)=>b.trend-a.trend).slice(0,8),rebound=[...all].sort((a,b)=>b.rebound-a.rebound).slice(0,8),balanced=[...all].sort((a,b)=>b.balanced-a.balanced).slice(0,12);
-  const core=balanced.slice(0,6);const sets=[];for(let i=0;i<5;i++){const pool=balanced.slice(0,12).map(x=>x.num),pick=[];while(pick.length<6&&pool.length){const idx=(i*3+pick.length*2)%pool.length;pick.push(pool.splice(idx,1)[0])}sets.push(pick.sort((a,b)=>a-b));}
-  document.getElementById('labSummary').innerHTML='<div class="mb8"><span class="text-gold fw700" style="font-size:11px">핵심 6개</span><div>'+core.map(x=>renderBall(x.num)).join('')+'</div></div><div class="grid2 mb8"><div><div class="text-green fw700 mb6" style="font-size:11px">추세 후보</div>'+trend.map(x=>'<span class="mini-chip">'+x.num+' · '+x.trend+'</span>').join('')+'</div><div><div class="text-cyan fw700 mb6" style="font-size:11px">반등 후보</div>'+rebound.map(x=>'<span class="mini-chip">'+x.num+' · '+x.rebound+'</span>').join('')+'</div></div><div class="text-gold fw700 mb6" style="font-size:11px">추천 근거 TOP 12</div>'+balanced.map(x=>'<div class="flex-between" style="padding:4px 0;border-bottom:1px solid rgba(30,45,69,.12);font-size:10px"><span>'+renderBall(x.num,true)+'</span><span>균형 '+x.balanced+' / 추세 '+x.trend+' / 반등 '+x.rebound+'</span><span class="text-dim">'+(x.reasons.join(' · ')||'중립')+'</span></div>').join('')+'<div class="text-gold fw700 mt10 mb6" style="font-size:11px">추천 조합 5세트</div>'+sets.map((a,i)=>'<div class="result-row"><span class="text-dim" style="font-size:10px">#'+(i+1)+'</span><div>'+a.map(n=>renderBall(n,true)).join('')+'</div></div>').join('');
-  renderDataHealth();if(!document.getElementById('numberProfile').innerHTML)renderNumberProfile();
-}
-
-const $=id=>document.getElementById(id);
-const isDrawAdmin=false;
-let generationSnapshot=null;
-function generationRecord(){
-  const rows=getGenerationDraws();const latest=DRAWS.at(-1)?.round||0;
-  const target=Number($('genTargetRound').value)||latest+1;
-  if(!Number.isInteger(target)||target<1||target>1000000)throw Error('대상 회차를 확인해주세요.');
-  return {schemaVersion:1,targetRound:target,strategy:selStrat,period:Number($('genPeriod').value)||0,
-    sourceStart:rows[0]?.round||0,sourceEnd:rows.at(-1)?.round||0,sourceCount:rows.length,
-    generatedAt:new Date().toISOString(),dataSource:DATA_SOURCE_INFO.fallbackUsed?'sample':DATA_SOURCE_INFO.cacheUsed?'cache':'loaded'};
-}
-$('loadingOverlay').classList.remove('hidden');
-initApp().catch(error=>{
-  console.error('앱 초기화 실패:',error);
-  $('statusDot').className='dot dot-red';
-  $('statusText').textContent='데이터를 불러오지 못했습니다. 인터넷 연결 후 새로고침해주세요.';
-}).finally(()=>$('loadingOverlay').classList.add('hidden'));
+// 초기 실행
+updatePositionQtyLabel();
+syncPositionInputs();
+calc();
+setTimeframe('15');
 </script>
 </body>
 </html>
