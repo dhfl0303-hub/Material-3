@@ -1710,6 +1710,19 @@ function applyLiveCandle(price, time){
   candle.h = Math.max(candle.h, price);
   candle.l = Math.min(candle.l, price);
   candle.c = price;
+  for(const [index,series] of candleChartInstance.data.datasets.entries()){
+    if(!series.emaPeriod || series.data.length < series.emaPeriod) continue;
+    const prev = series.data.at(-2)?.y;
+    const value = prev == null ? calcEMA(view.candles.map(c=>c.c),series.emaPeriod).at(-1)
+      : prev + (price-prev)*2/(series.emaPeriod+1);
+    series.data.at(-1).y=value;
+    const meta=candleChartInstance.getDatasetMeta(index);
+    const point=meta.data.at(-1);
+    if(point){
+      point.y=candleChartInstance.scales.y.getPixelForValue(value);
+      if(meta.dataset) meta.dataset._path=undefined;
+    }
+  }
   if(candlePaintTimer !== null) return;
   const chart = candleChartInstance;
   let previous = performance.now();
@@ -1897,15 +1910,12 @@ function renderAllCharts(candles){
           backgroundColors: candlePalette('backgroundColors'),
           borderColors: candlePalette('borderColors')
         },
-        {
-          type: 'line', label: 'MA20', data: candles.map((c,i) => ({x:c.x, y:ma20[i]})),
-          borderColor: '#f0b90b', borderWidth: 1, pointRadius: 0, spanGaps: true
-        },
-        {
-          type: 'line', label: 'MA60', data: candles.map((c,i) => ({x:c.x, y:ma60[i]})),
-          borderColor: '#5b8def', borderWidth: 1, pointRadius: 0, spanGaps: true
-        },
-        {
+        ...[[7,'#f0b90b'],[14,'#55b9df'],[28,'#cd78dc']].map(([period,color])=>{
+          const values=calcEMA(closes,period);
+          return {type:'line',label:'EMA'+period,emaPeriod:period,
+            data:candles.map((c,i)=>({x:c.x,y:values[i]})),parsing:false,
+            borderColor:color,borderWidth:1.5,pointRadius:0};
+        }),        {
           type: 'line', label: 'BB Upper', data: candles.map((c,i) => ({x:c.x, y:bbUpper[i]})),
           borderColor: 'rgba(139,148,158,0.6)', borderWidth: 1, borderDash: [4,3], pointRadius: 0, spanGaps: true, hidden: false
         },
