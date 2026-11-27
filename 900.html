@@ -2158,30 +2158,54 @@ async function fetchLongShortRatio(symbol, period, limit){
   return [...list].sort((a,b) => Number(a.timestamp) - Number(b.timestamp));
 }
 
+function describeEmaPosition(values, side){
+  if(!values.every(Number.isFinite)) return 'EMA 배열 산출 대기';
+  const [fast,mid,slow]=values;
+  const tolerance=Math.max(...values.map(Math.abs))*1e-12;
+  const trend=fast-mid>tolerance && mid-slow>tolerance ? 'long'
+    : mid-fast>tolerance && slow-mid>tolerance ? 'short' : null;
+  if(!trend) return '혼조·수렴 (방향 불분명)';
+  const label=trend==='long'?'정배열':'역배열';
+  if(side==='none') return label;
+  return label+' · 내 포지션과 '+(side===trend?'일치':'반대');
+}
 async function generateAnalysisText(){
   const btn = document.getElementById('analysisBtn');
   const originalLabel = btn.textContent;
   btn.disabled = true;
   btn.textContent = '불러오는 중... (6개 타임프레임)';
 
+  const snapshotTime = Date.now();
+  const analysisSymbol = currentSymbol;
   const timeframes = ['1','5','15','60','240','D'];
   const [candleResults, ratioResults, fundingInfo] = await Promise.all([
-    Promise.allSettled(timeframes.map(tf => fetchTimeframeCandles(currentSymbol, tf, 100))),
+    Promise.allSettled(timeframes.map(tf => fetchTimeframeCandles(analysisSymbol, tf, 200))),
     Promise.allSettled(timeframes.map(tf => fetchLongShortRatio(currentSymbol, TF_TO_RATIO_PERIOD[tf], 6))),
     fetchFundingInfo(currentSymbol).catch(() => null)
   ]);
 
+  if(analysisSymbol !== currentSymbol){
+    btn.disabled=false; btn.textContent=originalLabel;
+    alert('분석 중 종목이 바뀌었습니다. 현재 종목으로 다시 생성해 주세요.');
+    return;
+  }
   const sections = timeframes.map((tf, i) => {
     const r = candleResults[i];
     if(r.status !== 'fulfilled' || !r.value.length){
       return `[${TF_LABELS[tf]}]\n데이터 조회 실패`;
     }
     // 분석 텍스트도 진행 중인 마지막 봉을 제외한다.
-    const candles = r.value.length > 1 ? r.value.slice(0, -1) : r.value;
+    const intervalMs = (tf === 'D' ? 1440 : Number(tf)) * 60000;
+    const candles = r.value.filter(c => c.x + intervalMs <= snapshotTime);
+    if(!candles.length) return '['+TF_LABELS[tf]+'] 확정봉 없음';
     const closes = candles.map(c => c.c);
-    const ma20 = calcSMA(closes, 20);
-    const ma60 = calcSMA(closes, 60);
-    const { upper: bbUpper, lower: bbLower } = calcBollinger(closes, ma20, 20, 2);
+    const emaPeriods = [7, 14, 28];
+    const emaValues = emaPeriods.map(period => calcEMA(closes, period).at(-1));
+    const emaLine = emaPeriods.map((period,i) =>
+      'EMA'+period+' '+(emaValues[i] == null ? '-' : fmtPrice(emaValues[i]))
+    ).join(' / ');
+    const alignment = describeEmaPosition(emaValues, direction);
+    const { upper: bbUpper, lower: bbLower } = calcBollinger(closes, calcSMA(closes,20), 20, 2);
     const rsi = calcRSI(closes, 14);
     const { macdLine, signalLine, histogram } = calcMACD(closes, 12, 26, 9);
     const lastIdx = candles.length - 1;
@@ -2223,7 +2247,8 @@ async function generateAnalysisText(){
     return `[${TF_LABELS[tf]}]
 최근 캔들(${recent.length}개, 오래된순):
 ${candleLines}
-MA20 ${ma20[lastIdx]!=null?fmtPrice(ma20[lastIdx]):'-'} / MA60 ${ma60[lastIdx]!=null?fmtPrice(ma60[lastIdx]):'-'} / BB상단 ${bbUpper[lastIdx]!=null?fmtPrice(bbUpper[lastIdx]):'-'} / BB하단 ${bbLower[lastIdx]!=null?fmtPrice(bbLower[lastIdx]):'-'} / RSI ${rsi[lastIdx]!=null?rsi[lastIdx].toFixed(1):'-'} / MACD ${macdLine[lastIdx]!=null?macdLine[lastIdx].toFixed(4):'-'} Signal ${signalLine[lastIdx]!=null?signalLine[lastIdx].toFixed(4):'-'} Hist ${histogram[lastIdx]!=null?histogram[lastIdx].toFixed(4):'-'}
+${emaLine} · ${alignment} (확정봉 기준)
+BB상단 ${bbUpper[lastIdx]!=null?fmtPrice(bbUpper[lastIdx]):'-'} / BB하단 ${bbLower[lastIdx]!=null?fmtPrice(bbLower[lastIdx]):'-'} / RSI ${rsi[lastIdx]!=null?rsi[lastIdx].toFixed(1):'-'} / MACD ${macdLine[lastIdx]!=null?macdLine[lastIdx].toFixed(4):'-'} Signal ${signalLine[lastIdx]!=null?signalLine[lastIdx].toFixed(4):'-'} Hist ${histogram[lastIdx]!=null?histogram[lastIdx].toFixed(4):'-'}
 ${volumeLine}
 ${swingLine}
 ${ratioLine}`;
