@@ -226,7 +226,11 @@
   .live-price-info{display:flex;flex-direction:column;gap:2px;}
   .live-price-label{font-size:11px;color:var(--sub);}
   .live-price-value{font-size:16px;font-weight:700;color:var(--accent);}
-  .live-price-pnl{font-size:12px;font-weight:600;color:var(--sub);}
+  .live-price-pnl{font-size:13px;font-weight:700;color:var(--sub);}
+  .live-price-value + .live-price-pnl{margin-top:1em;}
+  .live-price-pnl.val-long{color:var(--long);}
+  .live-price-pnl.val-short{color:var(--short);}
+  .live-price-total:not(:empty){margin-top:1em;}
   .live-price-total{font-size:13px;font-weight:700;color:var(--text);}
 
   .fx-status-row{
@@ -1056,7 +1060,7 @@ function updateLivePnl(){
   const pnlKRW = pnlAmt * fx;
 
   pnlEl.textContent = `진입가 대비 ${fmtSigned(pct,2)}% · ${fmtSigned(pnlPct,1)}% · ${fmtSigned(pnlAmt)}\u00a0USDT\u00a0(${fmtSigned(pnlKRW,0)}원)`;
-  pnlEl.className = 'live-price-pnl ' + (pnlAmt >= 0 ? 'val-long' : 'val-short');
+  pnlEl.className = 'live-price-pnl ' + (pnlAmt > 0 ? 'val-long' : pnlAmt < 0 ? 'val-short' : '');
 
   // 교차마진: 총 자금 기준 합계 / 격리: 증거금 기준 합계
   const baseUSDT = totalFunds > margin ? totalFunds : margin;
