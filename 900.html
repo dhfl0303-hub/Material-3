@@ -329,7 +329,7 @@
     .wrap{max-width:1360px;}
     .desktop-grid{
       display:grid;
-      grid-template-columns:340px minmax(480px,1fr);
+      grid-template-columns:420px minmax(480px,1fr);
       gap:16px;
       align-items:stretch;
     }
@@ -1055,7 +1055,7 @@ function updateLivePnl(){
   const pnlAmt = margin * pnlPct / 100;
   const pnlKRW = pnlAmt * fx;
 
-  pnlEl.textContent = `진입가 대비 ${fmtSigned(pct,2)}% · ${fmtSigned(pnlPct,1)}% · ${fmtSigned(pnlAmt)} USDT (${fmtSigned(pnlKRW,0)}원)`;
+  pnlEl.textContent = `진입가 대비 ${fmtSigned(pct,2)}% · ${fmtSigned(pnlPct,1)}% · ${fmtSigned(pnlAmt)}\u00a0USDT\u00a0(${fmtSigned(pnlKRW,0)}원)`;
   pnlEl.className = 'live-price-pnl ' + (pnlAmt >= 0 ? 'val-long' : 'val-short');
 
   // 교차마진: 총 자금 기준 합계 / 격리: 증거금 기준 합계
