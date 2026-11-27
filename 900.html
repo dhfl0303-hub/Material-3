@@ -337,13 +337,13 @@
       display:grid;
       grid-template-columns:420px minmax(480px,1fr);
       gap:16px;
-      align-items:stretch;
+      align-items:start;
     }
     .col-left, .col-mid, .col-right{min-width:0;}
     .col-mid{order:2;}
     .col-left{order:1; display:flex; flex-direction:column;}
     .col-right{order:3;}
-    .col-left > .card{flex:1;}
+    .col-left > .card{flex:none;}
   }
 
   .indicator-label{
@@ -500,18 +500,24 @@
 #levelDistances .above{color:var(--long)}
 #levelDistances .below{color:var(--short)}
 .chart-canvas-wrap .chart-loading{position:absolute;top:8px;left:50%;transform:translateX(-50%);max-width:90%;width:max-content;padding:5px 10px;background:var(--panel);border-radius:5px;pointer-events:none}
-#barInfo{height:2.8em;line-height:1.4;overflow:auto;font-variant-numeric:tabular-nums}
-#levelsAbove,#levelsBelow{height:24px;box-sizing:border-box;flex-wrap:nowrap;align-items:center;overflow-x:auto;white-space:nowrap}
-#levelDistances{height:50px;box-sizing:border-box;align-content:start;overflow:auto;font-variant-numeric:tabular-nums}
-@media(max-width:650px){#levelDistances{height:72px}}
+#barInfo{min-height:2.8em;line-height:1.4;font-variant-numeric:tabular-nums}
+#levelsAbove,#levelsBelow{min-height:24px;box-sizing:border-box;align-items:center}
+#levelDistances{min-height:50px;box-sizing:border-box;align-content:start;font-variant-numeric:tabular-nums}
+@media(max-width:650px){#levelDistances{min-height:72px}}
 .analysis-box textarea{overscroll-behavior-y:contain}
+.calc-results{padding:12px 14px}
+.calc-results .card-title{margin-bottom:5px}
+.calc-results .result-line{padding:5px 0;gap:8px}
+.calc-results .result-value{text-align:right;font-size:13px}
+.calc-results .result-value.big{font-size:15px}
 @media (min-width:1280px){
-  body{padding-bottom:16px}
-  .wrap{height:calc(100dvh - 32px);display:flex;flex-direction:column}
-  .header,.wrap>.note{flex:none}
-  .desktop-grid{flex:1;min-height:0;grid-template-rows:minmax(0,1fr)}
-  .col-left,.col-mid{min-height:0;overflow-y:auto;scrollbar-gutter:stable;overscroll-behavior-y:contain}
-  .col-left>.card{flex:none;min-height:100%}
+  .desktop-grid:has(#rsiPanel[open]):has(#macdPanel[open]){
+    align-items:stretch;
+    & .col-mid, & .col-mid > .card, & .chart-card{display:flex;flex-direction:column}
+    & .col-mid > .card, & .chart-card{flex:1}
+    & .chart-canvas-wrap{flex-grow:1}
+    & .calc-results{margin-top:auto}
+  }
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
@@ -674,11 +680,8 @@
     </details>
   </div>
 
-  </div>
-  <div class="col-mid">
-
   <!-- 결과 -->
-  <div class="card">
+  <div class="card calc-results">
     <div class="card-title">계산 결과</div>
     <div class="result-line">
       <span class="result-label">증거금</span>
@@ -714,6 +717,9 @@
     </div>
   </div>
 
+  </div>
+  <div class="col-mid">
+
   <!-- 차트 분석 -->
   <div class="card">
     <div class="card-title">캔들차트 · 거래량 · RSI · MACD 분석</div>
@@ -737,10 +743,10 @@
       <div class="indicator-canvas-wrap">
         <canvas id="volumeChart"></canvas>
       </div>
-      <details ontoggle="if(this.open) rsiChartInstance?.resize()"><summary class="accordion-summary indicator-label">RSI (14)</summary><div class="indicator-canvas-wrap">
+      <details id="rsiPanel" ontoggle="if(this.open) rsiChartInstance?.resize()"><summary class="accordion-summary indicator-label">RSI (14)</summary><div class="indicator-canvas-wrap">
         <canvas id="rsiChart"></canvas>
       </div></details>
-      <details ontoggle="if(this.open) macdChartInstance?.resize()"><summary class="accordion-summary indicator-label">MACD (12, 26, 9)</summary><div class="indicator-canvas-wrap">
+      <details id="macdPanel" ontoggle="if(this.open) macdChartInstance?.resize()"><summary class="accordion-summary indicator-label">MACD (12, 26, 9)</summary><div class="indicator-canvas-wrap">
         <canvas id="macdChart"></canvas>
       </div></details>
       
