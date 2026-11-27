@@ -320,7 +320,7 @@
   }
   .chart-canvas-wrap{
     position:relative;
-    height:240px;
+    height:clamp(320px, 42vh, 490px);
     width:100%;
   }
   .indicator-canvas-wrap{
@@ -492,6 +492,7 @@
     opacity:0.35;
     pointer-events:none;
   }
+.level-edge{display:flex;flex-wrap:wrap;gap:4px 14px;font:600 12px sans-serif}.level-edge:not(:empty){padding:4px 0}.level-edge span{border-bottom:1px dashed currentColor}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
@@ -706,12 +707,12 @@
           <button type="button" class="tf-btn" id="tfBtn-60" onclick="setTimeframe('60')">1시간</button>
           <button type="button" class="tf-btn" id="tfBtn-240" onclick="setTimeframe('240')">4시간</button>
           <button type="button" class="tf-btn" id="tfBtn-D" onclick="setTimeframe('D')">1일</button>
-          <button type="button" class="tf-btn" onclick="resetChartZoom()" title="확대/축소 원래대로">↺ 리셋</button>
+          <button type="button" class="tf-btn" onclick="resetChartZoom()" title="1분봉 기본 보기로 돌아가기">↺ 리셋</button>
         </div>
       </div>
-      <div class="chart-canvas-wrap">
+      <div id="levelsAbove" class="level-edge"></div><div class="chart-canvas-wrap">
         <canvas id="candleChart"></canvas>
-      </div>
+      </div><div id="levelsBelow" class="level-edge"></div>
       <div class="indicator-label">거래량</div>
       <div class="indicator-canvas-wrap">
         <canvas id="volumeChart"></canvas>
@@ -788,6 +789,7 @@
 </script>
 
 <script>
+let candleChartInstance = null;
 let direction = 'long';
 let lastLivePrice = null;
 let liveFetchInFlight = false;
@@ -1125,7 +1127,7 @@ function connectPriceStream(){
     const socket = priceSocket;
     socket.onopen = () => {
       if(generation !== priceSocketGeneration) return;
-      socket.send(JSON.stringify({ op:'subscribe', args:symbols.map(s => `tickers.${s}`) }));
+      socket.send(JSON.stringify({ op:'subscribe', args:[...symbols.map(s => `tickers.${s}`), `kline.${currentTimeframe}.${currentSymbol}`] }));
       priceSocketPingTimer = setInterval(() => {
         if(socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ op:'ping' }));
       }, 20000);
@@ -1134,6 +1136,20 @@ function connectPriceStream(){
       if(generation !== priceSocketGeneration) return;
       try{
         const msg = JSON.parse(event.data);
+        if(msg.topic === `kline.${currentTimeframe}.${currentSymbol}`){
+          const bar = msg.data?.[0];
+          const view = lastChartSnapshot;
+          const candle = view?.candles.at(-1);
+          if(bar && candle && view.symbol === currentSymbol && view.timeframe === currentTimeframe &&
+             candle.x === Number(bar.start) && volumeChartInstance && Number.isFinite(Number(bar.volume))){
+            candle.v = Math.max(candle.v, Number(bar.volume));
+            const series = volumeChartInstance.data.datasets[0];
+            series.data.at(-1).y = candle.v;
+            series.backgroundColor[series.data.length-1] = Number(bar.close) >= Number(bar.open) ? 'rgba(0,192,118,0.6)' : 'rgba(246,70,93,0.6)';
+            volumeChartInstance.update('none');
+          }
+          return;
+        }
         if(!msg.topic?.startsWith('tickers.') || !msg.data) return;
         const symbol = msg.topic.slice(8);
         const price = parseFloat(msg.data.lastPrice);
@@ -1143,6 +1159,7 @@ function connectPriceStream(){
           document.getElementById('btcPriceValue').textContent = `${fmtPrice(price)} USDT`;
         }
         if(symbol === currentSymbol){
+          applyLiveCandle(price, Number(msg.ts) || Date.now());
           lastLivePrice = price;
           document.getElementById('livePriceValue').textContent = `${fmtPrice(price)} USDT`;
           document.getElementById('applyToEntryBtn').disabled = false;
@@ -1410,6 +1427,9 @@ function calc(){
   scheduleSaveSettings();
 
   if(!entry || !lev || !margin || isNaN(fx)){
+    document.getElementById('outLiqPrice').textContent = '-';
+    delete document.getElementById('outLiqPrice').dataset.price;
+    candleChartInstance?.update('none');
     return;
   }
   const posValue = margin * lev;
@@ -1429,6 +1449,7 @@ function calc(){
   document.getElementById('outLiqPrice').textContent = `${fmtPrice(liqPrice)} USDT`;
   document.getElementById('outLiqPrice').className = 'result-value big val-accent';
 
+  document.getElementById('outLiqPrice').dataset.price = liqPrice;
   const dist = (liqPrice - entry) / entry * 100;
   document.getElementById('outLiqDist').textContent = `${fmtSigned(dist)}%`;
 
@@ -1438,6 +1459,7 @@ function calc(){
 }
 
 function calcFromPrice(){
+  candleChartInstance?.update('none');
   const {entry, lev, margin, fx} = getInputs();
   const priceVal = document.getElementById('priceInput').value;
   const price = parseFloat(priceVal);
@@ -1470,9 +1492,10 @@ document.querySelectorAll('input[type=number]').forEach(el=>{
 });
 
 // ===== 캔들 차트 + 보조지표 =====
-let currentTimeframe = '15';
+const defaultTimeframe = '1';
+let currentTimeframe = defaultTimeframe;
 const TF_LABELS = { '1':'1분','5':'5분','15':'15분','60':'1시간','240':'4시간','D':'1일' };
-let candleChartInstance = null;
+
 let rsiChartInstance = null;
 let macdChartInstance = null;
 let volumeChartInstance = null;
@@ -1575,9 +1598,22 @@ function calcMACD(closes, fast=12, slow=26, signal=9){
   return { macdLine, signalLine, histogram };
 }
 
+function syncChartWindow({chart}){
+  const peer = chart === candleChartInstance ? volumeChartInstance : candleChartInstance;
+  if(!peer) return;
+  peer.options.scales.x.min = chart.scales.x.min;
+  peer.options.scales.x.max = chart.scales.x.max;
+  peer.update('none');
+}
+
 function resetChartZoom(){
+  if(currentTimeframe !== defaultTimeframe) setTimeframe(defaultTimeframe);
   if(candleChartInstance && typeof candleChartInstance.resetZoom === 'function'){
     candleChartInstance.resetZoom();
+    candleChartInstance.options.scales.x.min = Number(candleChartInstance.canvas.dataset.start);
+    candleChartInstance.options.scales.x.max = Number(candleChartInstance.canvas.dataset.end);
+    candleChartInstance.update('none');
+    syncChartWindow({chart:candleChartInstance});
   }
 }
 
@@ -1596,6 +1632,10 @@ document.addEventListener('click', dismissChartTooltips);
 document.addEventListener('touchstart', dismissChartTooltips, {passive:true});
 
 function setTimeframe(tf){
+  if(tf !== currentTimeframe && priceSocket?.readyState === WebSocket.OPEN){
+    priceSocket.send(JSON.stringify({op:'unsubscribe', args:[`kline.${currentTimeframe}.${currentSymbol}`]}));
+    priceSocket.send(JSON.stringify({op:'subscribe', args:[`kline.${tf}.${currentSymbol}`]}));
+  }
   currentTimeframe = tf;
   Object.keys(TF_LABELS).forEach(k => {
     const btn = document.getElementById('tfBtn-'+k);
@@ -1606,6 +1646,7 @@ function setTimeframe(tf){
 
 async function loadChartData(){
   if(chartFetchInFlight) return;
+  const requestedSymbol = currentSymbol, requestedTimeframe = currentTimeframe;
   chartFetchInFlight = true;
   const loadingEl = document.getElementById('chartLoading');
   loadingEl.style.display = 'block';
@@ -1626,15 +1667,198 @@ async function loadChartData(){
       c: parseFloat(r[4]),
       v: parseFloat(r[5])
     }));
-    renderAllCharts(candles);
+    if(requestedSymbol === currentSymbol && requestedTimeframe === currentTimeframe) renderAllCharts(candles);
   }catch(e){
     console.error('캔들 데이터 조회 실패', e);
   }finally{
     loadingEl.style.display = 'none';
     chartFetchInFlight = false;
+    if(requestedSymbol !== currentSymbol || requestedTimeframe !== currentTimeframe) loadChartData();
   }
 }
 
+function refreshChart(chart, canvas, config){
+  const key = currentSymbol + ':' + currentTimeframe;
+  if(!chart || canvas.dataset.view !== key){
+    if(chart) chart.destroy();
+    canvas.dataset.view = key;
+    if(canvas.id === 'candleChart') canvas.dataset.start = String(config.options.scales.x.min);
+    return new Chart(canvas, config);
+  }
+  if(canvas.id === 'candleChart'){
+    const bounds = config.options.scales.x;
+    const previous = chart.canvas.dataset;
+    if(chart.options.scales.x.min === Number(previous.start) || !previous.start){
+      chart.options.scales.x.min = bounds.min;
+      chart.options.scales.x.max = bounds.max;
+    }
+    previous.start = String(bounds.min);
+  }
+  chart.data.datasets = config.data.datasets;
+  chart.update('none');
+  return chart;
+}
+
+let candlePaintTimer = null;
+function applyLiveCandle(price, time){
+  const view = lastChartSnapshot;
+  if(!view || view.symbol !== currentSymbol || view.timeframe !== currentTimeframe || !candleChartInstance) return;
+  const candle = view.candles.at(-1);
+  const duration = (currentTimeframe === 'D' ? 1440 : Number(currentTimeframe)) * 60000;
+  if(time < candle.x) return;
+  if(time >= candle.x + duration){loadChartData(); return;}
+  candle.h = Math.max(candle.h, price);
+  candle.l = Math.min(candle.l, price);
+  candle.c = price;
+  if(candlePaintTimer !== null) return;
+  const chart = candleChartInstance;
+  let previous = performance.now();
+  function paint(now){
+    candlePaintTimer = null;
+    if(view !== lastChartSnapshot || chart !== candleChartInstance) return;
+    let axis = chart.scales.y;
+    let body = chart.getDatasetMeta(0).data.at(-1);
+    if(!body || matchMedia('(prefers-reduced-motion: reduce)').matches){
+      chart.update('none');
+      return;
+    }
+    if(candle.h > axis.max || candle.l < axis.min){
+      const fields = ['close', 'high', 'low'];
+      const displayed = fields.map(field => axis.getValueForPixel(body[field]));
+      chart.update('none');
+      axis = chart.scales.y;
+      body = chart.getDatasetMeta(0).data.at(-1);
+      fields.forEach((field, i) => { body[field] = axis.getPixelForValue(displayed[i]); });
+    }
+    const step = 1 - Math.exp(-Math.max(1, now - previous) / 160);
+    previous = now;
+    let moving = false;
+    for(const [field, priceKey] of [['close','c'], ['high','h'], ['low','l']]){
+      const target = axis.getPixelForValue(candle[priceKey]);
+      const gap = target - body[field];
+      if(Math.abs(gap) > 0.08){
+        body[field] += gap * step;
+        moving = true;
+      }else{
+        body[field] = target;
+      }
+    }
+    chart.draw();
+    if(moving) candlePaintTimer = requestAnimationFrame(paint);
+  }
+  candlePaintTimer = requestAnimationFrame(paint);
+}
+
+function candlePalette(original){
+  const defaults = Chart.defaults.elements.financial;
+  const result = {};
+  for(const [side, rgb] of [['up','0,192,118'], ['down','246,70,93']]){
+    const source = defaults?.[original]?.[side] ?? Chart.defaults.elements.candlestick?.[original]?.[side];
+    const ctx = document.getElementById('candleChart').getContext('2d');
+    ctx.save();
+    ctx.fillStyle = '#000';
+    if(source) ctx.fillStyle = source;
+    const normalized = ctx.fillStyle;
+    ctx.restore();
+    const alpha = normalized.startsWith('rgba') ? Number(normalized.split(',').at(-1).replace(')','')) : 1;
+    result[side] = 'rgba(' + rgb + ',' + alpha + ')';
+  }
+  result.unchanged = defaults?.[original]?.unchanged ?? '#888';
+  return result;
+}
+function readPositionLevels(){
+  return [
+    ['진입가', Number(document.getElementById('entryPrice').value), '#80b8ff'],
+    ['예상가', Number(document.getElementById('priceInput').value), '#63dfab'],
+    ['청산가', Number(document.getElementById('outLiqPrice').dataset.price), '#ff8291']
+  ].filter(([,value]) => Number.isFinite(value) && value > 0);
+}
+const positionLevels = {
+  id: 'positionLevels',
+  afterDatasetsDraw(chart){
+    const {ctx,chartArea:area,scales:{y}} = chart;
+    const rows = readPositionLevels().map(([name,value,color]) =>
+      ({name,value,color,py:y.getPixelForValue(value)})).sort((a,b)=>a.py-b.py);
+    ctx.save();
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    for(const [id, outside, arrow] of [
+      ['levelsAbove',r=>r.py<area.top,'↑'], ['levelsBelow',r=>r.py>area.bottom,'↓']
+    ]){
+      const rail=document.getElementById(id);
+      const group=rows.filter(outside);
+      const key=group.map(r=>r.name+r.value).join('|');
+      if(rail.dataset.key!==key){
+        rail.dataset.key=key;
+        rail.replaceChildren(...group.map(r=>{
+          const tag=document.createElement('span');
+          tag.style.color=r.color;
+          tag.textContent=arrow+' '+r.name+' '+fmtPrice(r.value);
+          return tag;
+        }));
+      }
+      group.forEach((r,index)=>{
+        const edge=id==='levelsAbove'?area.top:area.bottom;
+        ctx.strokeStyle=r.color;ctx.setLineDash([4,4+8*(group.length-1)]);
+        ctx.lineDashOffset=-8*index;
+        ctx.beginPath();ctx.moveTo(area.left,edge);ctx.lineTo(area.right,edge);ctx.stroke();
+      });
+    }
+    ctx.lineDashOffset=0;
+    const visible=rows.filter(r=>r.py>=area.top && r.py<=area.bottom);    let next = area.top + 10;
+    for(const [i,{name,value,color,py}] of visible.entries()){
+      const arrow = py < area.top ? '↑ ' : py > area.bottom ? '↓ ' : '';
+      const cy = Math.min(area.bottom-10-20*(visible.length-i-1),Math.max(next,py));
+      next = cy+20;
+      ctx.strokeStyle=color; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+      const lineY = py;
+      ctx.beginPath(); ctx.moveTo(area.left,lineY); ctx.lineTo(area.right,lineY); ctx.stroke();
+      ctx.setLineDash([]);
+      for(const [text,right] of [[arrow+name,false],[fmtPrice(value),true]]){
+        const width = ctx.measureText(text).width+12;
+        const x = right ? area.right-width : area.left;
+        if(!arrow && Math.abs(cy-py)>1){
+          const anchor = right ? x+width : x;
+          ctx.beginPath(); ctx.moveTo(anchor,py); ctx.lineTo(anchor,cy); ctx.stroke();
+        }
+        ctx.fillStyle='#15191e'; ctx.fillRect(x,cy-9,width,18);
+        ctx.strokeRect(x+0.5,cy-8.5,width-1,17);
+        ctx.fillStyle=color; ctx.fillText(text,x+6,cy);
+      }
+    }
+    ctx.restore();
+  }
+};
+const visibleExtremes = {
+  id: 'visibleExtremes',
+  afterDatasetsDraw({ctx, chartArea:a, scales:{x,y}, data}){
+    let high, low;
+    for(const c of data.datasets[0].data){
+      if(c.x < x.min || c.x > x.max) continue;
+      if(!high || c.h >= high.h) high=c;
+      if(!low || c.l <= low.l) low=c;
+    }
+    if(!high) return;
+    ctx.save();
+    ctx.font='bold 12px sans-serif';
+    ctx.textBaseline='middle';
+    ctx.textAlign='left';
+    ctx.lineWidth=1;
+    for(const [label,c,v,offset] of [['고점',high,high.h,-17],['저점',low,low.l,17]]){
+      const px=x.getPixelForValue(c.x), py=y.getPixelForValue(v);
+      const text=label+' '+fmtPrice(v);
+      const width=ctx.measureText(text).width+10;
+      const left=Math.max(a.left,Math.min(a.right-width,px+width+24<a.right ? px+18 : px-width-18));
+      const cy=Math.max(a.top+10,Math.min(a.bottom-10,py+offset));
+      ctx.strokeStyle='#ddd';
+      ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(left>px ? left : left+width,cy);ctx.stroke();
+      ctx.fillStyle='#171a20';ctx.fillRect(left,cy-8,width,16);
+      ctx.fillStyle='#f1f2f4';ctx.fillText(text,left+5,cy);
+    }
+    ctx.restore();
+  }
+};
 function renderAllCharts(candles){
   if(!candles.length) return;
   const closes = candles.map(c => c.c);
@@ -1646,21 +1870,32 @@ function renderAllCharts(candles){
 
   lastChartSnapshot = { candles, ma20, ma60, rsi, macdLine, signalLine, histogram, symbol: currentSymbol, timeframe: currentTimeframe };
 
+  const count = window.innerWidth < 640 ? 26 : 48;
+  const interval = (currentTimeframe === 'D' ? 1440 : Number(currentTimeframe)) * 60000;
+  const candleMin = candles[Math.max(0, candles.length - count)].x - interval / 2;
+  const candleMax = candles.at(-1).x + interval * Math.round(count * 0.42);
   const gridColor = 'rgba(255,255,255,0.06)';
   const tickColor = '#8a8a8a';
   const upColor = '#00c076';
   const downColor = '#f6465d';
 
+  document.getElementById('candleChart').dataset.end = String(candleMax);
+  const timeZoom = {
+    pan: { enabled:true, mode:'x', onPan:syncChartWindow },
+    zoom: { wheel:{enabled:true}, pinch:{enabled:true}, mode:'x', onZoom:syncChartWindow },
+    limits: { x:{minRange:interval * 5} }
+  };
   const candleCtx = document.getElementById('candleChart');
-  if(candleChartInstance) candleChartInstance.destroy();
-  candleChartInstance = new Chart(candleCtx, {
+  candleChartInstance = refreshChart(candleChartInstance, candleCtx, {
     type: 'candlestick',
+    plugins: [positionLevels, visibleExtremes],
     data: {
       datasets: [
         {
           label: currentSymbol,
           data: candles,
-          color: { up: upColor, down: downColor, unchanged: tickColor }
+          backgroundColors: candlePalette('backgroundColors'),
+          borderColors: candlePalette('borderColors')
         },
         {
           type: 'line', label: 'MA20', data: candles.map((c,i) => ({x:c.x, y:ma20[i]})),
@@ -1689,26 +1924,17 @@ function renderAllCharts(candles){
             filter: item => item.text !== 'BB Upper' && item.text !== 'BB Lower'
           }
         },
-        zoom: {
-          pan: { enabled: true, mode: 'x' },
-          zoom: {
-            wheel: { enabled: true },
-            pinch: { enabled: true },
-            mode: 'x'
-          },
-          limits: { x: { minRange: 5 * 60 * 1000 } }
-        }
+        zoom: timeZoom
       },
       scales: {
-        x: { type: 'time', grid: { color: gridColor }, ticks: { color: tickColor, maxRotation: 0, font: { size: 9 } } },
-        y: { position: 'right', grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 9 } } }
+        x: { min: candleMin, max: candleMax, type: 'time', offset:false, grid: { color: gridColor }, ticks: { color: tickColor, maxRotation: 0, font: { size: 9 } } },
+        y: { afterFit:scale => {scale.width = 64;}, position: 'right', grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 9 } } }
       }
     }
   });
 
   const volumeCtx = document.getElementById('volumeChart');
-  if(volumeChartInstance) volumeChartInstance.destroy();
-  volumeChartInstance = new Chart(volumeCtx, {
+  volumeChartInstance = refreshChart(volumeChartInstance, volumeCtx, {
     type: 'bar',
     data: {
       datasets: [{
@@ -1719,17 +1945,17 @@ function renderAllCharts(candles){
     },
     options: {
       responsive: true, maintainAspectRatio: false, animation: false, events: ['click'],
-      plugins: { legend: { display: false } },
+      plugins: { legend: { display: false }, zoom:timeZoom },
       scales: {
-        x: { type: 'time', grid: { color: gridColor }, ticks: { color: tickColor, maxRotation: 0, font: { size: 9 } } },
-        y: { position: 'right', grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 9 } } }
+        x: { min:candleChartInstance.scales.x.min, max:candleChartInstance.scales.x.max, type: 'time', offset:false, grid: { color: gridColor }, ticks: { color: tickColor, maxRotation: 0, font: { size: 9 } } },
+        y: { afterFit:scale => {scale.width = 64;}, position: 'right', grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 9 } } }
       }
     }
   });
 
+  syncChartWindow({chart:candleChartInstance});
   const rsiCtx = document.getElementById('rsiChart');
-  if(rsiChartInstance) rsiChartInstance.destroy();
-  rsiChartInstance = new Chart(rsiCtx, {
+  rsiChartInstance = refreshChart(rsiChartInstance, rsiCtx, {
     type: 'line',
     data: {
       datasets: [{
@@ -1749,8 +1975,7 @@ function renderAllCharts(candles){
   });
 
   const macdCtx = document.getElementById('macdChart');
-  if(macdChartInstance) macdChartInstance.destroy();
-  macdChartInstance = new Chart(macdCtx, {
+  macdChartInstance = refreshChart(macdChartInstance, macdCtx, {
     type: 'bar',
     data: {
       datasets: [
@@ -1987,7 +2212,7 @@ async function copyAnalysisText(){
 updatePositionQtyLabel();
 syncPositionInputs();
 calc();
-setTimeframe('15');
+setTimeframe(defaultTimeframe);
 </script>
 </body>
 </html>
