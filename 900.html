@@ -466,6 +466,9 @@
 .header{align-items:center;flex-wrap:wrap;gap:8px 16px}
 .market-strip{display:flex;align-items:center;flex-wrap:wrap;gap:5px 14px;font-size:12px;color:var(--sub)}
 .market-strip span{white-space:nowrap}.market-strip b{color:var(--text);font-variant-numeric:tabular-nums}
+#liveCandleBadge{position:absolute;pointer-events:none;z-index:1;background:#101114;border:1px solid #aab0b8;border-radius:6px;padding:3px 7px;text-align:right;color:#fff;font:600 12px/1.35 sans-serif;font-variant-numeric:tabular-nums}
+#liveCandleBadge{right:0;width:13ch;white-space:nowrap} #liveCandleBadge>*{display:block;height:17px;line-height:17px}
+#badgeMark{color:#ffa654}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
@@ -669,7 +672,8 @@
         </div>
       </div>
       <div id="levelDistances" class="level-edge" aria-label="현재가에서 설정가까지 거리"></div><div id="barInfo" style="font-size:12px;color:var(--sub)"></div><div id="levelsAbove" class="level-edge"></div><div class="chart-canvas-wrap">
-        <canvas id="candleChart"></canvas><div class="chart-loading" id="chartLoading" style="display:none;">캔들 데이터 불러오는 중...</div>
+        <canvas id="candleChart"></canvas>
+        <div id="liveCandleBadge" hidden title="표시가격 / 최근 체결가 / 봉 마감까지"><span id="badgeMark"></span><strong id="badgeLast"></strong><span id="badgeClock"></span></div><div class="chart-loading" id="chartLoading" style="display:none;">캔들 데이터 불러오는 중...</div>
       </div><div id="levelsBelow" class="level-edge"></div>
       <div class="indicator-label">거래량</div>
       <div class="indicator-canvas-wrap">
@@ -746,6 +750,7 @@
 
 <script>
 let candleChartInstance = null;
+let currentMarkPrice = null;
 let direction = 'long';
 let lastLivePrice = null;
 let liveFetchInFlight = false;
@@ -775,6 +780,7 @@ function updatePageTitle(price){
 }
 
 function resetLiveDisplayForSymbolChange(){
+  currentMarkPrice = null;
   lastLivePrice = null;
   document.getElementById('livePriceValue').textContent = '불러오는 중...';
   document.getElementById('applyToEntryBtn').disabled = true;
@@ -1090,6 +1096,8 @@ function connectPriceStream(){
         }
         if(!msg.topic?.startsWith('tickers.') || !msg.data) return;
         const symbol = msg.topic.slice(8);
+        const mark = Number(msg.data.markPrice);
+        if(symbol === currentSymbol && Number.isFinite(mark) && mark > 0) currentMarkPrice = mark;
         const price = parseFloat(msg.data.lastPrice);
         if(!Number.isFinite(price) || price <= 0) return;
         if(symbol === 'BTCUSDT'){
@@ -1482,6 +1490,7 @@ document.addEventListener('click', dismissChartTooltips);
 document.addEventListener('touchstart', dismissChartTooltips, {passive:true});
 
 function setTimeframe(tf){
+  if(tf!==currentTimeframe) document.getElementById('liveCandleBadge').hidden=true;
   if(tf !== currentTimeframe && priceSocket?.readyState === WebSocket.OPEN){
     priceSocket.send(JSON.stringify({op:'unsubscribe', args:[`kline.${currentTimeframe}.${currentSymbol}`]}));
     priceSocket.send(JSON.stringify({op:'subscribe', args:[`kline.${tf}.${currentSymbol}`]}));
@@ -1771,6 +1780,43 @@ const crosshair={
     ctx.restore();
   }
 };
+function remainingCandleTime(ms){
+  const seconds=Math.max(0, Math.ceil(ms/1000));
+  const hh=Math.floor(seconds/3600), mm=Math.floor(seconds/60)%60, ss=seconds%60;
+  return (hh?hh+':':'')+String(mm).padStart(2,'0')+':'+String(ss).padStart(2,'0');
+}
+function updateBadgeClock(){
+  const badge=document.getElementById('liveCandleBadge');
+  if(badge.hidden) return;
+  if(badge.dataset.tf!==currentTimeframe || badge.dataset.symbol!==currentSymbol){badge.hidden=true;return;}
+  const now=Date.now();
+  const intervalMs=(currentTimeframe==='D'?1440:Number(currentTimeframe))*60000;
+  const end=(Math.floor(now/intervalMs)+1)*intervalMs;
+  document.getElementById('badgeClock').textContent=TF_LABELS[currentTimeframe]+' · '+remainingCandleTime(end-now);
+}
+const liveCandleMarker={
+  id:'liveCandleMarker',
+  afterDraw(chart){
+    const badge=document.getElementById('liveCandleBadge'), view=lastChartSnapshot;
+    const bar=view?.candles.at(-1), a=chart.chartArea;
+    if(!bar || view.symbol!==currentSymbol || view.timeframe!==currentTimeframe || !a){badge.hidden=true;return;}
+    const px=chart.scales.x.getPixelForValue(bar.x), py=chart.scales.y.getPixelForValue(bar.c);
+    if(px<a.left || px>a.right || py<a.top || py>a.bottom){badge.hidden=true;return;}
+    const mark=document.getElementById('badgeMark');
+    mark.textContent=currentMarkPrice==null?'—':fmtPrice(currentMarkPrice);
+    document.getElementById('badgeLast').textContent=fmtPrice(bar.c);
+    badge.dataset.tf=view.timeframe;
+    badge.dataset.symbol=view.symbol;
+    badge.hidden=false;
+    updateBadgeClock();
+    badge.style.top=Math.round((a.top+a.bottom-badge.offsetHeight)/2)+'px';
+    const endX=Math.min(a.right,chart.width-badge.offsetWidth);
+    if(endX>px){
+      const ctx=chart.ctx;ctx.save();ctx.strokeStyle='#cbd0d7';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+      ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(endX,py);ctx.stroke();ctx.restore();    }
+  }
+};
+setInterval(updateBadgeClock, 1000);
 const visibleExtremes = {
   id: 'visibleExtremes',
   afterDatasetsDraw({ctx, chartArea:a, scales:{x,y}, data}){
@@ -1829,7 +1875,7 @@ function renderAllCharts(candles){
   const candleCtx = document.getElementById('candleChart');
   candleChartInstance = refreshChart(candleChartInstance, candleCtx, {
     type: 'candlestick',
-    plugins: [positionLevels, visibleExtremes, crosshair],
+    plugins: [positionLevels, visibleExtremes, crosshair, liveCandleMarker],
     data: {
       datasets: [
         {
