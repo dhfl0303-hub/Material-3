@@ -499,6 +499,20 @@
 #levelDistances span{border:0}
 #levelDistances .above{color:var(--long)}
 #levelDistances .below{color:var(--short)}
+.chart-canvas-wrap .chart-loading{position:absolute;top:8px;left:50%;transform:translateX(-50%);max-width:90%;width:max-content;padding:5px 10px;background:var(--panel);border-radius:5px;pointer-events:none}
+#barInfo{height:2.8em;line-height:1.4;overflow:auto;font-variant-numeric:tabular-nums}
+#levelsAbove,#levelsBelow{height:24px;box-sizing:border-box;flex-wrap:nowrap;align-items:center;overflow-x:auto;white-space:nowrap}
+#levelDistances{height:50px;box-sizing:border-box;align-content:start;overflow:auto;font-variant-numeric:tabular-nums}
+@media(max-width:650px){#levelDistances{height:72px}}
+.analysis-box textarea{overscroll-behavior-y:contain}
+@media (min-width:1280px){
+  body{padding-bottom:16px}
+  .wrap{height:calc(100dvh - 32px);display:flex;flex-direction:column}
+  .header,.wrap>.note{flex:none}
+  .desktop-grid{flex:1;min-height:0;grid-template-rows:minmax(0,1fr)}
+  .col-left,.col-mid{min-height:0;overflow-y:auto;scrollbar-gutter:stable;overscroll-behavior-y:contain}
+  .col-left>.card{flex:none;min-height:100%}
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
@@ -717,7 +731,7 @@
         </div>
       </div>
       <div id="levelDistances" class="level-edge" aria-label="현재가에서 설정가까지 거리"></div><div id="barInfo" style="font-size:12px;color:var(--sub)"></div><div id="levelsAbove" class="level-edge"></div><div class="chart-canvas-wrap">
-        <canvas id="candleChart"></canvas>
+        <canvas id="candleChart"></canvas><div class="chart-loading" id="chartLoading" style="display:none;">캔들 데이터 불러오는 중...</div>
       </div><div id="levelsBelow" class="level-edge"></div>
       <div class="indicator-label">거래량</div>
       <div class="indicator-canvas-wrap">
@@ -729,7 +743,7 @@
       <details ontoggle="if(this.open) macdChartInstance?.resize()"><summary class="accordion-summary indicator-label">MACD (12, 26, 9)</summary><div class="indicator-canvas-wrap">
         <canvas id="macdChart"></canvas>
       </div></details>
-      <div class="chart-loading" id="chartLoading" style="display:none;">캔들 데이터 불러오는 중...</div>
+      
       <button type="button" class="analysis-btn" id="analysisBtn" onclick="generateAnalysisText()">📋 전체 타임프레임(1분·5분·15분·1시간·4시간·1일) 분석 텍스트 생성</button>
       <div class="analysis-box" id="analysisBox">
         <textarea id="analysisOutput" readonly></textarea>
@@ -741,9 +755,7 @@
   </div>
   </div>
 
-  <div class="note">
-    이 계산기는 참고용 산술 도구이며, 실제 거래소 청산가·수수료·펀딩비와 차이가 있을 수 있습니다. 투자 판단과 책임은 본인에게 있습니다.
-  </div>
+  
 
 </div>
 
@@ -1664,7 +1676,8 @@ async function loadChartData(){
   chartFetchInFlight = true;
   const loadingEl = document.getElementById('chartLoading');
   loadingEl.textContent = '캔들 데이터 불러오는 중...';
-  loadingEl.style.display = 'block';
+  const sameView = candleChartInstance?.canvas?.dataset.view === requestedSymbol+':'+requestedTimeframe;
+  loadingEl.style.display = sameView ? 'none' : 'block';
   document.getElementById('chartTitle').textContent = `${currentSymbol} 캔들차트 (${TF_LABELS[currentTimeframe]})`;
   try{
     const url = `https://api.bybit.com/v5/market/kline?category=linear&symbol=${currentSymbol}&interval=${currentTimeframe}&limit=200`;
@@ -1686,6 +1699,7 @@ async function loadChartData(){
     if(requestedSymbol === currentSymbol && requestedTimeframe === currentTimeframe) renderAllCharts(candles);
     loadingEl.style.display = 'none';
   }catch(e){
+    loadingEl.style.display = 'block';
     loadingEl.textContent = '차트를 표시할 수 없습니다. '+e.message+' · 리셋을 눌러 다시 시도하세요.';
     console.error('캔들 데이터 조회 실패', e);
   }finally{
