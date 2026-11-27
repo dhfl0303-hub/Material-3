@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<script>
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  window.addEventListener('pageshow', () => window.scrollTo(0, 0), {once:true});
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Lev</title>
@@ -295,9 +299,7 @@
     flex-wrap:wrap;
     gap:8px;
   }
-  .chart-title{
-    font-size:13px;
-    color:var(--sub);
+  .chart-title{font-size:17px;font-weight:700;color:var(--text);
   }
   .tf-buttons{
     display:flex;
@@ -493,6 +495,10 @@
     pointer-events:none;
   }
 .level-edge{display:flex;flex-wrap:wrap;gap:4px 14px;font:600 12px sans-serif}.level-edge:not(:empty){padding:4px 0}.level-edge span{border-bottom:1px dashed currentColor}
+#levelDistances{font-size:14px;line-height:1.5}
+#levelDistances span{border:0}
+#levelDistances .above{color:var(--long)}
+#levelDistances .below{color:var(--short)}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
@@ -710,7 +716,7 @@
           <button type="button" class="tf-btn" onclick="resetChartZoom()" title="1분봉 기본 보기로 돌아가기">↺ 리셋</button>
         </div>
       </div>
-      <div id="levelsAbove" class="level-edge"></div><div class="chart-canvas-wrap">
+      <div id="levelDistances" class="level-edge" aria-label="현재가에서 설정가까지 거리"></div><div id="barInfo" style="font-size:12px;color:var(--sub)"></div><div id="levelsAbove" class="level-edge"></div><div class="chart-canvas-wrap">
         <canvas id="candleChart"></canvas>
       </div><div id="levelsBelow" class="level-edge"></div>
       <div class="indicator-label">거래량</div>
@@ -1598,16 +1604,24 @@ function calcMACD(closes, fast=12, slow=26, signal=9){
   return { macdLine, signalLine, histogram };
 }
 
-function syncChartWindow({chart}){
-  const peer = chart === candleChartInstance ? volumeChartInstance : candleChartInstance;
-  if(!peer) return;
-  peer.options.scales.x.min = chart.scales.x.min;
-  peer.options.scales.x.max = chart.scales.x.max;
-  peer.update('none');
+function linkedCharts(){
+  return [candleChartInstance,volumeChartInstance,rsiChartInstance,macdChartInstance].filter(Boolean);
 }
-
+function syncChartWindow({chart}){
+  const {min,max}=chart.scales.x;
+  for(const peer of linkedCharts()){
+    if(peer===chart) continue;
+    peer.options.scales.x.min=min;
+    peer.options.scales.x.max=max;
+    peer.update('none');
+  }
+}
 function resetChartZoom(){
-  if(currentTimeframe !== defaultTimeframe) setTimeframe(defaultTimeframe);
+  if(currentTimeframe !== defaultTimeframe || !candleChartInstance?.canvas || candleChartInstance.canvas.dataset.view !== currentSymbol+':'+defaultTimeframe){
+    setTimeframe(defaultTimeframe);
+    return;
+  }
+  loadChartData();
   if(candleChartInstance && typeof candleChartInstance.resetZoom === 'function'){
     candleChartInstance.resetZoom();
     candleChartInstance.options.scales.x.min = Number(candleChartInstance.canvas.dataset.start);
@@ -1649,6 +1663,7 @@ async function loadChartData(){
   const requestedSymbol = currentSymbol, requestedTimeframe = currentTimeframe;
   chartFetchInFlight = true;
   const loadingEl = document.getElementById('chartLoading');
+  loadingEl.textContent = '캔들 데이터 불러오는 중...';
   loadingEl.style.display = 'block';
   document.getElementById('chartTitle').textContent = `${currentSymbol} 캔들차트 (${TF_LABELS[currentTimeframe]})`;
   try{
@@ -1667,11 +1682,13 @@ async function loadChartData(){
       c: parseFloat(r[4]),
       v: parseFloat(r[5])
     }));
+    if(!candles.length) throw new Error('수신한 캔들이 없습니다.');
     if(requestedSymbol === currentSymbol && requestedTimeframe === currentTimeframe) renderAllCharts(candles);
+    loadingEl.style.display = 'none';
   }catch(e){
+    loadingEl.textContent = '차트를 표시할 수 없습니다. '+e.message+' · 리셋을 눌러 다시 시도하세요.';
     console.error('캔들 데이터 조회 실패', e);
   }finally{
-    loadingEl.style.display = 'none';
     chartFetchInFlight = false;
     if(requestedSymbol !== currentSymbol || requestedTimeframe !== currentTimeframe) loadChartData();
   }
@@ -1679,8 +1696,9 @@ async function loadChartData(){
 
 function refreshChart(chart, canvas, config){
   const key = currentSymbol + ':' + currentTimeframe;
-  if(!chart || canvas.dataset.view !== key){
-    if(chart) chart.destroy();
+  if(!chart?.canvas || Chart.getChart(canvas) !== chart || canvas.dataset.view !== key){
+    const attached = Chart.getChart(canvas);
+    if(attached) attached.destroy();
     canvas.dataset.view = key;
     if(canvas.id === 'candleChart') canvas.dataset.start = String(config.options.scales.x.min);
     return new Chart(canvas, config);
@@ -1786,11 +1804,83 @@ function readPositionLevels(){
     ['청산가', Number(document.getElementById('outLiqPrice').dataset.price), '#ff8291']
   ].filter(([,value]) => Number.isFinite(value) && value > 0);
 }
-const positionLevels = {
+let selectedBar=null;
+const crosshair={
+  id:'linkedCrosshair',
+  afterInit(chart){
+    function select(event){
+      const rect=chart.canvas.getBoundingClientRect(), area=chart.chartArea;
+      if(!area || !lastChartSnapshot) return;
+      const px=(event.clientX-rect.left)*chart.width/rect.width;
+      const py=(event.clientY-rect.top)*chart.height/rect.height;
+      const time=chart.scales.x.getValueForPixel(px);
+      const bars=lastChartSnapshot.candles;
+      const nearest=bars.reduce((a,b)=>Math.abs(a.x-time)<Math.abs(b.x-time)?a:b);
+      const step=bars.length>1 ? bars[1].x-bars[0].x : 60000;
+      selectedBar=px>=area.left && px<=area.right && py>=area.top && py<=area.bottom && Math.abs(nearest.x-time)<=step/2 ? {time:nearest.x,owner:chart,y:py} : null;
+      redraw();
+    }
+    function redraw(){
+      linkedCharts().forEach(chart=>chart.draw());
+    }
+    function leave(e){if(e.pointerType==='mouse'){selectedBar=null;redraw();}}
+    chart.canvas.addEventListener('pointermove',select);
+    chart.canvas.addEventListener('pointerdown',select);
+    chart.canvas.addEventListener('pointerleave',leave);
+    chart.removeCrosshair=()=>{
+      chart.canvas.removeEventListener('pointermove',select);
+      chart.canvas.removeEventListener('pointerdown',select);
+      chart.canvas.removeEventListener('pointerleave',leave);
+      selectedBar=null;
+    };
+  },
+  beforeDestroy(chart){chart.removeCrosshair?.();},
+  afterDraw(chart){
+    const a=chart.chartArea, x=chart.scales.x;
+    const px=selectedBar ? x.getPixelForValue(selectedBar.time) : NaN;
+    const visible=px>=a.left && px<=a.right;
+    if(chart.canvas.id==='candleChart'){
+      const data=chart.data.datasets, i=visible?data[0].data.findIndex(b=>b.x===selectedBar.time):-1;
+      let text='';
+      if(i>=0){
+        const b=data[0].data[i];
+        text=[new Date(b.x).toLocaleString('ko-KR'), '시 '+fmtPrice(b.o),'고 '+fmtPrice(b.h),'저 '+fmtPrice(b.l),'종 '+fmtPrice(b.c),'거래량 '+b.v,
+          ...data.filter(d=>d.emaPeriod).map(d=>d.label+' '+(d.data[i].y==null?'−':fmtPrice(d.data[i].y)))].join(' · ');
+      }
+      const box=document.getElementById('barInfo');
+      if(box.textContent!==text) box.textContent=text;
+    }
+    if(!visible) return;
+    const ctx=chart.ctx;
+    ctx.save();ctx.strokeStyle='#c3c9d4';ctx.lineWidth=1;ctx.setLineDash([3,4]);
+    ctx.beginPath();ctx.moveTo(px,a.top);ctx.lineTo(px,a.bottom);
+    if(selectedBar.owner===chart){ctx.moveTo(a.left,selectedBar.y);ctx.lineTo(a.right,selectedBar.y);}
+    ctx.stroke();ctx.restore();
+  }
+};const positionLevels = {
   id: 'positionLevels',
   afterDatasetsDraw(chart){
     const {ctx,chartArea:area,scales:{y}} = chart;
-    const rows = readPositionLevels().map(([name,value,color]) =>
+    const distanceBox=document.getElementById('levelDistances');
+    const ref=lastLivePrice;
+    const levels=readPositionLevels();
+    const key=ref>0 ? JSON.stringify([ref,levels]) : '';
+    if(distanceBox.dataset.key!==key){
+      distanceBox.dataset.key=key;
+      distanceBox.replaceChildren();
+      if(ref>0 && levels.length){
+        distanceBox.append('현재가 기준');
+        for(const [name,value] of levels){
+          const delta=value-ref;
+          const item=document.createElement('span');
+          const number=document.createElement('strong');
+          number.className=delta>0?'above':delta<0?'below':'';
+          number.textContent=fmtSigned(delta,priceDecimals(value))+' USDT ('+fmtSigned(delta/ref*100,2)+'%)';
+          item.append(name+' ',number);
+          distanceBox.append(item);
+        }
+      }
+    }    const rows = readPositionLevels().map(([name,value,color]) =>
       ({name,value,color,py:y.getPixelForValue(value)})).sort((a,b)=>a.py-b.py);
     ctx.save();
     ctx.font = 'bold 12px sans-serif';
@@ -1901,7 +1991,7 @@ function renderAllCharts(candles){
   const candleCtx = document.getElementById('candleChart');
   candleChartInstance = refreshChart(candleChartInstance, candleCtx, {
     type: 'candlestick',
-    plugins: [positionLevels, visibleExtremes],
+    plugins: [positionLevels, visibleExtremes, crosshair],
     data: {
       datasets: [
         {
@@ -1945,6 +2035,7 @@ function renderAllCharts(candles){
 
   const volumeCtx = document.getElementById('volumeChart');
   volumeChartInstance = refreshChart(volumeChartInstance, volumeCtx, {
+    plugins:[crosshair],
     type: 'bar',
     data: {
       datasets: [{
@@ -1963,10 +2054,10 @@ function renderAllCharts(candles){
     }
   });
 
-  syncChartWindow({chart:candleChartInstance});
   const rsiCtx = document.getElementById('rsiChart');
   rsiChartInstance = refreshChart(rsiChartInstance, rsiCtx, {
     type: 'line',
+    plugins:[crosshair],
     data: {
       datasets: [{
         label: 'RSI', data: candles.map((c,i) => ({x:c.x, y:rsi[i]})),
@@ -1975,10 +2066,10 @@ function renderAllCharts(candles){
     },
     options: {
       responsive: true, maintainAspectRatio: false, animation: false, events: ['click'],
-      plugins: { legend: { display: false } },
+      plugins: { zoom:timeZoom, legend: { display: false } },
       scales: {
-        x: { type: 'time', grid: { color: gridColor }, ticks: { color: tickColor, maxRotation: 0, font: { size: 9 } } },
-        y: { position: 'right', min: 0, max: 100, grid: { color: gridColor },
+        x: { min:candleChartInstance.scales.x.min, max:candleChartInstance.scales.x.max, type:'time', offset:false, grid: { color: gridColor }, ticks: { color: tickColor, maxRotation: 0, font: { size: 9 } } },
+        y: { afterFit:scale=>{scale.width=64;}, position: 'right', min: 0, max: 100, grid: { color: gridColor },
              ticks: { color: tickColor, font: { size: 9 }, callback: v => [30,50,70].includes(v) ? v : '' } }
       }
     }
@@ -1987,6 +2078,7 @@ function renderAllCharts(candles){
   const macdCtx = document.getElementById('macdChart');
   macdChartInstance = refreshChart(macdChartInstance, macdCtx, {
     type: 'bar',
+    plugins:[crosshair],
     data: {
       datasets: [
         {
@@ -2006,13 +2098,14 @@ function renderAllCharts(candles){
     },
     options: {
       responsive: true, maintainAspectRatio: false, animation: false, events: ['click'],
-      plugins: { legend: { labels: { color: tickColor, boxWidth: 10, font: { size: 10 } } } },
+      plugins: { zoom:timeZoom, legend: { labels: { color: tickColor, boxWidth: 10, font: { size: 10 } } } },
       scales: {
-        x: { type: 'time', grid: { color: gridColor }, ticks: { color: tickColor, maxRotation: 0, font: { size: 9 } } },
-        y: { position: 'right', grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 9 } } }
+        x: { min:candleChartInstance.scales.x.min, max:candleChartInstance.scales.x.max, type:'time', offset:false, grid: { color: gridColor }, ticks: { color: tickColor, maxRotation: 0, font: { size: 9 } } },
+        y: { afterFit:scale=>{scale.width=64;}, position: 'right', grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 9 } } }
       }
     }
   });
+  syncChartWindow({chart:candleChartInstance});
 }
 
 setInterval(() => {
