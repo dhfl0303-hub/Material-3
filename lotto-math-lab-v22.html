@@ -141,7 +141,7 @@ p{margin-bottom:6px;line-height:1.6}
   <div class="status"><div class="dot dot-green" id="statusDot"></div><span id="statusText">데이터 로드 중...</span></div>
   <div class="flex-center gap6">
     <span id="dataRange"></span>
-    <button id="drawAdminButton" class="btn btn-sm btn-outline hidden" onclick="openAddDrawModal()">➕ 회차 추가</button>
+    <button id="addDrawButton" class="btn btn-sm btn-outline" onclick="openAddDrawModal()">➕ 회차 추가</button>
   </div>
 </div>
 <div class="tabs">
@@ -969,15 +969,13 @@ function renderHistory(){
 
 /* ===== 수동 회차 추가 ===== */
 function openAddDrawModal(){
-  if(!isDrawAdmin){alert('회차 등록·수정은 운영자만 가능합니다.');return;}
-  const last = DRAWS.filter(d=>!d._manual).slice(-1)[0]?.round || DRAWS[DRAWS.length-1]?.round || 0;
+  const last = DRAWS[DRAWS.length-1]?.round || 0;
   document.getElementById('addRound').value = last + 1;
   document.getElementById('addDrawModal').classList.remove('hidden');
   renderManualList();
 }
 function closeAddDrawModal(){ document.getElementById('addDrawModal').classList.add('hidden'); }
 async function addManualDraw(){
-  if(!isDrawAdmin){alert('회차 등록·수정은 운영자만 가능합니다.');return;}
   const round=+document.getElementById('addRound').value,date=document.getElementById('addDate').value;
   const nums=[1,2,3,4,5,6].map(i=>+document.getElementById('addN'+i).value),bonus=+document.getElementById('addBonus').value;
   if(!round||nums.some(n=>!Number.isInteger(n)||n<1||n>45)||new Set(nums).size!==6){alert('회차와 당첨번호 6개를 정확히 입력해주세요.');return}
@@ -1009,16 +1007,6 @@ function loadManualDraws(){
     }
   }catch(e){}
 }
-function deleteManualDraw(round){
-  if(!isDrawAdmin){alert('회차 수정은 운영자만 가능합니다.');return;}
-  if(!confirm(round+'회차를 삭제할까요?'))return;
-  DRAWS = DRAWS.filter(d=>d.round!==round);
-  saveManualDraws();
-  if(db){try{db.collection('draws').doc(String(round)).delete()}catch(e){}}
-  updateStatusBar();
-  refreshCurrentTab();
-  renderManualList();
-}
 function refreshCurrentTab(){
   if(curTab==='stats')renderStatsTab();
   else if(curTab==='indicator')renderIndicatorTab();
@@ -1027,7 +1015,7 @@ function refreshCurrentTab(){
 function renderManualList(){
   const manual = DRAWS.filter(d=>d._manual);
   if(manual.length===0){ document.getElementById('manualDrawList').innerHTML='<div class="text-dim text-center mt8" style="font-size:10px">수동 추가된 회차가 없습니다.</div>'; return; }
-  document.getElementById('manualDrawList').innerHTML='<div class="text-dim mt8 mb6" style="font-size:10px;font-weight:700">수동 추가 목록 ('+manual.length+'건)</div>'+manual.map(m=>'<div class="flex-between" style="padding:4px 0;border-bottom:1px solid rgba(30,45,69,.12);font-size:11px"><span class="fw700">'+m.round+'회</span><span class="text-dim">'+m.nums.join(', ')+'</span><button class="btn btn-sm btn-danger" onclick="deleteManualDraw('+m.round+')">삭제</button></div>').join('');
+  document.getElementById('manualDrawList').innerHTML='<div class="text-dim mt8 mb6" style="font-size:10px;font-weight:700">수동 추가 목록 ('+manual.length+'건)</div>'+manual.map(m=>'<div class="flex-between" style="padding:4px 0;border-bottom:1px solid rgba(30,45,69,.12);font-size:11px"><span class="fw700">'+m.round+'회</span><span class="text-dim">'+m.nums.join(', ')+'</span></div>').join('');
 }
 
 /* ===== 보조지표 탭 ===== */
@@ -1414,7 +1402,6 @@ function renderLab(){
 }
 
 const $=id=>document.getElementById(id);
-const isDrawAdmin=false;
 let generationSnapshot=null;
 function generationRecord(){
   const rows=getGenerationDraws();const latest=DRAWS.at(-1)?.round||0;
