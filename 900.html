@@ -668,7 +668,7 @@
           <button type="button" class="tf-btn" id="tfBtn-60" onclick="setTimeframe('60')">1시간</button>
           <button type="button" class="tf-btn" id="tfBtn-240" onclick="setTimeframe('240')">4시간</button>
           <button type="button" class="tf-btn" id="tfBtn-D" onclick="setTimeframe('D')">1일</button>
-          <button type="button" class="tf-btn" onclick="resetChartZoom()" title="1분봉 기본 보기로 돌아가기">↺ 리셋</button>
+          <label class="tf-btn"><input type="checkbox" id="showSwingLevels" checked onchange="candleChartInstance?.draw()"> 지지·저항</label><button type="button" class="tf-btn" onclick="resetChartZoom()" title="1분봉 기본 보기로 돌아가기">↺ 리셋</button>
         </div>
       </div>
       <div id="levelDistances" class="level-edge" aria-label="현재가에서 설정가까지 거리"></div><div id="barInfo" style="font-size:12px;color:var(--sub)"></div><div id="levelsAbove" class="level-edge"></div><div class="chart-canvas-wrap">
@@ -1817,7 +1817,47 @@ const liveCandleMarker={
   }
 };
 setInterval(updateBadgeClock, 1000);
-const visibleExtremes = {
+function swingZones(bars){
+  const width=bars.slice(-14).reduce((sum,b)=>sum+b.h-b.l,0)/Math.max(1,Math.min(14,bars.length))*0.35;
+  function group(side){
+    const clusters=[];
+    for(let i=2;i<bars.length-2;i++){
+      const price=bars[i][side];
+      const neighbors=[bars[i-2],bars[i-1],bars[i+1],bars[i+2]];
+      if(!neighbors.every(b=>side==='l'?price<b.l:price>b.h)) continue;
+      const zone=clusters.filter(z=>Math.abs(z.price-price)<=width)
+        .sort((a,b)=>Math.abs(a.price-price)-Math.abs(b.price-price))[0];
+      if(!zone) clusters.push({price,hits:1});
+      else {zone.price+=(price-zone.price)/(++zone.hits);}
+    }
+    return clusters.filter(z=>z.hits>=2);
+  }
+  return {support:group('l'),resistance:group('h')};
+}
+const swingLines={
+  id:'swingLines',
+  afterDatasetsDraw(chart){
+    if(!document.getElementById('showSwingLevels').checked) return;
+    const zones=chart.data.datasets[0].zones, price=chart.data.datasets[0].data.at(-1)?.c;
+    if(!zones || !price) return;
+    const {ctx,chartArea:a,scales:{y}}=chart;
+    ctx.save();ctx.font='bold 13px sans-serif';ctx.textBaseline='middle';
+    for(const [group,label,colour] of [[zones.support,'지지','#3de8d0'],[zones.resistance,'저항','#ff9b38']]){
+      const zone=group.filter(z=>label==='지지'?z.price<price:z.price>price)
+        .sort((u,v)=>Math.abs(u.price-price)-Math.abs(v.price-price))[0];
+      if(!zone) continue;
+      const py=y.getPixelForValue(zone.price);
+      if(py<a.top || py>a.bottom) continue;
+      ctx.strokeStyle=colour;ctx.lineWidth=2;ctx.setLineDash([]);ctx.beginPath();
+      ctx.moveTo(a.left,py);ctx.lineTo(a.right,py);ctx.stroke();
+      const text=label+' '+fmtPrice(zone.price)+' · '+zone.hits+'회', x=a.left+48;
+      const cy=Math.max(a.top+8,Math.min(a.bottom-8,py+(label==='지지'?9:-9)));
+      ctx.fillStyle='#15191e';ctx.fillRect(x,cy-9,ctx.measureText(text).width+8,18);
+      ctx.fillStyle=colour;ctx.textAlign='left';ctx.fillText(text,x+4,cy);
+    }
+    ctx.restore();
+  }
+};const visibleExtremes = {
   id: 'visibleExtremes',
   afterDatasetsDraw({ctx, chartArea:a, scales:{x,y}, data}){
     let high, low;
@@ -1875,12 +1915,13 @@ function renderAllCharts(candles){
   const candleCtx = document.getElementById('candleChart');
   candleChartInstance = refreshChart(candleChartInstance, candleCtx, {
     type: 'candlestick',
-    plugins: [positionLevels, visibleExtremes, crosshair, liveCandleMarker],
+    plugins: [swingLines, positionLevels, visibleExtremes, crosshair, liveCandleMarker],
     data: {
       datasets: [
         {
           label: currentSymbol,
           data: candles,
+          zones:swingZones(candles.filter(b=>b.x+interval<=Date.now()).slice(-120)),
           backgroundColors: candlePalette('backgroundColors'),
           borderColors: candlePalette('borderColors')
         },
