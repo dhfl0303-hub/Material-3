@@ -109,8 +109,6 @@ p{margin-bottom:6px;line-height:1.6}
 .omr-cell.bonus-marked{background:transparent;color:var(--cyan);border:2px dashed var(--cyan)}
 .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:998;padding:20px}
 .modal{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:400px;width:100%;max-height:80vh;overflow-y:auto}
-.wheel-num-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--bg);color:var(--textDim);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
-.wheel-num-btn.active{background:var(--gold);color:var(--bg);border-color:var(--gold)}
 @media(max-width:500px){
   .heatmap{grid-template-columns:repeat(5,1fr)}
   .grid2{grid-template-columns:1fr 1fr}
@@ -135,7 +133,7 @@ p{margin-bottom:6px;line-height:1.6}
 <div id="mainApp">
 <div class="header">
   <h1>LOTTO MATH LAB</h1>
-  <p>조준은 1등, 안전망은 3등 — 수학·통계 기반 로또 분석 엔진</p>
+
 </div>
 <div class="data-bar">
   <div class="status"><div class="dot dot-green" id="statusDot"></div><span id="statusText">데이터 로드 중...</span></div>
@@ -173,23 +171,23 @@ p{margin-bottom:6px;line-height:1.6}
     </div>
     <div class="card"><div class="card-title">📈 번호 합계 분포</div><div class="grid2"><div class="stat"><div class="stat-val" id="sumAvg"></div><div class="stat-label">평균 합계</div></div><div class="stat"><div class="stat-val" id="sumStd"></div><div class="stat-label">표준편차</div></div></div>
       <div class="chart-wrapper mt8" style="height:150px"><canvas id="sumChart"></canvas></div>
-      <div class="info-neutral">💡 이론적 합계 범위: 21(최소)~255(최대), 중심극한정리에 의해 정규분포에 근사</div>
+      
     </div>
   </div>
   <div id="sub-pattern" class="hidden">
-    <div class="card"><div class="card-title">⚖️ 홀짝 비율 분포</div><table><thead><tr><th>홀:짝</th><th class="text-right">출현</th><th class="text-right">비율</th></tr></thead><tbody id="oddEvenBody"></tbody></table><div class="info-neutral">💡 통계적으로 3:3, 4:2, 2:4 비율이 전체의 약 75% 차지</div></div>
-    <div class="card"><div class="card-title">🔗 연속번호 출현</div><div class="grid2"><div class="stat"><div class="stat-val" id="consecPct"></div><div class="stat-label">연속번호 포함 비율</div></div><div class="stat"><div class="stat-val" id="consecCount"></div><div class="stat-label">해당 회차 수</div></div></div><div class="info-neutral">💡 실제 로또에서 연속번호가 포함되는 비율은 약 60~65%로 매우 흔함</div></div>
+    <div class="card"><div class="card-title">⚖️ 홀짝 비율 분포</div><table><thead><tr><th>홀:짝</th><th class="text-right">출현</th><th class="text-right">비율</th></tr></thead><tbody id="oddEvenBody"></tbody></table></div>
+    <div class="card"><div class="card-title">🔗 연속번호 출현</div><div class="grid2"><div class="stat"><div class="stat-val" id="consecPct"></div><div class="stat-label">연속번호 포함 비율</div></div><div class="stat"><div class="stat-val" id="consecCount"></div><div class="stat-label">해당 회차 수</div></div></div></div>
     <div class="card"><div class="card-title">♻️ 이월수 분석</div>
-      <div class="text-dim mb8" style="font-size:11px">직전 회차 당첨번호가 다음 회차에 다시 출현(이월)하는 패턴 분석</div>
+      
       <div class="grid2 mb8"><div class="stat"><div class="stat-val" id="carryPct"></div><div class="stat-label">이월수 포함 비율</div></div><div class="stat"><div class="stat-val" id="carryAvg"></div><div class="stat-label">회차당 평균 이월 개수</div></div></div>
       <div class="text-gold fw700 mb6" style="font-size:11px">🎫 직전 회차 번호 (다음 회차 이월 후보)</div>
       <div id="carryCandidates" class="flex-center gap4 mb8" style="flex-wrap:wrap"></div>
       <div id="carryDetail"></div>
-      <div class="info-neutral">💡 이론상 각 번호의 이월 확률은 6/45 ≈ 13.3%. 회차당 기대 이월 개수는 0.8개</div>
+      
     </div>
     <div class="card">
       <div class="card-title">📊 베이즈 번호 신뢰도</div>
-      <div class="text-dim mb8" style="font-size:11px">Beta-Binomial 평활화를 적용한 최근 출현률 추정치입니다. 다음 회차 당첨확률을 의미하지 않으며 번호별 최근 출현 강도를 비교하는 참고값입니다.</div>
+      
       <div class="grid2 mb8">
         <div><span style="font-size:11px;font-weight:600">분석 구간: </span><select id="bayesPeriod" onchange="renderBayes()"><option value="10">최근 10회</option><option value="20" selected>최근 20회</option><option value="50">최근 50회</option></select></div>
       </div>
@@ -204,32 +202,22 @@ p{margin-bottom:6px;line-height:1.6}
     <div class="card-title">📅 생성 분석 기간</div>
     <label for="genPeriod" style="font-size:12px;font-weight:600">분석 범위: </label><select id="genPeriod" onchange="onGenPeriodChange()"><option value="0">전체</option><option value="10">최근 10주</option><option value="30">최근 30주</option><option value="50">최근 50주</option><option value="100">최근 100주</option></select>
     <div id="genPeriodInfo" class="text-dim mt8" style="font-size:11px"></div>
-    <div class="text-dim mt8" style="font-size:11px;line-height:1.6">1주 = 불러온 데이터의 1회차이며 최신 회차부터 계산합니다. 저빈도 가중·결과 점수·축소조합 자동 추천에 선택 기간을 적용합니다. 갭 분석은 선택 범위 안의 최근 최대 15회, 점수는 기존 10·20회 추세와 미출현 갭 계산을 유지합니다. 균형 분포·인기번호 회피는 과거 데이터와 무관한 추출 규칙입니다.</div>
+    
   </div>
-  <div class="card"><label for="genTargetRound" class="text-dim">대상 회차: </label><input id="genTargetRound" type="number" min="1" max="1000000" style="width:110px"><p class="text-dim mt8" style="font-size:11px">생성할 번호의 대상 회차를 설정하세요.</p></div>
+  <div class="card"><label for="genTargetRound" class="text-dim">대상 회차: </label><input id="genTargetRound" type="number" min="1" max="1000000" style="width:110px"></div>
   <div class="card"><div class="card-title">🧮 번호 생성 전략</div><div id="strategyList"></div></div>
-  <div class="card"><div class="flex-between flex-wrap gap8 mb8"><div><span style="font-size:12px;font-weight:600">세트 수: </span><select id="genCount"><option value="1">1</option><option value="3">3</option><option value="5" selected>5</option><option value="10">10</option></select></div><button class="btn btn-primary" onclick="generateNumbers()">🎲 번호 생성</button></div></div>
+  <div class="card"><div class="flex-between flex-wrap gap8 mb8"><div><span style="font-size:12px;font-weight:600">세트 수: </span><select id="genCount"><option value="1">1</option><option value="3">3</option><option value="5" selected>5</option><option value="10">10</option></select></div><label><input type="checkbox" id="spreadMode"> 5등 이상 분산 모드</label><button class="btn btn-primary" onclick="generateNumbers()">🎲 번호 생성</button></div></div>
   <div class="card">
     <div class="card-title">🔒 고정수 · 제외수 · 조합 품질</div>
     <div class="grid2 mb8"><div><span class="text-dim" style="font-size:10px">고정수 (쉼표)</span><input id="fixedNums" placeholder="예: 7,23" style="width:100%;margin-top:4px"></div><div><span class="text-dim" style="font-size:10px">제외수 (쉼표)</span><input id="excludedNums" placeholder="예: 1,2,44" style="width:100%;margin-top:4px"></div></div>
     <div class="grid3"><div><span class="text-dim" style="font-size:10px">조합간 최대 중복</span><select id="maxOverlap" style="width:100%;margin-top:4px"><option value="2">2개</option><option value="3" selected>3개</option><option value="4">4개</option><option value="5">5개</option></select></div><div><span class="text-dim" style="font-size:10px">합계 범위</span><select id="sumFilter" style="width:100%;margin-top:4px"><option value="0">제한 없음</option><option value="100-175" selected>100~175</option><option value="120-165">120~165</option></select></div><div><span class="text-dim" style="font-size:10px">홀짝</span><select id="oeFilter" style="width:100%;margin-top:4px"><option value="0">제한 없음</option><option value="2-4" selected>2:4~4:2</option><option value="3">3:3만</option></select></div></div>
-    <div class="info-neutral">필터는 원하는 조합 형태를 만드는 기능이며 한 장의 당첨확률 자체를 높이지 않습니다.</div>
+    
   </div>
   <div id="genResults" class="hidden"><div class="card"><div class="card-title" id="genResultTitle"></div><div id="genResultBody"></div></div></div>
 
-  <div class="card">
-    <div class="card-title">🎯 축소조합 (Wheeling System)</div>
-    <div class="text-dim mb8" style="font-size:11px">유망 번호를 선택하면, 그중 3개가 당첨번호에 포함될 경우 생성 조합 중 최소 1장은 그 3개를 포함하도록 커버링 조합 세트를 생성합니다. 최대 18개까지 지원합니다(그 이상은 조합 수가 폭증해 계산이 사실상 불가능합니다). 18개 기준으로도 3개 이상 포함 확률은 위 계산기 기준 약 46%이며, 90%를 달성하려면 후보 30개·조합 수백~수천 장이 필요해 이 기능 범위를 벗어납니다.</div>
-    <div class="mb8">
-      <span style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">유망 번호 선택 (8~18개):</span>
-      <div class="flex-center gap4 mb8" style="flex-wrap:wrap"><button class="btn btn-sm btn-outline" onclick="autoWheelPool(10)">보수형 10개</button><button class="btn btn-sm btn-outline" onclick="autoWheelPool(12)">균형형 12개</button><button class="btn btn-sm btn-outline" onclick="autoWheelPool(15)">공격형 15개</button><button class="btn btn-sm btn-outline" onclick="clearWheelPool()">초기화</button></div><div id="wheelNumSelector" style="display:flex;flex-wrap:wrap;gap:4px"></div>
-      <div class="flex-between mt8"><span class="text-dim" style="font-size:11px">선택: <span id="wheelCount" class="text-gold fw700">0</span>개 (3개 이상 포함 확률: <span id="wheelProb" class="text-gold fw700">0%</span>)</span><button class="btn btn-primary btn-sm" onclick="generateWheel()" id="wheelBtn" disabled>🎯 축소조합 생성</button></div>
-      <div id="wheelLoading" class="hidden text-dim mt6" style="font-size:11px">⏳ 조합 계산 중입니다... (번호 수가 많으면 몇 초 걸릴 수 있어요)</div>
-    </div>
-    <div id="wheelResults" class="hidden"></div>
-  </div>
 
-  <div class="card"><div class="card-title">📘 전략별 수학 원리</div><div style="font-size:11px;color:var(--textDim);line-height:1.6"><p><strong class="text-gold">균형 분포</strong> — 5개 구간에서 골고루 추출. 당첨확률을 높이는 방식이 아니라 조합 형태의 편중을 줄이는 분산 전략.</p><p><strong class="text-gold">인기번호 회피</strong> — 게임이론 기반. 당첨 시 분배 인원 최소화로 실질 수익 극대화.</p><p><strong class="text-gold">저빈도 가중</strong> — 선택 기간의 기대 출현 횟수 대비 실제 출현이 적은 번호에 가중치를 부여하는 휴리스틱.</p><p><strong class="text-gold">갭 분석</strong> — 선택 기간 안의 최근 최대 15회차 미출현 번호 우선 선택. 평균회귀 관점의 전략.</p></div></div>
+
+
 </div>
 
 <!-- ═══════════ 탭3: 이력 ═══════════ -->
@@ -243,7 +231,7 @@ p{margin-bottom:6px;line-height:1.6}
   <div id="hist-backtest">
     <div class="card">
       <div class="card-title">🔍 내 번호 백테스트</div>
-      <div class="text-dim mb12" style="font-size:11px">번호 6개를 입력하면, 1회차부터 최신 회차까지 3등 이상(5개 일치) 당첨 이력을 역추적합니다.</div>
+      
       <div class="flex-center mb12" style="justify-content:center;gap:8px;flex-wrap:wrap;padding:10px 0">
         <input type="number" id="bt1" min="1" max="45" placeholder="1" style="width:55px;height:55px;font-size:22px;font-weight:900;text-align:center;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--gold)">
         <input type="number" id="bt2" min="1" max="45" placeholder="2" style="width:55px;height:55px;font-size:22px;font-weight:900;text-align:center;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--gold)">
@@ -258,7 +246,7 @@ p{margin-bottom:6px;line-height:1.6}
   </div>
 
   <div id="hist-strategy" class="hidden">
-    <div class="card"><div class="card-title">🧪 워크포워드 전략 백테스트</div><div class="text-dim mb8" style="font-size:11px">각 회차 직전 데이터만 사용해 추세·반등·균형 상위 6개를 선정하고 다음 실제 회차와 비교합니다. 미래 데이터는 사용하지 않습니다.</div><div class="grid2 mb8"><div><span class="text-dim" style="font-size:10px">검증 회차</span><select id="wfPeriod" style="width:100%;margin-top:4px"><option value="100">최근 100회</option><option value="300" selected>최근 300회</option><option value="500">최근 500회</option></select></div><div class="flex-center" style="align-items:end"><button class="btn btn-primary" style="width:100%" onclick="runWalkForward()">검증 실행</button></div></div><div id="wfResult"></div></div>
+    <div class="card"><div class="card-title">🧪 워크포워드 전략 백테스트</div><div class="grid2 mb8"><div><span class="text-dim" style="font-size:10px">검증 회차</span><select id="wfPeriod" style="width:100%;margin-top:4px"><option value="100">최근 100회</option><option value="300" selected>최근 300회</option><option value="500">최근 500회</option></select></div><div class="flex-center" style="align-items:end"><button class="btn btn-primary" style="width:100%" onclick="runWalkForward()">검증 실행</button></div></div><div id="wfResult"></div></div>
   </div>
 
   <div id="hist-draws" class="hidden">
@@ -285,7 +273,7 @@ p{margin-bottom:6px;line-height:1.6}
 <div id="tab-indicator" class="hidden">
   <div class="card">
     <div class="card-title">🎯 균형 시그널 스코어</div>
-    <div class="text-dim mb8" style="font-size:11px">최근 출현 강도 기반 추세 점수와 미출현 갭 기반 반등 점수를 결합한 상대평가입니다. 균형 점수 = 추세 55% + 반등 45%.</div>
+    
     <div class="flex-between mb8"><div class="text-dim" style="font-size:10px">이번 분석 기준 추천 번호</div><div id="topBalls"></div></div>
     <div class="heatmap" id="signalHeatmap"></div>
   </div>
@@ -305,7 +293,7 @@ p{margin-bottom:6px;line-height:1.6}
 
   <div id="ind-rsi">
     <div class="card"><div class="card-title">📊 출현 모멘텀 RSI</div>
-      <div class="text-dim mb8" style="font-size:11px">출현=1·미출현=0 변화로 계산한 모멘텀 지표(0~100). 주가 RSI와 동일한 예측 의미는 없으며 최근 출현 변화의 방향성을 비교합니다.</div>
+      
       <div class="mb8"><span style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">RSI 기간: </span><select id="rsiPeriod" onchange="renderRSI()"><option value="14">14회</option><option value="20" selected>20회</option><option value="30">30회</option></select></div>
       <div class="chart-wrapper" style="height:220px"><canvas id="rsiChart"></canvas></div>
       <div class="grid2 mt8"><div class="card" style="margin:0;padding:10px"><div class="text-red fw700 mb6" style="font-size:11px">🔴 과열 (RSI > 70)</div><div id="rsiHot" style="font-size:11px"></div></div><div class="card" style="margin:0;padding:10px"><div class="text-cyan fw700 mb6" style="font-size:11px">🔵 침체 (RSI < 30)</div><div id="rsiCold" style="font-size:11px"></div></div></div>
@@ -314,7 +302,7 @@ p{margin-bottom:6px;line-height:1.6}
 
   <div id="ind-bb" class="hidden">
     <div class="card"><div class="card-title">📉 볼린저밴드</div>
-      <div class="text-dim mb8" style="font-size:11px">출현 빈도 이동평균 ± 2σ 밴드. 밴드 이탈 = 통계적 이상치</div>
+      
       <div class="mb8"><span style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">번호 선택 (1~45): </span><div id="bbNumSelector" class="num-selector"></div></div>
       <div class="chart-wrapper" style="height:200px"><canvas id="bbChart"></canvas></div>
       <div class="grid2 mt8"><div class="card" style="margin:0;padding:10px"><div class="text-red fw700 mb6" style="font-size:11px">⬆ 상단 돌파 (과다출현)</div><div id="bbUpper" style="font-size:11px"></div></div><div class="card" style="margin:0;padding:10px"><div class="text-cyan fw700 mb6" style="font-size:11px">⬇ 하단 이탈 (과소출현)</div><div id="bbLower" style="font-size:11px"></div></div></div>
@@ -323,7 +311,7 @@ p{margin-bottom:6px;line-height:1.6}
 
   <div id="ind-macd" class="hidden">
     <div class="card"><div class="card-title">📊 MACD</div>
-      <div class="text-dim mb8" style="font-size:11px">EMA(12)-EMA(26) + Signal(9). 추세 전환 감지. 히스토그램이 양전환되면 출현 모멘텀 상승 신호</div>
+      
       <div class="mb8"><span style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">번호 선택 (1~45): </span><div id="macdNumSelector" class="num-selector"></div></div>
       <div class="chart-wrapper" style="height:220px"><canvas id="macdChart"></canvas></div>
     </div>
@@ -332,7 +320,7 @@ p{margin-bottom:6px;line-height:1.6}
   <div id="ind-super" class="hidden">
     <div class="card">
       <div class="card-title">⚡ 슈퍼트렌드 (Supertrend)</div>
-      <div class="text-dim mb8" style="font-size:11px">번호의 출현 변동성 밴드 돌파 시 추세 포착 (녹색: 상승 / 적색: 하락). 상승 우세군에서 번호를 선별하면 5개 일치 확률 향상</div>
+      
       <div class="mb8"><span style="font-size:11px;font-weight:600;display:block;margin-bottom:6px">번호 선택 (1~45): </span><div id="superNumSelector" class="num-selector"></div></div>
       <div class="chart-wrapper" style="height:200px"><canvas id="superChart"></canvas></div>
       <div class="grid2 mt8">
@@ -344,7 +332,7 @@ p{margin-bottom:6px;line-height:1.6}
 
   <div id="ind-mom" class="hidden">
     <div class="card"><div class="card-title">🎯 구간 모멘텀 오실레이터</div>
-      <div class="text-dim mb8" style="font-size:11px">5구간의 최근 출현 모멘텀 비교 (최근 10회 vs 이전 10회). 둘레: 구간/번호대 · 중심에서 바깥쪽: 누적 출현 횟수(회)</div>
+      
       <div class="chart-wrapper" style="height:280px"><canvas id="momChart"></canvas></div>
       <table class="mt8"><thead><tr><th>구간</th><th class="text-right">최근10회</th><th class="text-right">이전10회</th><th class="text-right">변화율</th></tr></thead><tbody id="momBody"></tbody></table>
     </div>
@@ -353,20 +341,20 @@ p{margin-bottom:6px;line-height:1.6}
   <div id="ind-range" class="hidden">
     <div class="card">
       <div class="card-title">📊 번호대별 출현 추세 (최근 20회)</div>
-      <div class="text-dim mb8" style="font-size:11px">단번대~40번대 회차별 출현 개수 추세. 과소 출현 번호대에서 반등 번호를 찾아보세요</div>
+      
       <div class="chart-wrapper" style="height:250px"><canvas id="rangeChart"></canvas></div>
       <div class="grid3 mt8" id="rangeStats"></div>
     </div>
   </div>
 
-  <div class="info-box info-neutral mt8" style="font-size:10px;text-align:center">💡 5대 지표를 종합하여 유망 번호 10~12개를 선별한 후, 축소조합(생성 탭)으로 3등 안전망을 구축하세요.</div>
+  
 </div>
 
 <!-- ═══════════ 탭5: 내 번호 분석 ═══════════ -->
 <div id="tab-analyze" class="hidden">
   <div class="card">
     <div class="card-title">🔢 분석할 번호 6개 입력</div>
-    <div class="text-dim mb12" style="font-size:11px">직접 선택한 6개의 번호를 보조지표 기반으로 정밀 분석합니다. 5개 이상 일치(3등+) 가능성을 점검하세요.</div>
+    
     <div class="flex-center mb12" style="justify-content:center;gap:8px;flex-wrap:wrap;padding:10px 0">
       <input type="number" id="myNum1" min="1" max="45" placeholder="1" style="width:70px;height:70px;font-size:26px;font-weight:900;text-align:center;border-radius:12px;border:2px solid var(--border);background:var(--bg);color:var(--gold)">
       <input type="number" id="myNum2" min="1" max="45" placeholder="2" style="width:70px;height:70px;font-size:26px;font-weight:900;text-align:center;border-radius:12px;border:2px solid var(--border);background:var(--bg);color:var(--gold)">
@@ -383,7 +371,7 @@ p{margin-bottom:6px;line-height:1.6}
 
 <!-- ═══════════ 탭6: 이번 회차 연구실 ═══════════ -->
 <div id="tab-lab" class="hidden">
-  <div class="card"><div class="card-title">🧪 이번 회차 연구실</div><div class="text-dim mb8" style="font-size:11px">최근 데이터로 추세·반등·균형 후보를 한 화면에 정리합니다. 점수는 과거 데이터 기반 상대평가이며 당첨확률 보장이 아닙니다.</div><button class="btn btn-primary" id="labRefreshBtn" style="width:100%" onclick="refreshLabData()">🔄 최신 분석</button><div id="labRefreshStatus" class="hidden mt8" style="font-size:11px;text-align:center"></div><div id="labSummary" class="mt8"></div></div>
+  <div class="card"><div class="card-title">🧪 이번 회차 연구실</div><button class="btn btn-primary" id="labRefreshBtn" style="width:100%" onclick="refreshLabData()">🔄 최신 분석</button><div id="labRefreshStatus" class="hidden mt8" style="font-size:11px;text-align:center"></div><div id="labSummary" class="mt8"></div></div>
   <div class="card"><div class="card-title">🔎 번호 상세 프로필</div><div class="flex-center gap8 mb8"><select id="profileNum" style="flex:1"></select><button class="btn btn-primary btn-sm" onclick="renderNumberProfile()">조회</button></div><div id="numberProfile"></div></div>
   <div class="card"><div class="card-title">🤝 번호 쌍 · 삼중조합 분석</div><div class="grid2 mb8"><div><span class="text-dim" style="font-size:10px">번호 2~3개 (쉼표)</span><input id="pairInput" placeholder="예: 7,23 또는 7,23,41" style="width:100%;margin-top:4px"></div><div class="flex-center" style="align-items:end"><button class="btn btn-primary btn-sm" style="width:100%" onclick="analyzePairTriple()">분석</button></div></div><div id="pairResult"></div></div>
   <div class="card"><div class="card-title">🩺 데이터 상태 · 이상 검사</div><div id="dataHealth"></div><button class="btn btn-outline btn-sm mt8" onclick="renderDataHealth()">다시 검사</button></div>
@@ -475,7 +463,6 @@ async function initApp(){
   renderStatsTab();
   renderStrategies();
   initIndicatorSelects();
-  initWheelSelector();
   ensureProfileOptions();
 }
 
@@ -648,7 +635,7 @@ function renderBayes(){
   html+=top10.map(d=>'<div class="flex-between" style="padding:3px 0;font-size:11px">'+renderBall(d.num,true)+'<span class="text-green fw700">'+d.posterior.toFixed(1)+'%</span><span class="text-dim">('+d.appeared+'/'+period+'회)</span></div>').join('');
   html+='<div class="text-cyan fw700 mb6 mt8" style="font-size:11px">🔻 평활 출현률 하위 5</div>';
   html+=bot5.map(d=>'<div class="flex-between" style="padding:3px 0;font-size:11px">'+renderBall(d.num,true)+'<span class="text-cyan">'+d.posterior.toFixed(1)+'%</span><span class="text-dim">('+d.appeared+'/'+period+'회)</span></div>').join('');
-  html+='<div class="info-neutral mt8">Beta(6,39) 사전분포에 최근 관측을 합친 사후평균입니다. 로또 각 번호의 다음 회차 실제 추첨확률은 여전히 동일합니다.</div>';
+
   document.getElementById('bayesResult').innerHTML=html;
 }
 
@@ -672,14 +659,12 @@ function updateGenerationPeriod(){
 function onGenPeriodChange(){
   updateGenerationPeriod();
   document.getElementById('genResults').classList.add('hidden');
-  document.getElementById('wheelResults').classList.add('hidden');
-  if(wheelAutoSize)autoWheelPool(wheelAutoSize);
 }
 
 
 const strategies=[{id:'balanced',name:'균형 분포',desc:'구간 편중을 줄인 형태 분산'},{id:'antiPop',name:'인기번호 회피',desc:'32~45를 늘려 타인과의 조합 중복 가능성 완화'},{id:'poisson',name:'저빈도 가중',desc:'선택 기간의 기대 출현 대비 저빈도 번호 가중'},{id:'gap',name:'갭 분석',desc:'최근 미출현 번호 우선 — 평균회귀 관점'}];
 let selStrat='balanced';
-function renderStrategies(){document.getElementById('strategyList').innerHTML=strategies.map(s=>'<button class="strategy-btn'+(s.id===selStrat?' active':'')+'" onclick="selStrat=\''+s.id+'\';renderStrategies()"><div><div class="name">'+s.name+'</div><div class="desc">'+s.desc+'</div></div>'+(s.id===selStrat?'<span class="text-gold">✓</span>':'')+' </button>').join('')}
+function renderStrategies(){document.getElementById('strategyList').innerHTML=strategies.map(s=>'<button class="strategy-btn'+(s.id===selStrat?' active':'')+'" onclick="selStrat=\''+s.id+'\';renderStrategies()"><div><div class="name">'+s.name+'</div></div>'+(s.id===selStrat?'<span class="text-gold">✓</span>':'')+' </button>').join('')}
 
 function balancedPick(){
   const z=[[1,9],[10,19],[20,29],[30,39],[40,45]],pk=[2,1,1,1,1];
@@ -735,27 +720,77 @@ function applyConstraints(base,fixed,excluded){
   return out.sort((a,b)=>a-b);
 }
 function overlapCount(a,b){return a.filter(n=>b.includes(n)).length}
-function generateNumbers(){
+// Six-number draws are indexed by their combinatorial number-system rank.
+// Once three matches are fixed, all completions using smaller numbers are consecutive.
+const totalPossibleDraws = 8145060;
+const rankCounts = Array.from({length:46},(_,n)=>Array.from({length:7},(_,k)=>Math.round(comb(n,k))));
+function portfolioHits(tickets){
+  if(!tickets.length) return 0;
+  const seen = new Uint8Array(totalPossibleDraws);
+  let hits=0;
+  for(const numbers of tickets){
+    const member=new Uint8Array(46), available=new Uint8Array(46);
+    numbers.forEach(n=>member[n]=1);
+    for(let n=1;n<=45;n++) available[n]=available[n-1]+member[n];
+    function visit(high,left,matched,rank){
+      if(matched>=3){
+        const end=rank+rankCounts[high][left];
+        for(let r=rank;r<end;r++) if(!seen[r]){seen[r]=1;hits++;}
+        return;
+      }
+      if(matched+Math.min(left,available[high])<3) return;
+      for(let n=high;n>=left;n--){
+        if(matched+available[n]<3) break;
+        visit(n-1,left-1,matched+member[n],rank+rankCounts[n-1][left]);
+      }
+    }
+    visit(45,6,0,0);
+  }
+  return hits;
+}
+function oddsText(hits,count){
+  return count+'게임 · 한 줄 이상 5등 이상: '+(hits/totalPossibleDraws*100).toFixed(3)+'% · 1등: '+count+' / 8,145,060';
+}function generateNumbers(){
   try{generationRecord();}catch(e){alert(e.message);return;}
   const sourceDraws=getGenerationDraws();
   if(!sourceDraws.length){alert('분석할 회차 데이터가 없습니다.');return;}
   const scoreDetails=calcScoreDetailsForDraws(sourceDraws);
-  const count=+document.getElementById('genCount').value,fn=genFns[selStrat],results=[];
+  const count=+document.getElementById('genCount').value,fn=genFns[selStrat];
   const fixed=parseNumList('fixedNums'),excluded=parseNumList('excludedNums');
   if(fixed.length>6){alert('고정수는 최대 6개입니다.');return} if(fixed.some(n=>excluded.includes(n))){alert('같은 번호를 고정수와 제외수에 동시에 넣을 수 없습니다.');return}
   const maxOv=+document.getElementById('maxOverlap').value;
-  let attempts=0;
+  function buildBundle(){
+  const results=[]; let attempts=0;
   while(results.length<count&&attempts++<3000){
     const nums=applyConstraints(fn(sourceDraws),fixed,excluded);if(nums.length!==6||!passesQuality(nums))continue;
     if(results.some(r=>overlapCount(r.nums,nums)>maxOv))continue;
     const detail=nums.map(n=>scoreDetails.find(x=>x.num===n));
     results.push({nums,sum:nums.reduce((a,b)=>a+b,0),oe:nums.filter(n=>n%2===1).length+':'+nums.filter(n=>n%2===0).length,lh:nums.filter(n=>n<=22).length+':'+nums.filter(n=>n>22).length,score:(detail.reduce((a,b)=>a+b.balanced,0)/6).toFixed(1)});
   }
-  generationSnapshot=generationRecord();
+  return results;
+  }
+  let results=buildBundle();
+  const hitsFor=bundle=>portfolioHits(bundle.map(row=>row.nums));
+  let bestHits=hitsFor(results), baseline=bestHits, compared=1;
+  const spread=document.getElementById('spreadMode').checked && count>1;
+  if(spread && results.length===count){
+    for(let attempt=1;attempt<5;attempt++){
+      const other=buildBundle();
+      if(other.length!==count) continue;
+      compared++;
+      const hits=hitsFor(other);
+      if(hits>bestHits){results=other;bestHits=hits;}
+    }
+  }  generationSnapshot=generationRecord();
   document.getElementById('genResults').classList.remove('hidden');
   document.getElementById('genResultTitle').textContent='🎯 생성 결과 ('+stratNames[selStrat]+') · '+generationPeriodLabel()+' · 대상 '+generationSnapshot.targetRound+'회';
   document.getElementById('genResultBody').innerHTML=results.length?results.map((r,i)=>'<div class="result-row"><div class="flex-center gap4"><span style="font-size:10px;color:var(--textDim);width:20px">#'+(i+1)+'</span>'+r.nums.map(n=>renderBall(n)).join('')+'</div><div class="result-meta"><span>합:'+r.sum+'</span><span>홀짝:'+r.oe+'</span><span>균형:'+r.score+'</span></div></div>').join(''):'<div class="info-red info-box">현재 고정/제외/품질/중복 조건을 동시에 만족하는 조합을 만들지 못했습니다. 조건을 조금 완화해주세요.</div>';
-}
+  if(results.length){
+    const comparison=spread && results.length===count
+      ? '<br>같은 수량의 후보 '+compared+'묶음 비교 · 첫 묶음 '+(baseline/totalPossibleDraws*100).toFixed(3)+'% → 선택 묶음 '+(bestHits/totalPossibleDraws*100).toFixed(3)+'%' : '';
+    const partial=results.length<count?'요청 '+count+'게임 중 조건을 만족한 '+results.length+'게임만 계산했습니다.<br>':'';
+    document.getElementById('genResultBody').insertAdjacentHTML('afterbegin','<div class="info-box info-green">'+partial+oddsText(bestHits,results.length)+comparison+'</div>');
+  }}
 
 /* ===== 적중 확률 계산기 (초기하분포) ===== */
 function comb(n,k){
@@ -765,102 +800,6 @@ function comb(n,k){
   for(let i=0;i<k;i++){ res = res*(n-i)/(i+1); }
   return res;
 }
-function probAtLeast3(poolSize, pop=45, winners=6, kMin=3){
-  const total = comb(pop, poolSize);
-  if(total<=0) return 0;
-  let p=0;
-  for(let k=kMin;k<=winners;k++){
-    if(poolSize-k<0) continue;
-    p += comb(winners,k)*comb(pop-winners, poolSize-k);
-  }
-  return p/total;
-}
-
-/* ===== 축소조합 ===== */
-let wheelSelected = new Set();
-let wheelAutoSize = 0;
-function initWheelSelector(){
-  const c = document.getElementById('wheelNumSelector');
-  c.innerHTML = '';
-  for(let i=1;i<=N;i++){
-    const btn = document.createElement('div');
-    btn.className = 'wheel-num-btn' + (wheelSelected.has(i) ? ' active' : '');
-    btn.textContent = i;
-    btn.onclick = () => {
-      wheelAutoSize=0;
-      if(wheelSelected.has(i)){ wheelSelected.delete(i); btn.classList.remove('active'); }
-      else if(wheelSelected.size < 18){ wheelSelected.add(i); btn.classList.add('active'); }
-      document.getElementById('wheelCount').textContent = wheelSelected.size;
-      document.getElementById('wheelBtn').disabled = wheelSelected.size < 8;
-      document.getElementById('wheelProb').textContent = wheelSelected.size>0 ? (probAtLeast3(wheelSelected.size)*100).toFixed(1)+'%' : '0%';
-    };
-    c.appendChild(btn);
-  }
-}
-function autoWheelPool(size){
-  const draws=getGenerationDraws();if(!draws.length){alert('분석할 회차 데이터가 없습니다.');return;}
-  wheelAutoSize=size;
-  const scores=calcScoreDetailsForDraws(draws).sort((a,b)=>b.balanced-a.balanced||a.num-b.num);wheelSelected=new Set(scores.slice(0,size).map(x=>x.num));initWheelSelector();
-  document.getElementById('wheelCount').textContent=wheelSelected.size;document.getElementById('wheelBtn').disabled=wheelSelected.size<8;document.getElementById('wheelProb').textContent=(probAtLeast3(wheelSelected.size)*100).toFixed(1)+'%';
-}
-function clearWheelPool(){wheelAutoSize=0;wheelSelected.clear();initWheelSelector();document.getElementById('wheelCount').textContent='0';document.getElementById('wheelProb').textContent='0%';document.getElementById('wheelBtn').disabled=true;}
-
-function generateWheel(){
-  const nums = [...wheelSelected].sort((a,b)=>a-b);
-  const K = nums.length;
-  if(K < 8) return;
-  document.getElementById('wheelBtn').disabled = true;
-  document.getElementById('wheelLoading').classList.remove('hidden');
-  document.getElementById('wheelResults').classList.add('hidden');
-  setTimeout(()=>runWheelCalc(nums), 30);
-}
-function runWheelCalc(nums){
-  const K = nums.length;
-  const comboMasks = [];
-  (function combo(start,depth,mask){
-    if(depth===6){ comboMasks.push(mask); return; }
-    for(let i=start;i<K;i++){ combo(i+1,depth+1,mask|(1<<i)); }
-  })(0,0,0);
-  const tripleMasks = [];
-  (function tri(start,depth,mask){
-    if(depth===3){ tripleMasks.push(mask); return; }
-    for(let i=start;i<K;i++){ tri(i+1,depth+1,mask|(1<<i)); }
-  })(0,0,0);
-  let uncovered = tripleMasks.map((_,i)=>i);
-  const neededMasks = [];
-  while(uncovered.length > 0){
-    let bestIdx=-1, bestCover=0, bestCoveredList=null;
-    for(let ci=0; ci<comboMasks.length; ci++){
-      const cm = comboMasks[ci];
-      let cover=0; const coveredList=[];
-      for(const ti of uncovered){ const tm=tripleMasks[ti]; if((tm & cm)===tm){ cover++; coveredList.push(ti); } }
-      if(cover > bestCover){ bestCover=cover; bestIdx=ci; bestCoveredList=coveredList; }
-    }
-    if(bestIdx===-1) break;
-    neededMasks.push(comboMasks[bestIdx]);
-    const coveredSet = new Set(bestCoveredList);
-    uncovered = uncovered.filter(ti=>!coveredSet.has(ti));
-  }
-  const needed = neededMasks.map(mask=>{
-    const arr=[];
-    for(let i=0;i<K;i++){ if(mask & (1<<i)) arr.push(nums[i]); }
-    return arr;
-  });
-  renderWheelResult(needed, K);
-}
-function renderWheelResult(needed, K){
-  document.getElementById('wheelLoading').classList.add('hidden');
-  document.getElementById('wheelBtn').disabled = false;
-  const cost = needed.length * 1000;
-  let html = '<div class="card mt8"><div class="card-title">🎯 축소조합 결과</div>';
-  html += '<div class="grid2 mb8"><div class="stat"><div class="stat-val text-gold">'+needed.length+'장</div><div class="stat-label">생성 조합 수</div></div><div class="stat"><div class="stat-val">'+cost.toLocaleString()+'원</div><div class="stat-label">총 비용</div></div></div>';
-  html += '<div class="info-green info-box mb8">✅ 선택한 '+K+'개 번호 중 당첨번호와 <strong>3개 이상 일치</strong>하면 최소 1장은 5등 이상 당첨 보장</div>';
-  html += needed.map((c,i)=>'<div class="result-row"><span style="font-size:10px;color:var(--textDim);width:25px">#'+(i+1)+'</span>'+c.map(n=>renderBall(n)).join('')+'</div>').join('');
-  html += '</div>';
-  document.getElementById('wheelResults').innerHTML = html;
-  document.getElementById('wheelResults').classList.remove('hidden');
-}
-
 /* ===== 이력 탭: 백테스트 ===== */
 function runBacktest(){
   const inputs = [1,2,3,4,5,6].map(i => parseInt(document.getElementById('bt'+i).value));
@@ -1023,7 +962,7 @@ const WEIGHTS = {rsi:25, bb:20, macd:20, super:20, mom:15};
 const WEIGHT_NAMES = {rsi:'RSI 상대강도',bb:'볼린저밴드',macd:'MACD',super:'슈퍼트렌드',mom:'구간 모멘텀'};
 
 function initIndicatorSelects(){
-  document.getElementById('weightSliders').innerHTML='<div class="grid2"><div class="stat"><div class="stat-val text-green">55%</div><div class="stat-label">추세 점수<br>최근 10·20회 출현 강도</div></div><div class="stat"><div class="stat-val text-cyan">45%</div><div class="stat-label">반등 점수<br>현재 미출현 갭 중심</div></div></div><div class="info-neutral">RSI·볼린저·MACD·슈퍼트렌드는 별도 관찰 지표로 유지하며 균형 점수와 혼합하지 않습니다.</div>';
+  document.getElementById('weightSliders').innerHTML='<div class="grid2"><div class="stat"><div class="stat-val text-green">55%</div><div class="stat-label">추세 점수<br>최근 10·20회 출현 강도</div></div><div class="stat"><div class="stat-val text-cyan">45%</div><div class="stat-label">반등 점수<br>현재 미출현 갭 중심</div></div></div>';
   ['bb','macd','super'].forEach(ind=>{
     const container=document.getElementById(ind+'NumSelector');
     if(!container)return;
@@ -1256,14 +1195,12 @@ function analyzeMyNumbers(){
     '<div class="card mt8"><div class="card-title">🎯 보조지표 정밀 평가 (5종 가중치 융합)</div>'+
     '<div class="stat mb8" style="background:rgba(240,192,64,.08);border:1px solid rgba(240,192,64,.2)"><div class="stat-val text-gold">'+avgScore+'점</div><div class="stat-label">조합 평균 시그널 스코어 (기준점: 50점)</div></div>'+
     '<table style="line-height:1.8"><thead><tr><th>번호</th><th class="text-right">균형</th><th class="text-right">추세</th><th class="text-right">반등</th><th>근거</th></tr></thead><tbody>'+rowsHtml+'</tbody></table>'+
-    '<div class="info-neutral mt8">💡 <strong>1~3등 분석 가이드:</strong><br>'+
-    '• <strong>추세 점수</strong>는 최근 출현 강도, <strong>반등 점수</strong>는 미출현 갭을 중심으로 봅니다.<br>'+
-    '• <strong>균형 점수</strong>는 두 관점을 결합한 상대평가이며 당첨확률 자체를 의미하지 않습니다.</div></div>'+
+    '</div>'+
     '<div class="card mt8"><div class="card-title">📋 과거 성적 요약</div>'+
     '<div class="grid3"><div class="stat"><div class="stat-val text-cyan">'+bt3plus+'회</div><div class="stat-label">3개+ 일치</div></div>'+
     '<div class="stat"><div class="stat-val text-green">'+bt4plus+'회</div><div class="stat-label">4개+ 일치</div></div>'+
     '<div class="stat"><div class="stat-val text-gold">'+bt5plus+'회</div><div class="stat-label">5개+ 일치 (3등↑)</div></div></div>'+
-    '<div class="info-neutral">총 '+DRAWS.length+'회차 대상 백테스트 결과</div>'+
+    ''+
     (btHits.length>0 ? '<div class="mt8" style="max-height:260px;overflow-y:auto">'+btHits.slice(0,30).map(h=>
       '<div style="padding:6px 0;border-bottom:1px solid rgba(30,45,69,.12)">'+
       '<div class="flex-between mb4"><span class="fw700" style="font-size:11px">'+h.round+'회</span><span class="text-dim" style="font-size:10px">'+(h.date||'')+'</span><span class="fw700 '+(h.mc>=5?'text-gold':h.mc>=4?'text-green':'text-cyan')+'" style="font-size:11px">'+h.mc+'개 일치</span></div>'+
@@ -1271,10 +1208,10 @@ function analyzeMyNumbers(){
     ).join('')+(btHits.length>30?'<div class="text-dim text-center mt6" style="font-size:10px">...외 '+(btHits.length-30)+'건</div>':'')+'</div>' : '') +
     '</div>'+
     '<div class="card mt8"><div class="card-title">🙈 인기번호 회피 스코어</div>'+
-    '<div class="text-dim mb8" style="font-size:11px">사람들이 생일·기념일 숫자 습관으로 1~31에 선택이 몰리는 경향은 잘 알려진 사실입니다. 32~45 번호가 많을수록 다른 사람과 조합이 덜 겹칠 가능성이 있다는 단일 지표 기반 참고값이며, 당첨 확률 자체와는 무관합니다.</div>'+
+
     '<div class="stat mb8" style="background:rgba(240,192,64,.08);border:1px solid rgba(240,192,64,.2)"><div class="stat-val '+avoidColor+'">'+avoidScore+'점</div><div class="stat-label">회피 스코어 (0~100, 높을수록 분산) — '+avoidLabel+'</div></div>'+
     '<div class="grid2 mb8"><div class="stat"><div class="stat-val">'+over31+'/6개</div><div class="stat-label">32~45 번호 개수</div></div><div class="stat"><div class="stat-val">'+(6-over31)+'/6개</div><div class="stat-label">1~31 번호 개수</div></div></div>'+
-    (hasConsecutive||allOdd||allEven ? '<div class="info-neutral" style="font-size:10px">참고: '+[hasConsecutive?'연속번호 포함':'',allOdd?'전부 홀수':'',allEven?'전부 짝수':''].filter(Boolean).join(' · ')+' — 이런 패턴이 실제로 더 몰리는지는 정확한 공개 데이터가 없어 단정하지 않습니다.</div>' : '') +
+
     '</div>';
 
   document.getElementById('analyzeResult').innerHTML=html;
@@ -1313,7 +1250,7 @@ function runWalkForward(){
     const train=DRAWS.slice(0,i),actual=DRAWS[i].nums,details=calcScoreDetailsForDraws(train);
     for(const m of modes){const pred=[...details].sort((a,b)=>b[m]-a[m]||a.num-b.num).slice(0,6).map(x=>x.num);const hit=pred.filter(n=>actual.includes(n)).length,s=stats[m];s.matches+=hit;s.h3+=hit>=3;s.h4+=hit>=4;s.h5+=hit>=5;s.best=Math.max(s.best,hit);s.n++;}
   }
-  const names={trend:'추세',rebound:'반등',balanced:'균형'};document.getElementById('wfResult').innerHTML='<table><thead><tr><th>전략</th><th class="text-right">평균 일치</th><th class="text-right">3개+</th><th class="text-right">4개+</th><th class="text-right">최고</th></tr></thead><tbody>'+modes.map(m=>{const x=stats[m];return'<tr><td class="fw700">'+names[m]+'</td><td class="text-right">'+(x.matches/x.n).toFixed(3)+'</td><td class="text-right">'+x.h3+'회 ('+(x.h3/x.n*100).toFixed(1)+'%)</td><td class="text-right">'+x.h4+'회</td><td class="text-right text-gold">'+x.best+'개</td></tr>'}).join('')+'</tbody></table><div class="info-neutral">검증 '+stats.trend.n+'회. 각 시점에서 해당 회차 이후 데이터는 사용하지 않았습니다. 무작위 6개 번호의 기대 일치 개수는 0.8개입니다.</div>';
+  const names={trend:'추세',rebound:'반등',balanced:'균형'};document.getElementById('wfResult').innerHTML='<table><thead><tr><th>전략</th><th class="text-right">평균 일치</th><th class="text-right">3개+</th><th class="text-right">4개+</th><th class="text-right">최고</th></tr></thead><tbody>'+modes.map(m=>{const x=stats[m];return'<tr><td class="fw700">'+names[m]+'</td><td class="text-right">'+(x.matches/x.n).toFixed(3)+'</td><td class="text-right">'+x.h3+'회 ('+(x.h3/x.n*100).toFixed(1)+'%)</td><td class="text-right">'+x.h4+'회</td><td class="text-right text-gold">'+x.best+'개</td></tr>'}).join('')+'</tbody></table>';
 }
 async function refreshLabData(){
   const btn=document.getElementById('labRefreshBtn');
