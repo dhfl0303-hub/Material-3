@@ -403,62 +403,6 @@
     color:#fff;
   }
 
-  .split-entry-card{
-    background:var(--panel2);
-    border:1px solid var(--border);
-    border-radius:10px;
-    padding:12px;
-    margin-bottom:12px;
-  }
-  .split-entry-header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:10px;
-    font-size:13px;
-    color:var(--sub);
-  }
-  .split-entry-row{
-    display:flex;
-    gap:6px;
-    align-items:center;
-    margin-bottom:8px;
-  }
-  .split-entry-row input{
-    flex:1;
-    min-width:0;
-    background:var(--panel);
-    border:1px solid var(--border);
-    color:var(--text);
-    font-size:14px;
-    padding:8px;
-    border-radius:6px;
-  }
-  .split-entry-row .split-entry-label{
-    font-size:11px;
-    color:var(--sub);
-    width:34px;
-    flex-shrink:0;
-  }
-  .split-entry-row .split-row-del{
-    flex-shrink:0;
-    background:var(--panel);
-    border:1px solid var(--border);
-    color:var(--short);
-    width:32px;
-    height:32px;
-    border-radius:6px;
-    cursor:pointer;
-    font-size:14px;
-  }
-  .split-entry-summary{
-    font-size:12px;
-    color:var(--sub);
-    line-height:1.6;
-    border-top:1px solid var(--border);
-    padding-top:8px;
-    margin-top:4px;
-  }
   .trade-day{
     border:1px solid var(--border);
     border-radius:9px;
@@ -519,6 +463,9 @@
     & .calc-results{margin-top:auto}
   }
 }
+.header{align-items:center;flex-wrap:wrap;gap:8px 16px}
+.market-strip{display:flex;align-items:center;flex-wrap:wrap;gap:5px 14px;font-size:12px;color:var(--sub)}
+.market-strip span{white-space:nowrap}.market-strip b{color:var(--text);font-variant-numeric:tabular-nums}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
@@ -531,7 +478,10 @@
 <div class="wrap">
 
   <div class="header">
-    <div class="version-badge">v5.2 · 2026-08-12</div>
+    <div class="version-badge">v5.3 · 2026-11-27</div>    <div class="market-strip" aria-label="주요 시세">
+      <span>달러 <b id="quoteUsd">—</b></span><span>100엔 <b id="quoteJpy">—</b></span><span>유로 <b id="quoteEur">—</b></span>
+      <span>금 <b id="quoteGold">—</b></span><span>브렌트유 <b id="quoteOil">—</b></span>
+    </div>
   </div>
 
   <div class="desktop-grid">
@@ -584,30 +534,12 @@
     </div>
 
     <div class="row">
-      <div class="field" style="flex:1">
-        <label>진입 방식</label>
-        <div class="toggle">
-          <button id="btnSingleEntry" onclick="setEntryMode('single')">단일진입</button>
-          <button id="btnSplitEntry" onclick="setEntryMode('split')">분할매매</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="row" id="singleEntryRow">
       <div class="field">
         <label>진입가 (USDT)</label>
         <input type="number" id="entryPrice" value="65780" step="0.1" oninput="syncPositionInputs(); calc()">
       </div>
     </div>
 
-    <div id="splitEntryCard" class="split-entry-card" style="display:none;">
-      <div class="split-entry-header">
-        <span>분할 진입 회차</span>
-        <button type="button" class="btn-mini" onclick="addSplitRow()">+ 행 추가</button>
-      </div>
-      <div id="splitEntryRows"></div>
-      <div class="split-entry-summary" id="splitEntrySummary">진입가·증거금을 입력하면 평균 진입가가 자동 계산됩니다.</div>
-    </div>
 
     <div class="row">
       <div class="field" style="flex:1">
@@ -622,10 +554,10 @@
     <div class="row">
       <div class="field">
         <label>배율 (x)</label>
-        <input type="number" id="leverage" value="10" step="1" oninput="syncPositionInputs(); calc(); if(entryMode==='split') updateSplitEntries();">
+        <input type="number" id="leverage" value="10" step="1" oninput="syncPositionInputs(); calc();">
       </div>
       <div class="field">
-        <label>증거금 (원화)<span id="marginAutoNote" style="display:none; color:var(--sub); font-weight:normal;"> · 분할매매 자동계산</span></label>
+        <label>증거금 (원화)</label>
         <input type="number" id="margin" value="138000" step="1000" oninput="quantityInputSource='margin'; syncQuantityFromMargin(); calc(); updateFundsUsdt();">
         <div id="marginUsdt" style="font-size:11px;color:var(--sub);margin-top:4px;"></div>
       </div>
@@ -922,13 +854,10 @@ loadSymbolList();
 const SETTINGS_FIELDS = ['entryPrice','priceInput','leverage','margin','positionQty','totalFunds','mmRate','fxRate','feeRate','coinInput'];
 
 function collectSettings(){
-  const obj = { direction, entryMode, quantityInputSource };
+  const obj = { direction, quantityInputSource };
   SETTINGS_FIELDS.forEach(id => {
     obj[id] = document.getElementById(id).value;
   });
-  if(entryMode === 'split'){
-    obj.splitEntries = JSON.stringify(getSplitRowsData());
-  }
   return obj;
 }
 
@@ -944,21 +873,6 @@ function applySettings(data){
   }
   if(data.direction === 'long' || data.direction === 'short' || data.direction === 'none'){
     setDirection(data.direction, true);
-  }
-  if(data.entryMode === 'split' && data.splitEntries){
-    try{
-      const rows = JSON.parse(data.splitEntries);
-      document.getElementById('splitEntryRows').innerHTML = '';
-      if(rows.length){
-        rows.forEach(r => addSplitRow(r.price, r.marginKRW, true));
-      }
-      setEntryMode('split', true);
-    }catch(e){
-      console.error('분할매매 데이터 복원 실패', e);
-      setEntryMode('single', true);
-    }
-  } else {
-    setEntryMode('single', true);
   }
 }
 
@@ -1231,102 +1145,6 @@ function setDirection(d, skipSave){
 }
 setDirection('long', true);
 
-// ===== 분할매매 모드 =====
-let entryMode = 'single';
-let splitRowCount = 0;
-
-function setEntryMode(mode, skipSave){
-  entryMode = mode;
-  document.getElementById('btnSingleEntry').className = mode==='single' ? 'active-long' : '';
-  document.getElementById('btnSplitEntry').className = mode==='split' ? 'active-long' : '';
-  document.getElementById('singleEntryRow').style.display = mode==='single' ? 'flex' : 'none';
-  document.getElementById('splitEntryCard').style.display = mode==='split' ? 'block' : 'none';
-  document.getElementById('marginAutoNote').style.display = mode==='split' ? 'inline' : 'none';
-  document.getElementById('entryPrice').readOnly = (mode==='split');
-  document.getElementById('margin').readOnly = (mode==='split');
-  document.getElementById('positionQty').readOnly = (mode==='split');
-
-  if(mode==='split'){
-    quantityInputSource = 'margin';
-    if(document.querySelectorAll('#splitEntryRows .split-entry-row').length === 0){
-      const curEntry = document.getElementById('entryPrice').value;
-      const curMarginKRW = document.getElementById('margin').value;
-      addSplitRow(curEntry, curMarginKRW, true);
-    } else {
-      updateSplitEntries();
-    }
-  } else {
-    calc();
-  }
-  if(!skipSave) scheduleSaveSettings();
-}
-
-function addSplitRow(price, marginKRW, skipSave){
-  splitRowCount++;
-  const rowId = 'split-' + splitRowCount;
-  const container = document.getElementById('splitEntryRows');
-  const row = document.createElement('div');
-  row.className = 'split-entry-row';
-  row.id = rowId;
-  row.innerHTML = `
-    <span class="split-entry-label">진입가</span>
-    <input type="number" class="split-price" placeholder="진입가" value="${price!=null?price:''}" step="0.1" oninput="updateSplitEntries()">
-    <span class="split-entry-label">증거금</span>
-    <input type="number" class="split-margin" placeholder="증거금(원)" value="${marginKRW!=null?marginKRW:''}" step="1000" oninput="updateSplitEntries()">
-    <button type="button" class="split-row-del" onclick="removeSplitRow('${rowId}')">✕</button>
-  `;
-  container.appendChild(row);
-  if(!skipSave) updateSplitEntries();
-}
-
-function removeSplitRow(rowId){
-  const row = document.getElementById(rowId);
-  if(row) row.remove();
-  updateSplitEntries();
-}
-
-function getSplitRowsData(){
-  const rows = document.querySelectorAll('#splitEntryRows .split-entry-row');
-  const data = [];
-  rows.forEach(row => {
-    const price = parseFloat(row.querySelector('.split-price').value);
-    const marginKRW = parseFloat(row.querySelector('.split-margin').value);
-    data.push({ price: isNaN(price) ? null : price, marginKRW: isNaN(marginKRW) ? null : marginKRW });
-  });
-  return data;
-}
-
-function updateSplitEntries(){
-  const rows = getSplitRowsData();
-  const valid = rows.filter(r => r.price != null && r.marginKRW != null && r.marginKRW > 0);
-  const summaryEl = document.getElementById('splitEntrySummary');
-
-  if(valid.length === 0){
-    summaryEl.textContent = '진입가·증거금을 입력하면 평균 진입가가 자동 계산됩니다.';
-    scheduleSaveSettings();
-    return;
-  }
-
-  let totalMarginKRW = 0;
-  valid.forEach(r => {
-    totalMarginKRW += r.marginKRW;
-  });
-  // 동일 레버리지 분할 진입의 실제 보유 수량을 반영한 평균가(조화 가중평균)
-  const totalQtyWeight = valid.reduce((sum, r) => sum + r.marginKRW / r.price, 0);
-  const avgEntry = totalQtyWeight > 0 ? totalMarginKRW / totalQtyWeight : 0;
-
-  document.getElementById('entryPrice').value = avgEntry.toFixed(2);
-  document.getElementById('margin').value = Math.round(totalMarginKRW);
-  quantityInputSource = 'margin';
-  syncQuantityFromMargin();
-
-  summaryEl.textContent = `${valid.length}회 진입 · 평균 진입가 ${fmtPrice(avgEntry)} USDT · 총 증거금 ${fmt(totalMarginKRW,0)}원`;
-
-  calc();
-  scheduleSaveSettings();
-}
-
-setEntryMode('single', true);
 
 function fmt(n, digits=2){
   if(isNaN(n)) return '-';
@@ -1420,7 +1238,7 @@ function syncMarginFromQuantity(){
 }
 
 function syncPositionInputs(){
-  if(entryMode === 'split' || quantityInputSource === 'margin') syncQuantityFromMargin();
+  if(quantityInputSource === 'margin') syncQuantityFromMargin();
   else syncMarginFromQuantity();
 }
 
@@ -2362,5 +2180,55 @@ syncPositionInputs();
 calc();
 setTimeframe(defaultTimeframe);
 </script>
-</body>
+<script>
+(()=>{
+  function change(value, prior){
+    if(!(prior>0) || !Number.isFinite(prior)) return ['(비교값 없음)',''];
+    const pct=Number(((value/prior-1)*100).toFixed(2));
+    return ['('+(pct>0?'+':'')+pct.toFixed(2)+'%)',pct>0?'var(--long)':pct<0?'var(--short)':'var(--sub)'];
+  }
+  function show(id,value,previous,unit,date,previousDate,digits=2){
+    if(!(value>0) || !Number.isFinite(value)) return;
+    const field=document.getElementById(id);
+    const badge=document.createElement('span');
+    const [text,color]=change(value,previous);
+    badge.textContent=text;
+    badge.style.color=color;
+    field.replaceChildren(value.toLocaleString('ko-KR',{maximumFractionDigits:digits})+unit+' ',badge);
+    field.title='기준일 '+date+(previousDate?' · 비교일 '+previousDate:'');
+  }
+  async function response(url){
+    const res=await fetch(url,{signal:AbortSignal.timeout(10000)});
+    if(!res.ok) throw Error(String(res.status));
+    return res;
+  }
+  async function snapshot(day){
+    const path='/v1/currencies/usd.json';
+    for(const base of ['https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@'+day,'https://'+day+'.currency-api.pages.dev']){
+      try{
+        const data=await (await response(base+path)).json();
+        if(data.usd && data.date && (day==='latest'||data.date===day)) return data;
+      }catch{}
+    }
+    throw Error('시세 조회 실패');
+  }
+  async function currencies(){
+    const now=await snapshot('latest');
+    const yesterday=new Date(Date.parse(now.date+'T00:00:00Z')-86400000).toISOString().slice(0,10);
+    const prior=await snapshot(yesterday).catch(()=>null);
+    for(const [id,convert,unit,digits] of [
+      ['quoteUsd',r=>r.krw,'원',2],['quoteJpy',r=>100*r.krw/r.jpy,'원',2],
+      ['quoteEur',r=>1/r.eur,' USD',4],['quoteGold',r=>(r.krw/r.xau)*(3.75/31.1034768),'원/1돈',0]
+    ]) show(id,convert(now.usd),prior?convert(prior.usd):null,unit,now.date,prior?.date,digits);
+  }
+  async function oil(){
+    const csv=await (await response('https://raw.githubusercontent.com/datasets/oil-prices/master/data/brent-daily.csv')).text();
+    const rows=csv.trim().split(/\r?\n/).map(row=>row.split(',')).filter(([,price])=>Number(price)>0);
+    const [date,price]=rows.at(-1), prev=rows.at(-2);
+    show('quoteOil',Number(price),Number(prev?.[1]),' $/배럴',date,prev?.[0]);
+  }
+  const refresh=()=>Promise.allSettled([currencies(),oil()]);
+  refresh();
+  setInterval(()=>{if(!document.hidden)refresh()},3600000);})();
+</script></body>
 </html>
